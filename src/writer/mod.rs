@@ -353,6 +353,41 @@ impl DERWriter {
         return Ok(());
     }
 
+    /// Writes `&[u8]` as an ASN.1 OCTETSTRING value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_bytes(b"Hello!")
+    /// }).unwrap();
+    /// assert_eq!(der, vec![4, 6, 72, 101, 108, 108, 111, 33]);
+    /// ```
+    pub fn write_bytes(&mut self, bytes: &[u8]) -> io::Result<()> {
+        try!(self.write_identifier(TAG_OCTETSTRING, PC::Primitive));
+        try!(self.write_length(bytes.len()));
+        self.buf.extend_from_slice(bytes);
+        return Ok(());
+    }
+
+    /// Writes the ASN.1 NULL value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_null()
+    /// }).unwrap();
+    /// assert_eq!(der, vec![5, 0]);
+    /// ```
+    pub fn write_null(&mut self) -> io::Result<()> {
+        try!(self.write_identifier(TAG_NULL, PC::Primitive));
+        try!(self.write_length(0));
+        return Ok(());
+    }
+
     /// Writes ASN.1 SEQUENCE.
     ///
     /// This function uses the loan pattern: `callback` is called back with

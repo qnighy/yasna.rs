@@ -193,11 +193,84 @@ fn test_write_biguint() {
 }
 
 #[test]
-fn test_write_sequence() {
+fn test_write_bytes() {
+    let data = construct_der(|writer| {
+        writer.write_bytes(&[1, 0, 100, 255])
+    }).unwrap();
+    assert_eq!(data, vec![4, 4, 1, 0, 100, 255]);
+}
+
+#[test]
+fn test_write_null() {
+    let data = construct_der(|writer| {
+        writer.write_null()
+    }).unwrap();
+    assert_eq!(data, vec![5, 0]);
+}
+
+#[test]
+fn test_write_sequence_small() {
     let data = construct_der(|writer| {
         writer.write_sequence(|_| {
             return Ok(());
         })
     }).unwrap();
     assert_eq!(data, vec![48, 0]);
+
+    let data = construct_der(|writer| {
+        writer.write_sequence(|writer| {
+            try!(writer.write_bytes(&vec![91; 20]));
+            return Ok(());
+        })
+    }).unwrap();
+    assert_eq!(data, vec![
+        48, 22, 4, 20, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91,
+        91, 91, 91, 91, 91, 91]);
+
+    let data = construct_der(|writer| {
+        writer.write_sequence(|writer| {
+            try!(writer.write_bytes(&vec![91; 200]));
+            return Ok(());
+        })
+    }).unwrap();
+    assert_eq!(data[0..9].to_vec(),
+        vec![48, 129, 203, 4, 129, 200, 91, 91, 91]);
+    assert_eq!(data.len(), 206);
+
+    let data = construct_der(|writer| {
+        writer.write_sequence(|writer| {
+            try!(writer.write_bytes(&vec![91; 2000]));
+            return Ok(());
+        })
+    }).unwrap();
+    assert_eq!(data[0..11].to_vec(),
+        vec![48, 130, 7, 212, 4, 130, 7, 208, 91, 91, 91]);
+    assert_eq!(data.len(), 2008);
+}
+
+#[test]
+fn test_write_sequence_medium() {
+    let data = construct_der(|writer| {
+        writer.write_sequence(|writer| {
+            try!(writer.write_bytes(&vec![91; 200000]));
+            return Ok(());
+        })
+    }).unwrap();
+    assert_eq!(data[0..13].to_vec(),
+        vec![48, 131, 3, 13, 69, 4, 131, 3, 13, 64, 91, 91, 91]);
+    assert_eq!(data.len(), 200010);
+}
+
+#[test]
+#[ignore]
+fn test_write_sequence_large() {
+    let data = construct_der(|writer| {
+        writer.write_sequence(|writer| {
+            try!(writer.write_bytes(&vec![91; 20000000]));
+            return Ok(());
+        })
+    }).unwrap();
+    assert_eq!(data[0..15].to_vec(),
+        vec![48, 132, 1, 49, 45, 6, 4, 132, 1, 49, 45, 0, 91, 91, 91]);
+    assert_eq!(data.len(), 20000012);
 }
