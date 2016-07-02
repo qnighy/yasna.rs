@@ -1,6 +1,7 @@
 #!/bin/sh
 set -ue
 
+cp doc/* target/doc/
 pip install ghp-import --user
 $HOME/.local/bin/ghp-import -n target/doc
 
