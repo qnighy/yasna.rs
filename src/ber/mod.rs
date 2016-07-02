@@ -264,8 +264,7 @@ impl<'a> BerReader<'a> {
                 },
         }
     }
-    pub fn parse_default<T, F>(&mut self, default: T, mut fun: F)
-            -> BerResult<T>
+    pub fn parse_default<T, F>(&mut self, default: T, fun: F) -> BerResult<T>
             where F: FnMut(&mut Self) -> BerResult<T>, T: Eq {
         match try!(self.parse_optional(fun)) {
             Some(result) => {
@@ -617,7 +616,6 @@ impl FromBer for ObjectIdentifier {
             if buf.len() == 0 || buf[buf.len()-1] >= 128 {
                 return Err(BerError::Invalid);
             }
-            let mut pos = 0;
             let mut subid : u64 = 0;
             for &b in buf.iter() {
                 if b == 128 {
