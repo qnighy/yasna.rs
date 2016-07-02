@@ -1,6 +1,6 @@
 [package]
 name = "yasna"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Masaki Hara <ackie.h.gmai@gmail.com>"]
 
 description = "ASN.1 library for Rust"
