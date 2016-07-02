@@ -6,7 +6,7 @@ authors = ["Masaki Hara <ackie.h.gmai@gmail.com>"]
 description = "ASN.1 library for Rust"
 documentation = "https://qnighy.github.io/yasna.rs"
 homepage = "https://github.com/qnighy/yasna.rs"
-repository = "https://github.com/qnighy/yasna.rs.git"
+repository = "https://github.com/qnighy/yasna.rs"
 readme = "README.md"
 keywords = ["parser", "serialization"]
 license = "MIT/Apache-2.0"
@@ -15,5 +15,13 @@ include = [
   "Cargo.toml",
 ]
 
+[features]
+default = ["bigint"]
+bigint = ["num"]
+
 [dependencies]
-num = "0.1.32"
+
+[dependencies.num]
+version = "0.1.32"
+features = ["bigint"]
+optional = true

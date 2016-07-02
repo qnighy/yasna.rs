@@ -6,9 +6,32 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+//! A library for reading and writing ASN.1 data.
+//!
+//! # Example
+//!
+//! ```
+//! extern crate yasna;
+//!
+//! fn main() {
+//!     let der = yasna::construct_der(|writer| {
+//!         writer.write_sequence(|writer| {
+//!             try!(writer.write_i64(10));
+//!             try!(writer.write_bool(true));
+//!             return Ok(());
+//!         })
+//!     }).unwrap();
+//!     println!("(10, true) = {:?}", der);
+//! }
+//! ```
+
+#[cfg(feature = "bigint")]
 extern crate num;
 
 mod basics;
+mod writer;
 pub mod ber;
 
 pub use basics::*;
+
+pub use writer::{construct_der,DERWriter};
