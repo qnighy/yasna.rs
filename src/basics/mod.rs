@@ -10,7 +10,7 @@ use std::ops::{Deref, DerefMut};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum TagClass {
-    Universal, Application, ContextSpecific, Private,
+    Universal = 0, Application = 1, ContextSpecific = 2, Private = 3,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]

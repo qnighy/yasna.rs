@@ -10,6 +10,9 @@
 extern crate num;
 
 mod basics;
+mod writer;
 pub mod ber;
 
 pub use basics::*;
+
+pub use writer::{construct_der,DERWriter};
