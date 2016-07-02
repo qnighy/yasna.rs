@@ -16,4 +16,7 @@ include = [
 ]
 
 [dependencies]
-num = "0.1.32"
+
+[dependencies.num]
+version = "0.1.32"
+features = ["bigint"]
