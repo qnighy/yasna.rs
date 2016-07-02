@@ -191,3 +191,13 @@ fn test_write_biguint() {
         2, 17, 3, 160, 201, 32, 117, 192, 219,
         243, 184, 172, 188, 95, 150, 206, 63, 10, 210]);
 }
+
+#[test]
+fn test_write_sequence() {
+    let data = construct_der(|writer| {
+        writer.write_sequence(|_| {
+            return Ok(());
+        })
+    }).unwrap();
+    assert_eq!(data, vec![48, 0]);
+}

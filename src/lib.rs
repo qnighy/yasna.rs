@@ -15,9 +15,13 @@
 //!
 //! fn main() {
 //!     let der = yasna::construct_der(|writer| {
-//!         writer.write_i64(10)
+//!         writer.write_sequence(|writer| {
+//!             try!(writer.write_i64(10));
+//!             try!(writer.write_bool(true));
+//!             return Ok(());
+//!         })
 //!     }).unwrap();
-//!     println!("10 = {:?}", der);
+//!     println!("(10, true) = {:?}", der);
 //! }
 //! ```
 

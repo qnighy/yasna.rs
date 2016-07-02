@@ -23,8 +23,13 @@ use super::*;
 /// ```
 /// use yasna;
 /// let der = yasna::construct_der(|writer| {
-///     writer.write_i64(10)
+///     writer.write_sequence(|writer| {
+///         try!(writer.write_i64(10));
+///         try!(writer.write_bool(true));
+///         return Ok(());
+///     })
 /// }).unwrap();
+/// assert_eq!(der, vec![48, 6, 2, 1, 10, 1, 1, 255]);
 /// ```
 ///
 /// # Errors
@@ -73,6 +78,7 @@ impl DERWriter {
 
     /// Writes BER length octets.
     fn write_length(&mut self, length: usize) -> io::Result<()> {
+        let length = length as u64;
         if length < 128 {
             self.buf.push(length as u8);
             return Ok(());
@@ -90,6 +96,60 @@ impl DERWriter {
             shiftnum -= 8;
         }
         return Ok(());
+    }
+
+    /// Deals with unknown length procedures.
+    /// This function first marks the current position and
+    /// allocates 3 bytes. Then it calls back `callback`.
+    /// It then calculates the length and moves the written data
+    /// to the actual position. Finally, it writes the length.
+    fn with_length<T, F>(&mut self, mut callback: F) -> io::Result<T>
+        where F: FnMut(&mut Self) -> io::Result<T> {
+        let expected_length_length = 3;
+        for _ in 0..3 {
+            self.buf.push(255);
+        }
+        let start_pos = self.buf.len();
+        let result = try!(callback(self));
+        let length = (self.buf.len() - start_pos) as u64;
+        let length_length;
+        let mut shiftnum = 56; // ceil(64 / 8) * 8 - 8
+        if length < 128 {
+            length_length = 1;
+        } else {
+            while (length >> shiftnum) == 0 {
+                shiftnum -= 8;
+            }
+            length_length = shiftnum / 8 + 2;
+        }
+        let new_start_pos;
+        if length_length < expected_length_length {
+            let diff = expected_length_length - length_length;
+            new_start_pos = start_pos - diff;
+            self.buf.drain(new_start_pos .. start_pos);
+        } else if length_length > expected_length_length {
+            let diff = length_length - expected_length_length;
+            new_start_pos = start_pos + diff;
+            for _ in 0..diff { self.buf.insert(start_pos, 0); }
+        } else {
+            new_start_pos = start_pos;
+        }
+        let mut idx = new_start_pos - length_length;
+        if length < 128 {
+            self.buf[idx] = length as u8;
+        } else {
+            self.buf[idx] = 128 | ((shiftnum / 8 + 1) as u8);
+            idx += 1;
+            loop {
+                self.buf[idx] = (length >> shiftnum) as u8;
+                idx += 1;
+                if shiftnum == 0 {
+                    break;
+                }
+                shiftnum -= 8;
+            }
+        }
+        return Ok(result);
     }
 
     /// Writes `bool` as an ASN.1 BOOLEAN value.
@@ -291,6 +351,30 @@ impl DERWriter {
         bytes.reverse();
         self.buf.extend_from_slice(&bytes);
         return Ok(());
+    }
+
+    /// Writes ASN.1 SEQUENCE.
+    ///
+    /// This function uses the loan pattern: `callback` is called back with
+    /// a `DERWriter`, to which the contents of the SEQUENCE is written.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_sequence(|writer| {
+    ///         try!(writer.write_i64(10));
+    ///         try!(writer.write_bool(true));
+    ///         return Ok(());
+    ///     })
+    /// }).unwrap();
+    /// assert_eq!(der, vec![48, 6, 2, 1, 10, 1, 1, 255]);
+    /// ```
+    pub fn write_sequence<T, F>(&mut self, callback: F) -> io::Result<T>
+        where F: FnMut(&mut Self) -> io::Result<T> {
+        try!(self.write_identifier(TAG_SEQUENCE, PC::Constructed));
+        return self.with_length(callback);
     }
 }
 
