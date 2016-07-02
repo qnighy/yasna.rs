@@ -12,7 +12,7 @@ script:
   - cargo test --verbose
   - cargo doc
 after_success: |
-  [ $TRAVIS_BRANCH = master ] &&
+  [ $TRAVIS_BRANCH = travis ] &&
   [ $TRAVIS_PULL_REQUEST = false ] &&
   [ $TRAVIS_RUST_VERSION = stable ] &&
   ssh-agent .travis/deploy.sh
