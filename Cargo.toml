@@ -15,8 +15,13 @@ include = [
   "Cargo.toml",
 ]
 
+[features]
+default = ["bigint"]
+bigint = ["num"]
+
 [dependencies]
 
 [dependencies.num]
 version = "0.1.32"
 features = ["bigint"]
+optional = true

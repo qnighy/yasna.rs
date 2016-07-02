@@ -12,6 +12,7 @@ use std::fmt::{self,Display};
 use std::hash::Hash;
 use std::io;
 
+#[cfg(feature = "bigint")]
 use num::bigint::{BigInt,BigUint,ToBigUint};
 
 use super::*;
@@ -503,6 +504,7 @@ impl FromBer for i64 {
     }
 }
 
+#[cfg(feature = "bigint")]
 impl FromBer for BigInt {
     fn from_ber(parser: &mut BerReader) -> BerResult<Self> {
         parser.parse_general(TAG_INTEGER, TagType::Explicit, |parser, pc| {
@@ -528,6 +530,7 @@ impl FromBer for BigInt {
     }
 }
 
+#[cfg(feature = "bigint")]
 impl FromBer for BigUint {
     fn from_ber(parser: &mut BerReader) -> BerResult<Self> {
         match try!(parser.parse::<BigInt>()).to_biguint() {
