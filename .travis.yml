@@ -12,6 +12,9 @@ script:
   - cargo test --verbose
   - cargo doc
 after_success: |
+  echo $TRAVIS_BRANCH &&
+  echo $TRAVIS_PULL_REQUEST &&
+  echo $TRAVIS_RUST_VERSION &&
   [ $TRAVIS_BRANCH = travis ] &&
   [ $TRAVIS_PULL_REQUEST = false ] &&
   [ $TRAVIS_RUST_VERSION = stable ] &&
