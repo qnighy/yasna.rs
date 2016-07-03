@@ -10,12 +10,24 @@ use std::error::Error;
 use std::fmt::{self,Display};
 use std::io;
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub enum ASN1Error {
+#[derive(Debug)]
+pub struct ASN1Error {
+    kind: ASN1ErrorKind,
+}
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum ASN1ErrorKind {
     Eof, Extra, IntegerOverflow, StackOverflow, Invalid,
 }
 
 pub type ASN1Result<T> = Result<T, ASN1Error>;
+
+impl ASN1Error {
+    pub fn new(kind: ASN1ErrorKind) -> Self {
+        ASN1Error {
+            kind: kind,
+        }
+    }
+}
 
 impl Display for ASN1Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
@@ -26,12 +38,12 @@ impl Display for ASN1Error {
 
 impl Error for ASN1Error {
     fn description(&self) -> &str {
-        match *self {
-            ASN1Error::Eof => "End of file",
-            ASN1Error::Extra => "Extra data in file",
-            ASN1Error::IntegerOverflow => "Integer overflow",
-            ASN1Error::StackOverflow => "Stack overflow",
-            ASN1Error::Invalid => "Invalid data",
+        match self.kind {
+            ASN1ErrorKind::Eof => "End of file",
+            ASN1ErrorKind::Extra => "Extra data in file",
+            ASN1ErrorKind::IntegerOverflow => "Integer overflow",
+            ASN1ErrorKind::StackOverflow => "Stack overflow",
+            ASN1ErrorKind::Invalid => "Invalid data",
         }
     }
 }
