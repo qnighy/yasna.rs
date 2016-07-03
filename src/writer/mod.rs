@@ -38,22 +38,25 @@ use super::*;
 ///
 pub fn construct_der<F>(callback: F) -> io::Result<Vec<u8>>
         where F: FnOnce(&mut DERWriter) -> io::Result<()> {
-    let mut writer = DERWriter {
-        buf: Vec::new(),
-    };
-    try!(callback(&mut writer));
-    return Ok(writer.buf);
+    let mut buf = Vec::new();
+    {
+        let mut writer = DERWriter {
+            buf: &mut buf,
+        };
+        try!(callback(&mut writer));
+    }
+    return Ok(buf);
 }
 
 /// A writer object that has an internal buffer storing DER-encoded data.
 ///
 /// This object is only created by `construct_der` function.
 #[derive(Debug)]
-pub struct DERWriter {
-    buf: Vec<u8>,
+pub struct DERWriter<'a> {
+    buf: &'a mut Vec<u8>,
 }
 
-impl DERWriter {
+impl<'a> DERWriter<'a> {
     /// Writes BER identifier (tag + primitive/constructed) octets.
     fn write_identifier(&mut self, tag: Tag, pc: PC) -> io::Result<()> {
         let classid = tag.tag_class as u8;
