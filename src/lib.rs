@@ -10,14 +10,18 @@
 //!
 //! # Example
 //!
+//! To serialize ASN.1 data, you can use [`construct_der`][construct_der].
+//!
+//! [construct_der]: fn.construct_der.html
+//!
 //! ```
 //! extern crate yasna;
 //!
 //! fn main() {
 //!     let der = yasna::construct_der(|writer| {
 //!         writer.write_sequence(|writer| {
-//!             try!(writer.write_i64(10));
-//!             try!(writer.write_bool(true));
+//!             try!(writer.next().write_i64(10));
+//!             try!(writer.next().write_bool(true));
 //!             return Ok(());
 //!         })
 //!     }).unwrap();
@@ -34,4 +38,4 @@ pub mod ber;
 
 pub use basics::*;
 
-pub use writer::{construct_der,DERWriter};
+pub use writer::{construct_der,construct_der_seq,DERWriterSeq,DERWriter};

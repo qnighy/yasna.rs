@@ -19,8 +19,8 @@ extern crate yasna;
 fn main() {
     let der = yasna::construct_der(|writer| {
         writer.write_sequence(|writer| {
-            try!(writer.write_i64(10));
-            try!(writer.write_bool(true));
+            try!(writer.next().write_i64(10));
+            try!(writer.next().write_bool(true));
             return Ok(());
         })
     }).unwrap();

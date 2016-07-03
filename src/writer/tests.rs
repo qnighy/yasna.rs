@@ -13,7 +13,7 @@ use super::*;
 
 #[test]
 fn test_write_bool() {
-    let data = construct_der(|writer| {
+    let data = construct_der_seq(|writer| {
         for &val in [false, true].iter() {
             try!(writer.write_bool(val));
         }
@@ -24,7 +24,7 @@ fn test_write_bool() {
 
 #[test]
 fn test_write_i64() {
-    let data = construct_der(|writer| {
+    let data = construct_der_seq(|writer| {
         for &val in [
             -9223372036854775808, -65537, -65536, -32769, -32768, -129, -128,
             -1, 0, 1, 127, 128, 32767, 32768, 65535, 65536,
@@ -43,7 +43,7 @@ fn test_write_i64() {
 
 #[test]
 fn test_write_u64() {
-    let data = construct_der(|writer| {
+    let data = construct_der_seq(|writer| {
         for &val in [
             0, 1, 127, 128, 32767, 32768, 65535, 65536,
             9223372036854775807, 18446744073709551615].iter() {
@@ -60,7 +60,7 @@ fn test_write_u64() {
 
 #[test]
 fn test_write_i32() {
-    let data = construct_der(|writer| {
+    let data = construct_der_seq(|writer| {
         for &val in [
             -2147483648, -65537, -65536, -32769, -32768, -129, -128, -1, 0, 1,
             127, 128, 32767, 32768, 65535, 65536, 2147483647].iter() {
@@ -78,7 +78,7 @@ fn test_write_i32() {
 
 #[test]
 fn test_write_u32() {
-    let data = construct_der(|writer| {
+    let data = construct_der_seq(|writer| {
         for &val in [
             0, 1, 127, 128, 32767, 32768, 65535, 65536, 2147483647,
             4294967295].iter() {
@@ -94,7 +94,7 @@ fn test_write_u32() {
 
 #[test]
 fn test_write_i16() {
-    let data = construct_der(|writer| {
+    let data = construct_der_seq(|writer| {
         for &val in [-32768, -129, -128, -1, 0, 1, 127, 128, 32767].iter() {
             try!(writer.write_i16(val));
         }
@@ -107,7 +107,7 @@ fn test_write_i16() {
 
 #[test]
 fn test_write_u16() {
-    let data = construct_der(|writer| {
+    let data = construct_der_seq(|writer| {
         for &val in [0, 1, 127, 128, 32767, 32768, 65535].iter() {
             try!(writer.write_u16(val));
         }
@@ -120,7 +120,7 @@ fn test_write_u16() {
 
 #[test]
 fn test_write_i8() {
-    let data = construct_der(|writer| {
+    let data = construct_der_seq(|writer| {
         for &val in [-128, -1, 0, 1, 127].iter() {
             try!(writer.write_i8(val));
         }
@@ -131,7 +131,7 @@ fn test_write_i8() {
 
 #[test]
 fn test_write_u8() {
-    let data = construct_der(|writer| {
+    let data = construct_der_seq(|writer| {
         for &val in [0, 1, 127, 255].iter() {
             try!(writer.write_u8(val));
         }
@@ -144,7 +144,7 @@ fn test_write_u8() {
 #[test]
 fn test_write_bigint() {
     use num::FromPrimitive;
-    let data = construct_der(|writer| {
+    let data = construct_der_seq(|writer| {
         for &val in [
             -9223372036854775808, -65537, -65536, -32769, -32768, -129, -128,
             -1, 0, 1, 127, 128, 32767, 32768, 65535, 65536,
@@ -173,7 +173,7 @@ fn test_write_bigint() {
 #[test]
 fn test_write_biguint() {
     use num::FromPrimitive;
-    let data = construct_der(|writer| {
+    let data = construct_der_seq(|writer| {
         for &val in [
             0, 1, 127, 128, 32767, 32768, 65535, 65536,
             9223372036854775807, 18446744073709551615].iter() {
@@ -194,7 +194,7 @@ fn test_write_biguint() {
 
 #[test]
 fn test_write_bytes() {
-    let data = construct_der(|writer| {
+    let data = construct_der_seq(|writer| {
         writer.write_bytes(&[1, 0, 100, 255])
     }).unwrap();
     assert_eq!(data, vec![4, 4, 1, 0, 100, 255]);
@@ -202,7 +202,7 @@ fn test_write_bytes() {
 
 #[test]
 fn test_write_null() {
-    let data = construct_der(|writer| {
+    let data = construct_der_seq(|writer| {
         writer.write_null()
     }).unwrap();
     assert_eq!(data, vec![5, 0]);
@@ -210,14 +210,14 @@ fn test_write_null() {
 
 #[test]
 fn test_write_sequence_small() {
-    let data = construct_der(|writer| {
+    let data = construct_der_seq(|writer| {
         writer.write_sequence(|_| {
             return Ok(());
         })
     }).unwrap();
     assert_eq!(data, vec![48, 0]);
 
-    let data = construct_der(|writer| {
+    let data = construct_der_seq(|writer| {
         writer.write_sequence(|writer| {
             try!(writer.write_bytes(&vec![91; 20]));
             return Ok(());
@@ -227,7 +227,7 @@ fn test_write_sequence_small() {
         48, 22, 4, 20, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91,
         91, 91, 91, 91, 91, 91]);
 
-    let data = construct_der(|writer| {
+    let data = construct_der_seq(|writer| {
         writer.write_sequence(|writer| {
             try!(writer.write_bytes(&vec![91; 200]));
             return Ok(());
@@ -237,7 +237,7 @@ fn test_write_sequence_small() {
         vec![48, 129, 203, 4, 129, 200, 91, 91, 91]);
     assert_eq!(data.len(), 206);
 
-    let data = construct_der(|writer| {
+    let data = construct_der_seq(|writer| {
         writer.write_sequence(|writer| {
             try!(writer.write_bytes(&vec![91; 2000]));
             return Ok(());
@@ -250,7 +250,7 @@ fn test_write_sequence_small() {
 
 #[test]
 fn test_write_sequence_medium() {
-    let data = construct_der(|writer| {
+    let data = construct_der_seq(|writer| {
         writer.write_sequence(|writer| {
             try!(writer.write_bytes(&vec![91; 200000]));
             return Ok(());
@@ -264,7 +264,7 @@ fn test_write_sequence_medium() {
 #[test]
 #[ignore]
 fn test_write_sequence_large() {
-    let data = construct_der(|writer| {
+    let data = construct_der_seq(|writer| {
         writer.write_sequence(|writer| {
             try!(writer.write_bytes(&vec![91; 20000000]));
             return Ok(());
