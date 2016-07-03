@@ -39,5 +39,5 @@ mod deserializer;
 pub use basics::*;
 
 pub use writer::{construct_der,construct_der_seq,DERWriterSeq,DERWriter,DERWriterSet};
-pub use reader::{BERReader,ASN1Error,ASN1ErrorKind,BERMode,ASN1Result,parse_ber_general};
+pub use reader::{BERReader,BERReaderSeq,ASN1Error,ASN1ErrorKind,BERMode,ASN1Result,parse_ber_general};
 pub use deserializer::FromBER;

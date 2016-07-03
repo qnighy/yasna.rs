@@ -14,11 +14,11 @@ use num::bigint::{BigInt,BigUint};
 use super::TagType;
 use super::{TAG_PRINTABLESTRING,TAG_UTCTIME};
 
-use super::{ASN1Result,ASN1ErrorKind,BERMode,BERReader,parse_ber_general};
+use super::{ASN1Error,ASN1Result,ASN1ErrorKind,BERMode,BERReader,parse_ber_general};
 use super::{PrintableString,UtcTime,ObjectIdentifier,BitString,SetOf};
 
 pub trait FromBER: Sized + Eq + Hash {
-    fn from_ber<'a, 'b>(reader: &mut BERReader<'a, 'b>) -> ASN1Result<Self>;
+    fn from_ber<'a, 'b>(reader: BERReader<'a, 'b>) -> ASN1Result<Self>;
 
     fn deserialize_ber_general(src: &[u8], mode: BERMode) -> ASN1Result<Self> {
         return parse_ber_general(src, mode, |reader| {
@@ -28,7 +28,7 @@ pub trait FromBER: Sized + Eq + Hash {
 }
 
 impl<T> FromBER for Vec<T> where T: Sized + Eq + Hash + FromBER {
-    fn from_ber(reader: &mut BERReader) -> ASN1Result<Self> {
+    fn from_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.parse_sequence(|reader| {
             let mut ret = Vec::new();
             loop {
@@ -50,7 +50,7 @@ impl<T> FromBER for Vec<T> where T: Sized + Eq + Hash + FromBER {
 }
 
 impl<T> FromBER for SetOf<T> where T: Sized + Eq + Hash + FromBER {
-    fn from_ber<'a, 'b>(reader: &mut BERReader<'a, 'b>) -> ASN1Result<Self> {
+    fn from_ber<'a, 'b>(reader: BERReader<'a, 'b>) -> ASN1Result<Self> {
         reader.parse_set(|reader| {
             let mut ret = SetOf::new();
             let mut old_buf : Option<&'a [u8]> = None;
@@ -96,70 +96,70 @@ impl<T> FromBER for SetOf<T> where T: Sized + Eq + Hash + FromBER {
 }
 
 impl FromBER for i64 {
-    fn from_ber(reader: &mut BERReader) -> ASN1Result<Self> {
+    fn from_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.read_i64()
     }
 }
 
 #[cfg(feature = "bigint")]
 impl FromBER for BigInt {
-    fn from_ber(reader: &mut BERReader) -> ASN1Result<Self> {
+    fn from_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.read_bigint()
     }
 }
 
 #[cfg(feature = "bigint")]
 impl FromBER for BigUint {
-    fn from_ber(reader: &mut BERReader) -> ASN1Result<Self> {
+    fn from_ber(reader: BERReader) -> ASN1Result<Self> {
         match try!(reader.parse::<BigInt>()).to_biguint() {
             Some(result) => Ok(result),
-            None => Err(reader.generate_error(ASN1ErrorKind::Invalid)),
+            None => Err(ASN1Error::new(ASN1ErrorKind::Invalid)),
         }
     }
 }
 
 impl FromBER for () {
-    fn from_ber(reader: &mut BERReader) -> ASN1Result<Self> {
+    fn from_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.read_null()
     }
 }
 
 impl FromBER for bool {
-    fn from_ber(reader: &mut BERReader) -> ASN1Result<Self> {
+    fn from_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.read_bool()
     }
 }
 
 impl FromBER for BitString {
-    fn from_ber(reader: &mut BERReader) -> ASN1Result<Self> {
+    fn from_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.parse_bitstring()
     }
 }
 
 impl FromBER for Vec<u8> {
-    fn from_ber(reader: &mut BERReader) -> ASN1Result<Self> {
+    fn from_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.parse_octetstring()
     }
 }
 
 impl FromBER for ObjectIdentifier {
-    fn from_ber(reader: &mut BERReader) -> ASN1Result<Self> {
+    fn from_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.read_oid()
     }
 }
 
 impl FromBER for PrintableString {
-    fn from_ber(reader: &mut BERReader) -> ASN1Result<Self> {
+    fn from_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.parse_tagged(TAG_PRINTABLESTRING, TagType::Implicit, |reader| {
             let octets = try!(reader.parse_octetstring());
             return PrintableString::from_bytes(octets)
-                .ok_or(reader.generate_error(ASN1ErrorKind::Invalid));
+                .ok_or(ASN1Error::new(ASN1ErrorKind::Invalid));
         })
     }
 }
 
 impl FromBER for UtcTime {
-    fn from_ber(reader: &mut BERReader) -> ASN1Result<Self> {
+    fn from_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.parse_tagged(TAG_UTCTIME, TagType::Implicit, |reader| {
             let octets = try!(reader.parse_octetstring());
             // TODO: format check
