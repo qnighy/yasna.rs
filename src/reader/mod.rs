@@ -19,6 +19,15 @@ use super::{TAG_BOOLEAN,TAG_INTEGER,TAG_BITSTRING,TAG_OCTETSTRING,TAG_NULL,TAG_O
 use super::{PrintableString,UtcTime,ObjectIdentifier,BitString,SetOf};
 pub use self::error::*;
 
+pub fn parse_ber_general<'a, T, F>(buf: &'a [u8], mode: BERMode, mut fun: F)
+        -> ASN1Result<T>
+        where F: for<'b> FnMut(&mut BERReader<'b>) -> ASN1Result<T> {
+    let mut parser = BERReader::new(buf, mode);
+    let result = try!(fun(&mut parser));
+    try!(parser.end_of_buf());
+    return Ok(result);
+}
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum BERMode {
     Ber, Der,
@@ -268,14 +277,6 @@ impl<'a> BERReader<'a> {
             fun(parser)
         })
     }
-    pub fn from_buf<T, F>(buf: &'a [u8], mode: BERMode, mut fun: F)
-            -> ASN1Result<T>
-            where F: FnMut(&mut Self) -> ASN1Result<T> {
-        let mut parser = Self::new(buf, mode);
-        let result = try!(fun(&mut parser));
-        try!(parser.end_of_buf());
-        return Ok(result);
-    }
     pub fn parse_sequence<T, F>(&mut self, mut fun: F) -> ASN1Result<T>
             where F: FnMut(&mut Self) -> ASN1Result<T> {
         self.parse_general(TAG_SEQUENCE, TagType::Explicit, |parser, pc| {
@@ -349,8 +350,8 @@ impl<'a> BERReader<'a> {
 pub trait FromBER: Sized + Eq + Hash {
     fn from_ber<'a>(parser: &mut BERReader<'a>) -> ASN1Result<Self>;
 
-    fn from_buf(src: &[u8], mode: BERMode) -> ASN1Result<Self> {
-        return BERReader::from_buf(src, mode, |parser| {
+    fn deserialize_ber_general(src: &[u8], mode: BERMode) -> ASN1Result<Self> {
+        return parse_ber_general(src, mode, |parser| {
             return Self::from_ber(parser);
         });
     }
