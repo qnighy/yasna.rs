@@ -9,6 +9,7 @@
 use std::cmp::Ordering;
 use std::hash::Hash;
 
+#[cfg(feature = "bigint")]
 use num::bigint::{BigInt,BigUint};
 
 use super::TagType;
