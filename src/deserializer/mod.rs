@@ -29,10 +29,10 @@ pub trait FromBER: Sized + Eq + Hash {
 
 impl<T> FromBER for Vec<T> where T: Sized + Eq + Hash + FromBER {
     fn from_ber(reader: BERReader) -> ASN1Result<Self> {
-        reader.parse_sequence(|reader| {
+        reader.read_sequence(|reader| {
             let mut ret = Vec::new();
             loop {
-                let result = try!(reader.parse_optional(|reader| {
+                let result = try!(reader.read_optional(|reader| {
                     T::from_ber(reader)
                 }));
                 match result {
@@ -51,12 +51,12 @@ impl<T> FromBER for Vec<T> where T: Sized + Eq + Hash + FromBER {
 
 impl<T> FromBER for SetOf<T> where T: Sized + Eq + Hash + FromBER {
     fn from_ber<'a, 'b>(reader: BERReader<'a, 'b>) -> ASN1Result<Self> {
-        reader.parse_set(|reader| {
+        reader.read_set(|reader| {
             let mut ret = SetOf::new();
             let mut old_buf : Option<&'a [u8]> = None;
             loop {
-                let (result, buf) = try!(reader.parse_with_buffer(|reader| {
-                    reader.parse_optional(|reader| {
+                let (result, buf) = try!(reader.read_with_buffer(|reader| {
+                    reader.read_optional(|reader| {
                         T::from_ber(reader)
                     })
                 }));
@@ -132,7 +132,7 @@ impl FromBER for bool {
 
 impl FromBER for BitString {
     fn from_ber(reader: BERReader) -> ASN1Result<Self> {
-        reader.parse_bitstring()
+        reader.read_bitstring()
     }
 }
 
@@ -150,7 +150,7 @@ impl FromBER for ObjectIdentifier {
 
 impl FromBER for PrintableString {
     fn from_ber(reader: BERReader) -> ASN1Result<Self> {
-        reader.parse_tagged(TAG_PRINTABLESTRING, TagType::Implicit, |reader| {
+        reader.read_tagged(TAG_PRINTABLESTRING, TagType::Implicit, |reader| {
             let octets = try!(reader.read_bytes());
             return PrintableString::from_bytes(octets)
                 .ok_or(ASN1Error::new(ASN1ErrorKind::Invalid));
@@ -160,7 +160,7 @@ impl FromBER for PrintableString {
 
 impl FromBER for UtcTime {
     fn from_ber(reader: BERReader) -> ASN1Result<Self> {
-        reader.parse_tagged(TAG_UTCTIME, TagType::Implicit, |reader| {
+        reader.read_tagged(TAG_UTCTIME, TagType::Implicit, |reader| {
             let octets = try!(reader.read_bytes());
             // TODO: format check
             return Ok(UtcTime::new(octets));
