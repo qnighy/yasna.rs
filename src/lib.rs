@@ -33,7 +33,7 @@ extern crate num;
 
 mod basics;
 mod writer;
-pub mod ber;
+pub mod reader;
 
 pub use basics::*;
 
