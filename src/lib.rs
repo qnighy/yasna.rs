@@ -20,11 +20,10 @@
 //! fn main() {
 //!     let der = yasna::construct_der(|writer| {
 //!         writer.write_sequence(|writer| {
-//!             try!(writer.next().write_i64(10));
-//!             try!(writer.next().write_bool(true));
-//!             return Ok(());
+//!             writer.next().write_i64(10);
+//!             writer.next().write_bool(true);
 //!         })
-//!     }).unwrap();
+//!     });
 //!     println!("(10, true) = {:?}", der);
 //! }
 //! ```

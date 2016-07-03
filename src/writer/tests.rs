@@ -16,10 +16,9 @@ use super::*;
 fn test_write_bool() {
     let data = construct_der_seq(|writer| {
         for &val in [false, true].iter() {
-            try!(writer.next().write_bool(val));
+            writer.next().write_bool(val);
         }
-        return Ok(());
-    }).unwrap();
+    });
     assert_eq!(data, vec![1, 1, 0, 1, 1, 255]);
 }
 
@@ -30,10 +29,9 @@ fn test_write_i64() {
             -9223372036854775808, -65537, -65536, -32769, -32768, -129, -128,
             -1, 0, 1, 127, 128, 32767, 32768, 65535, 65536,
             9223372036854775807].iter() {
-            try!(writer.next().write_i64(val));
+            writer.next().write_i64(val);
         }
-        return Ok(());
-    }).unwrap();
+    });
     assert_eq!(data, vec![
         2, 8, 128, 0, 0, 0, 0, 0, 0, 0, 2, 3, 254, 255, 255, 2, 3, 255, 0, 0,
         2, 3, 255, 127, 255, 2, 2, 128, 0, 2, 2, 255, 127, 2, 1, 128,
@@ -48,10 +46,9 @@ fn test_write_u64() {
         for &val in [
             0, 1, 127, 128, 32767, 32768, 65535, 65536,
             9223372036854775807, 18446744073709551615].iter() {
-            try!(writer.next().write_u64(val));
+            writer.next().write_u64(val);
         }
-        return Ok(());
-    }).unwrap();
+    });
     assert_eq!(data, vec![
         2, 1, 0, 2, 1, 1, 2, 1, 127, 2, 2, 0, 128, 2, 2, 127, 255,
         2, 3, 0, 128, 0, 2, 3, 0, 255, 255, 2, 3, 1, 0, 0,
@@ -65,10 +62,9 @@ fn test_write_i32() {
         for &val in [
             -2147483648, -65537, -65536, -32769, -32768, -129, -128, -1, 0, 1,
             127, 128, 32767, 32768, 65535, 65536, 2147483647].iter() {
-            try!(writer.next().write_i32(val));
+            writer.next().write_i32(val);
         }
-        return Ok(());
-    }).unwrap();
+    });
     assert_eq!(data, vec![
         2, 4, 128, 0, 0, 0, 2, 3, 254, 255, 255, 2, 3, 255, 0, 0,
         2, 3, 255, 127, 255, 2, 2, 128, 0, 2, 2, 255, 127, 2, 1, 128,
@@ -83,10 +79,9 @@ fn test_write_u32() {
         for &val in [
             0, 1, 127, 128, 32767, 32768, 65535, 65536, 2147483647,
             4294967295].iter() {
-            try!(writer.next().write_u32(val));
+            writer.next().write_u32(val);
         }
-        return Ok(());
-    }).unwrap();
+    });
     assert_eq!(data, vec![
         2, 1, 0, 2, 1, 1, 2, 1, 127, 2, 2, 0, 128, 2, 2, 127, 255,
         2, 3, 0, 128, 0, 2, 3, 0, 255, 255, 2, 3, 1, 0, 0,
@@ -97,10 +92,9 @@ fn test_write_u32() {
 fn test_write_i16() {
     let data = construct_der_seq(|writer| {
         for &val in [-32768, -129, -128, -1, 0, 1, 127, 128, 32767].iter() {
-            try!(writer.next().write_i16(val));
+            writer.next().write_i16(val);
         }
-        return Ok(());
-    }).unwrap();
+    });
     assert_eq!(data, vec![
         2, 2, 128, 0, 2, 2, 255, 127, 2, 1, 128, 2, 1, 255, 2, 1, 0, 2, 1, 1,
         2, 1, 127, 2, 2, 0, 128, 2, 2, 127, 255]);
@@ -110,10 +104,9 @@ fn test_write_i16() {
 fn test_write_u16() {
     let data = construct_der_seq(|writer| {
         for &val in [0, 1, 127, 128, 32767, 32768, 65535].iter() {
-            try!(writer.next().write_u16(val));
+            writer.next().write_u16(val);
         }
-        return Ok(());
-    }).unwrap();
+    });
     assert_eq!(data, vec![
         2, 1, 0, 2, 1, 1, 2, 1, 127, 2, 2, 0, 128, 2, 2, 127, 255,
         2, 3, 0, 128, 0, 2, 3, 0, 255, 255]);
@@ -123,10 +116,9 @@ fn test_write_u16() {
 fn test_write_i8() {
     let data = construct_der_seq(|writer| {
         for &val in [-128, -1, 0, 1, 127].iter() {
-            try!(writer.next().write_i8(val));
+            writer.next().write_i8(val);
         }
-        return Ok(());
-    }).unwrap();
+    });
     assert_eq!(data, vec![2, 1, 128, 2, 1, 255, 2, 1, 0, 2, 1, 1, 2, 1, 127]);
 }
 
@@ -134,10 +126,9 @@ fn test_write_i8() {
 fn test_write_u8() {
     let data = construct_der_seq(|writer| {
         for &val in [0, 1, 127, 255].iter() {
-            try!(writer.next().write_u8(val));
+            writer.next().write_u8(val);
         }
-        return Ok(());
-    }).unwrap();
+    });
     assert_eq!(data, vec![2, 1, 0, 2, 1, 1, 2, 1, 127, 2, 2, 0, 255]);
 }
 
@@ -150,14 +141,13 @@ fn test_write_bigint() {
             -9223372036854775808, -65537, -65536, -32769, -32768, -129, -128,
             -1, 0, 1, 127, 128, 32767, 32768, 65535, 65536,
             9223372036854775807, ].iter() {
-            try!(writer.next().write_bigint(&BigInt::from_i64(val).unwrap()));
+            writer.next().write_bigint(&BigInt::from_i64(val).unwrap());
         }
-        try!(writer.next().write_bigint(&BigInt::parse_bytes(
-            b"1234567890123456789012345678901234567890", 10).unwrap()));
-        try!(writer.next().write_bigint(&BigInt::parse_bytes(
-            b"-1234567890123456789012345678901234567890", 10).unwrap()));
-        return Ok(());
-    }).unwrap();
+        writer.next().write_bigint(&BigInt::parse_bytes(
+            b"1234567890123456789012345678901234567890", 10).unwrap());
+        writer.next().write_bigint(&BigInt::parse_bytes(
+            b"-1234567890123456789012345678901234567890", 10).unwrap());
+    });
     assert_eq!(data, vec![
         2, 8, 128, 0, 0, 0, 0, 0, 0, 0, 2, 3, 254, 255, 255, 2, 3, 255, 0, 0,
         2, 3, 255, 127, 255, 2, 2, 128, 0, 2, 2, 255, 127, 2, 1, 128,
@@ -178,13 +168,11 @@ fn test_write_biguint() {
         for &val in [
             0, 1, 127, 128, 32767, 32768, 65535, 65536,
             9223372036854775807, 18446744073709551615].iter() {
-            try!(writer.next().write_biguint(
-                &BigUint::from_u64(val).unwrap()));
+            writer.next().write_biguint(&BigUint::from_u64(val).unwrap());
         }
-        try!(writer.next().write_biguint(&BigUint::parse_bytes(
-            b"1234567890123456789012345678901234567890", 10).unwrap()));
-        return Ok(());
-    }).unwrap();
+        writer.next().write_biguint(&BigUint::parse_bytes(
+            b"1234567890123456789012345678901234567890", 10).unwrap());
+    });
     assert_eq!(data, vec![
         2, 1, 0, 2, 1, 1, 2, 1, 127, 2, 2, 0, 128, 2, 2, 127, 255,
         2, 3, 0, 128, 0, 2, 3, 0, 255, 255, 2, 3, 1, 0, 0,
@@ -198,7 +186,7 @@ fn test_write_biguint() {
 fn test_write_bytes() {
     let data = construct_der(|writer| {
         writer.write_bytes(&[1, 0, 100, 255])
-    }).unwrap();
+    });
     assert_eq!(data, vec![4, 4, 1, 0, 100, 255]);
 }
 
@@ -206,45 +194,40 @@ fn test_write_bytes() {
 fn test_write_null() {
     let data = construct_der(|writer| {
         writer.write_null()
-    }).unwrap();
+    });
     assert_eq!(data, vec![5, 0]);
 }
 
 #[test]
 fn test_write_sequence_small() {
     let data = construct_der(|writer| {
-        writer.write_sequence(|_| {
-            return Ok(());
-        })
-    }).unwrap();
+        writer.write_sequence(|_| {})
+    });
     assert_eq!(data, vec![48, 0]);
 
     let data = construct_der(|writer| {
         writer.write_sequence(|writer| {
-            try!(writer.next().write_bytes(&vec![91; 20]));
-            return Ok(());
+            writer.next().write_bytes(&vec![91; 20]);
         })
-    }).unwrap();
+    });
     assert_eq!(data, vec![
         48, 22, 4, 20, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91, 91,
         91, 91, 91, 91, 91, 91]);
 
     let data = construct_der(|writer| {
         writer.write_sequence(|writer| {
-            try!(writer.next().write_bytes(&vec![91; 200]));
-            return Ok(());
+            writer.next().write_bytes(&vec![91; 200]);
         })
-    }).unwrap();
+    });
     assert_eq!(data[0..9].to_vec(),
         vec![48, 129, 203, 4, 129, 200, 91, 91, 91]);
     assert_eq!(data.len(), 206);
 
     let data = construct_der(|writer| {
         writer.write_sequence(|writer| {
-            try!(writer.next().write_bytes(&vec![91; 2000]));
-            return Ok(());
+            writer.next().write_bytes(&vec![91; 2000]);
         })
-    }).unwrap();
+    });
     assert_eq!(data[0..11].to_vec(),
         vec![48, 130, 7, 212, 4, 130, 7, 208, 91, 91, 91]);
     assert_eq!(data.len(), 2008);
@@ -254,10 +237,9 @@ fn test_write_sequence_small() {
 fn test_write_sequence_medium() {
     let data = construct_der(|writer| {
         writer.write_sequence(|writer| {
-            try!(writer.next().write_bytes(&vec![91; 200000]));
-            return Ok(());
+            writer.next().write_bytes(&vec![91; 200000]);
         })
-    }).unwrap();
+    });
     assert_eq!(data[0..13].to_vec(),
         vec![48, 131, 3, 13, 69, 4, 131, 3, 13, 64, 91, 91, 91]);
     assert_eq!(data.len(), 200010);
@@ -268,10 +250,9 @@ fn test_write_sequence_medium() {
 fn test_write_sequence_large() {
     let data = construct_der(|writer| {
         writer.write_sequence(|writer| {
-            try!(writer.next().write_bytes(&vec![91; 20000000]));
-            return Ok(());
+            writer.next().write_bytes(&vec![91; 20000000]);
         })
-    }).unwrap();
+    });
     assert_eq!(data[0..15].to_vec(),
         vec![48, 132, 1, 49, 45, 6, 4, 132, 1, 49, 45, 0, 91, 91, 91]);
     assert_eq!(data.len(), 20000012);
@@ -281,22 +262,20 @@ fn test_write_sequence_large() {
 fn test_write_set() {
     let data = construct_der(|writer| {
         writer.write_set(|writer| {
-            try!(writer.next()
-                .write_tagged_implicit(Tag::context(28), |writer| {
+            writer.next().write_tagged_implicit(Tag::context(28), |writer| {
                 writer.write_i64(456789)
-            }));
-            try!(writer.next().write_tagged(Tag::context(345678), |writer| {
+            });
+            writer.next().write_tagged(Tag::context(345678), |writer| {
                 writer.write_bytes(b"Foo")
-            }));
-            try!(writer.next().write_tagged(Tag::context(27), |writer| {
+            });
+            writer.next().write_tagged(Tag::context(27), |writer| {
                 writer.write_i64(456790)
-            }));
-            try!(writer.next().write_tagged(Tag::context(345677), |writer| {
+            });
+            writer.next().write_tagged(Tag::context(345677), |writer| {
                 writer.write_bytes(b"Bar")
-            }));
-            return Ok(());
+            });
         })
-    }).unwrap();
+    });
     assert_eq!(data, vec![
         49, 32, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
         77, 5, 4, 3, 66, 97, 114, 191, 149, 140, 78, 5, 4, 3, 70, 111, 111]);
@@ -308,7 +287,7 @@ fn test_write_tagged() {
         writer.write_tagged(Tag::context(3), |writer| {
             writer.write_i64(10)
         })
-    }).unwrap();
+    });
     assert_eq!(data, vec![163, 3, 2, 1, 10]);
 }
 
@@ -318,6 +297,6 @@ fn test_write_tagged_implicit() {
         writer.write_tagged_implicit(Tag::context(3), |writer| {
             writer.write_i64(10)
         })
-    }).unwrap();
+    });
     assert_eq!(data, vec![131, 1, 10]);
 }
