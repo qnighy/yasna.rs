@@ -138,7 +138,7 @@ impl FromBER for BitString {
 
 impl FromBER for Vec<u8> {
     fn from_ber(reader: BERReader) -> ASN1Result<Self> {
-        reader.parse_octetstring()
+        reader.read_bytes()
     }
 }
 
@@ -151,7 +151,7 @@ impl FromBER for ObjectIdentifier {
 impl FromBER for PrintableString {
     fn from_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.parse_tagged(TAG_PRINTABLESTRING, TagType::Implicit, |reader| {
-            let octets = try!(reader.parse_octetstring());
+            let octets = try!(reader.read_bytes());
             return PrintableString::from_bytes(octets)
                 .ok_or(ASN1Error::new(ASN1ErrorKind::Invalid));
         })
@@ -161,7 +161,7 @@ impl FromBER for PrintableString {
 impl FromBER for UtcTime {
     fn from_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.parse_tagged(TAG_UTCTIME, TagType::Implicit, |reader| {
-            let octets = try!(reader.parse_octetstring());
+            let octets = try!(reader.read_bytes());
             // TODO: format check
             return Ok(UtcTime::new(octets));
         })

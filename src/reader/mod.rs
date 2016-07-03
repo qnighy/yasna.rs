@@ -265,7 +265,7 @@ impl<'a> BERReaderImpl<'a> {
         }
     }
 
-    fn parse_octetstring_impl(&mut self, vec: &mut Vec<u8>) -> ASN1Result<()> {
+    fn read_bytes_impl(&mut self, vec: &mut Vec<u8>) -> ASN1Result<()> {
         self.parse_general(TAG_OCTETSTRING, TagType::Explicit, |inner, pc| {
             if pc == PC::Constructed {
                 if inner.mode == BERMode::Der {
@@ -273,7 +273,7 @@ impl<'a> BERReaderImpl<'a> {
                 }
                 loop {
                     let result = try!(inner.parse_optional(|inner| {
-                        inner.parse_octetstring_impl(vec)
+                        inner.read_bytes_impl(vec)
                     }));
                     match result {
                         Some(()) => {},
@@ -391,9 +391,9 @@ impl<'a, 'b> BERReader<'a, 'b> {
         })
     }
 
-    pub fn parse_octetstring(mut self) -> ASN1Result<Vec<u8>> {
+    pub fn read_bytes(mut self) -> ASN1Result<Vec<u8>> {
         let mut ret = Vec::new();
-        try!(self.inner.parse_octetstring_impl(&mut ret));
+        try!(self.inner.read_bytes_impl(&mut ret));
         return Ok(ret);
     }
 
