@@ -119,9 +119,9 @@ impl<'a> DERWriterSeq<'a> {
     /// Generates a new [`DERWriter`][derwriter].
     ///
     /// [derwriter]: struct.DERWriter.html
-    pub fn next<'b>(&'b mut self) -> DERWriter<'a, 'b> {
+    pub fn next<'b>(&'b mut self) -> DERWriter<'b> {
         return DERWriter {
-            inner: self,
+            buf: self.buf,
         };
     }
 
@@ -416,11 +416,17 @@ impl<'a> DERWriterSeq<'a> {
 /// assert_eq!(der, vec![2, 1, 10]);
 /// ```
 #[derive(Debug)]
-pub struct DERWriter<'a, 'b> where 'a: 'b {
-    inner: &'b mut DERWriterSeq<'a>,
+pub struct DERWriter<'a> {
+    buf: &'a mut Vec<u8>,
 }
 
-impl<'a, 'b> DERWriter<'a, 'b> where 'a: 'b {
+impl<'a> DERWriter<'a> {
+    fn inner(self) -> DERWriterSeq<'a> {
+        return DERWriterSeq {
+            buf: self.buf,
+        }
+    }
+
     /// Writes `bool` as an ASN.1 BOOLEAN value.
     ///
     /// # Examples
@@ -433,7 +439,7 @@ impl<'a, 'b> DERWriter<'a, 'b> where 'a: 'b {
     /// assert_eq!(der, vec![1, 1, 255]);
     /// ```
     pub fn write_bool(self, val: bool) -> io::Result<()> {
-        self.inner.write_bool(val)
+        self.inner().write_bool(val)
     }
 
     /// Writes `i64` as an ASN.1 INTEGER value.
@@ -448,42 +454,42 @@ impl<'a, 'b> DERWriter<'a, 'b> where 'a: 'b {
     /// assert_eq!(der, vec![2, 4, 73, 150, 2, 210]);
     /// ```
     pub fn write_i64(self, val: i64) -> io::Result<()> {
-        self.inner.write_i64(val)
+        self.inner().write_i64(val)
     }
 
     /// Writes `u64` as an ASN.1 INTEGER value.
     pub fn write_u64(self, val: u64) -> io::Result<()> {
-        self.inner.write_u64(val)
+        self.inner().write_u64(val)
     }
 
     /// Writes `i32` as an ASN.1 INTEGER value.
     pub fn write_i32(self, val: i32) -> io::Result<()> {
-        self.inner.write_i32(val)
+        self.inner().write_i32(val)
     }
 
     /// Writes `u32` as an ASN.1 INTEGER value.
     pub fn write_u32(self, val: u32) -> io::Result<()> {
-        self.inner.write_u32(val)
+        self.inner().write_u32(val)
     }
 
     /// Writes `i16` as an ASN.1 INTEGER value.
     pub fn write_i16(self, val: i16) -> io::Result<()> {
-        self.inner.write_i16(val)
+        self.inner().write_i16(val)
     }
 
     /// Writes `u16` as an ASN.1 INTEGER value.
     pub fn write_u16(self, val: u16) -> io::Result<()> {
-        self.inner.write_u16(val)
+        self.inner().write_u16(val)
     }
 
     /// Writes `i8` as an ASN.1 INTEGER value.
     pub fn write_i8(self, val: i8) -> io::Result<()> {
-        self.inner.write_i8(val)
+        self.inner().write_i8(val)
     }
 
     /// Writes `u8` as an ASN.1 INTEGER value.
     pub fn write_u8(self, val: u8) -> io::Result<()> {
-        self.inner.write_u8(val)
+        self.inner().write_u8(val)
     }
 
     #[cfg(feature = "bigint")]
@@ -505,7 +511,7 @@ impl<'a, 'b> DERWriter<'a, 'b> where 'a: 'b {
     /// # }
     /// ```
     pub fn write_bigint(self, val: &BigInt) -> io::Result<()> {
-        self.inner.write_bigint(val)
+        self.inner().write_bigint(val)
     }
 
     #[cfg(feature = "bigint")]
@@ -527,7 +533,7 @@ impl<'a, 'b> DERWriter<'a, 'b> where 'a: 'b {
     /// # }
     /// ```
     pub fn write_biguint(self, val: &BigUint) -> io::Result<()> {
-        self.inner.write_biguint(val)
+        self.inner().write_biguint(val)
     }
 
     /// Writes `&[u8]` as an ASN.1 OCTETSTRING value.
@@ -542,7 +548,7 @@ impl<'a, 'b> DERWriter<'a, 'b> where 'a: 'b {
     /// assert_eq!(der, vec![4, 6, 72, 101, 108, 108, 111, 33]);
     /// ```
     pub fn write_bytes(self, bytes: &[u8]) -> io::Result<()> {
-        self.inner.write_bytes(bytes)
+        self.inner().write_bytes(bytes)
     }
 
     /// Writes the ASN.1 NULL value.
@@ -557,7 +563,7 @@ impl<'a, 'b> DERWriter<'a, 'b> where 'a: 'b {
     /// assert_eq!(der, vec![5, 0]);
     /// ```
     pub fn write_null(self) -> io::Result<()> {
-        self.inner.write_null()
+        self.inner().write_null()
     }
 
     /// Writes ASN.1 SEQUENCE.
