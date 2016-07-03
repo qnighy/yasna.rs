@@ -31,6 +31,18 @@ pub fn parse_ber_general<'a, T, F>(buf: &'a [u8], mode: BERMode, callback: F)
     return Ok(result);
 }
 
+pub fn parse_ber<'a, T, F>(buf: &'a [u8], callback: F)
+        -> ASN1Result<T>
+        where F: for<'b> FnOnce(BERReader<'a, 'b>) -> ASN1Result<T> {
+    parse_ber_general(buf, BERMode::Ber, callback)
+}
+
+pub fn parse_der<'a, T, F>(buf: &'a [u8], callback: F)
+        -> ASN1Result<T>
+        where F: for<'b> FnOnce(BERReader<'a, 'b>) -> ASN1Result<T> {
+    parse_ber_general(buf, BERMode::Der, callback)
+}
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum BERMode {
     Ber, Der,
