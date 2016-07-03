@@ -9,6 +9,7 @@
 #[cfg(feature = "bigint")]
 use num::bigint::{BigUint, BigInt};
 
+use super::super::Tag;
 use super::*;
 
 #[test]
@@ -274,4 +275,49 @@ fn test_write_sequence_large() {
     assert_eq!(data[0..15].to_vec(),
         vec![48, 132, 1, 49, 45, 6, 4, 132, 1, 49, 45, 0, 91, 91, 91]);
     assert_eq!(data.len(), 20000012);
+}
+
+#[test]
+fn test_write_set() {
+    let data = construct_der(|writer| {
+        writer.write_set(|writer| {
+            try!(writer.next()
+                .write_tagged_implicit(Tag::context(28), |writer| {
+                writer.write_i64(456789)
+            }));
+            try!(writer.next().write_tagged(Tag::context(345678), |writer| {
+                writer.write_bytes(b"Foo")
+            }));
+            try!(writer.next().write_tagged(Tag::context(27), |writer| {
+                writer.write_i64(456790)
+            }));
+            try!(writer.next().write_tagged(Tag::context(345677), |writer| {
+                writer.write_bytes(b"Bar")
+            }));
+            return Ok(());
+        })
+    }).unwrap();
+    assert_eq!(data, vec![
+        49, 32, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
+        77, 5, 4, 3, 66, 97, 114, 191, 149, 140, 78, 5, 4, 3, 70, 111, 111]);
+}
+
+#[test]
+fn test_write_tagged() {
+    let data = construct_der(|writer| {
+        writer.write_tagged(Tag::context(3), |writer| {
+            writer.write_i64(10)
+        })
+    }).unwrap();
+    assert_eq!(data, vec![163, 3, 2, 1, 10]);
+}
+
+#[test]
+fn test_write_tagged_implicit() {
+    let data = construct_der(|writer| {
+        writer.write_tagged_implicit(Tag::context(3), |writer| {
+            writer.write_i64(10)
+        })
+    }).unwrap();
+    assert_eq!(data, vec![131, 1, 10]);
 }

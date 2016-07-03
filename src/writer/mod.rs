@@ -113,11 +113,20 @@ pub fn construct_der_seq<F>(callback: F) -> io::Result<Vec<u8>>
 #[derive(Debug)]
 pub struct DERWriter<'a> {
     buf: &'a mut Vec<u8>,
+    implicit_tag: Option<Tag>,
 }
 
 impl<'a> DERWriter<'a> {
+    fn from_buf(buf: &'a mut Vec<u8>) -> Self {
+        return DERWriter {
+            buf: buf,
+            implicit_tag: None,
+        }
+    }
     /// Writes BER identifier (tag + primitive/constructed) octets.
     fn write_identifier(&mut self, tag: Tag, pc: PC) -> io::Result<()> {
+        let tag = if let Some(tag) = self.implicit_tag { tag } else { tag };
+        self.implicit_tag = None;
         let classid = tag.tag_class as u8;
         let pcid = pc as u8;
         if tag.tag_number < 31 {
@@ -551,10 +560,31 @@ impl<'a> DERWriter<'a> {
         where F: FnOnce(DERWriter) -> io::Result<T> {
         try!(self.write_identifier(tag, PC::Constructed));
         return self.with_length(|writer| {
-            callback(DERWriter {
-                buf: writer.buf,
-            })
+            callback(DERWriter::from_buf(writer.buf))
         });
+    }
+
+    /// Writes an implicitly tagged value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna::{self,Tag};
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_tagged_implicit(Tag::context(3), |writer| {
+    ///         writer.write_i64(10)
+    ///     })
+    /// }).unwrap();
+    /// assert_eq!(der, vec![131, 1, 10]);
+    /// ```
+    pub fn write_tagged_implicit<T, F>
+        (mut self, tag: Tag, callback: F) -> io::Result<T>
+        where F: FnOnce(DERWriter) -> io::Result<T> {
+        let tag = if let Some(tag) = self.implicit_tag { tag } else { tag };
+        self.implicit_tag = None;
+        let mut writer = DERWriter::from_buf(self.buf);
+        writer.implicit_tag = Some(tag);
+        return callback(writer);
     }
 }
 
@@ -588,9 +618,7 @@ impl<'a> DERWriterSeq<'a> {
     ///
     /// [derwriter]: struct.DERWriter.html
     pub fn next<'b>(&'b mut self) -> DERWriter<'b> {
-        return DERWriter {
-            buf: self.buf,
-        };
+        return DERWriter::from_buf(self.buf);
     }
 }
 
@@ -625,9 +653,7 @@ impl<'a> DERWriterSet<'a> {
     /// [derwriter]: struct.DERWriter.html
     pub fn next<'b>(&'b mut self) -> DERWriter<'b> {
         self.bufs.push(Vec::new());
-        return DERWriter {
-            buf: self.bufs.last_mut().unwrap(),
-        };
+        return DERWriter::from_buf(self.bufs.last_mut().unwrap());
     }
 }
 
