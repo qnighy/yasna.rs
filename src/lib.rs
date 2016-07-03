@@ -38,4 +38,4 @@ mod reader;
 pub use basics::*;
 
 pub use writer::{construct_der,construct_der_seq,DERWriterSeq,DERWriter,DERWriterSet};
-pub use reader::{BerReader,BerError,BerMode,FromBer,BerResult};
+pub use reader::{BERReader,ASN1Error,BERMode,FromBER,ASN1Result};
