@@ -587,3 +587,6 @@ enum PC {
 }
 
 const PCS : [PC; 2] = [PC::Primitive, PC::Constructed];
+
+#[cfg(test)]
+mod tests;
