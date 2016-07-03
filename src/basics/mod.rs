@@ -8,11 +8,32 @@
 
 use std::ops::{Deref, DerefMut};
 
+/// An ASN.1 tag class, used in [`Tag`][tag].
+///
+/// [tag]: struct.Tag.html
+///
+/// A tag class is one of:
+///
+/// - UNIVERSAL
+/// - APPLICATION
+/// - context specific
+/// - PRIVATE
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum TagClass {
     Universal = 0, Application = 1, ContextSpecific = 2, Private = 3,
 }
 
+/// An ASN.1 tag.
+///
+/// An ASN.1 tag is a pair of a tag class and a tag number.
+///
+/// - A tag class is one of:
+///   - UNIVERSAL
+///   - APPLICATION
+///   - context specific
+///   - PRIVATE
+/// - A tag number is a nonnegative integer.
+///   In this library. Tag numbers are assumed to be in `u64`.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Tag {
     pub tag_class: TagClass,
@@ -75,18 +96,21 @@ pub const TAG_UTCTIME : Tag = Tag {
 };
 
 impl Tag {
+    /// Constructs an APPLICATION tag, namely \[APPLICATION n\].
     pub fn application(tag_number: u64) -> Tag {
         return Tag {
             tag_class: TagClass::Application,
             tag_number: tag_number,
         }
     }
+    /// Constructs a context specific tag, namely \[n\].
     pub fn context(tag_number: u64) -> Tag {
         return Tag {
             tag_class: TagClass::ContextSpecific,
             tag_number: tag_number,
         }
     }
+    /// Constructs a PRIVATE tag, namely \[PRIVATE n\].
     pub fn private(tag_number: u64) -> Tag {
         return Tag {
             tag_class: TagClass::Private,

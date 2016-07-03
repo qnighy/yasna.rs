@@ -481,7 +481,6 @@ impl<'a> DERWriter<'a> {
         });
     }
 
-
     /// Writes ASN.1 SET.
     ///
     /// This function uses the loan pattern: `callback` is called back with
@@ -533,6 +532,29 @@ impl<'a> DERWriter<'a> {
             self.buf.extend_from_slice(buf);
         }
         return Ok(result);
+    }
+
+    /// Writes a (explicitly) tagged value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna::{self,Tag};
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_tagged(Tag::context(3), |writer| {
+    ///         writer.write_i64(10)
+    ///     })
+    /// }).unwrap();
+    /// assert_eq!(der, vec![163, 3, 2, 1, 10]);
+    /// ```
+    pub fn write_tagged<T, F>(mut self, tag: Tag, callback: F) -> io::Result<T>
+        where F: FnOnce(DERWriter) -> io::Result<T> {
+        try!(self.write_identifier(tag, PC::Constructed));
+        return self.with_length(|writer| {
+            callback(DERWriter {
+                buf: writer.buf,
+            })
+        });
     }
 }
 
