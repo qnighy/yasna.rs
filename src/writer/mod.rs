@@ -102,7 +102,7 @@ pub fn construct_der_seq<F>(callback: F) -> io::Result<Vec<u8>>
 /// ```
 /// use yasna;
 /// let der = yasna::construct_der(|writer| {
-///     writer.write_sequence(|writer| {
+///     writer.write_sequence(|writer : &mut yasna::DERWriterSeq| {
 ///         try!(writer.next().write_i64(10));
 ///         try!(writer.next().write_bool(true));
 ///         return Ok(());
@@ -393,6 +393,43 @@ impl<'a> DERWriterSeq<'a> {
         try!(self.write_identifier(TAG_SEQUENCE, PC::Constructed));
         return self.with_length(callback);
     }
+
+    /// Writes ASN.1 SET.
+    fn write_set<T, F>(&mut self, callback: F) -> io::Result<T>
+        where F: FnOnce(&mut DERWriterSet) -> io::Result<T> {
+        let mut bufs = Vec::new();
+        let result;
+        {
+            let mut writer = DERWriterSet {
+                bufs: &mut bufs,
+            };
+            result = try!(callback(&mut writer));
+        }
+        for buf in bufs.iter() {
+            assert!(buf.len() > 0, "Empty output in write_set()");
+        }
+        bufs.sort_by(|buf0, buf1| {
+            let buf00 = buf0[0] & 223;
+            let buf10 = buf1[0] & 223;
+            if buf00 != buf10 || (buf0[0] & 31) != 31 {
+                return buf00.cmp(&buf10);
+            }
+            let len0 = buf0[1..].iter().position(|x| x & 128 == 0).unwrap();
+            let len1 = buf1[1..].iter().position(|x| x & 128 == 0).unwrap();
+            if len0 != len1 {
+                return len0.cmp(&len1);
+            }
+            return buf0[1..].cmp(&buf1[1..]);
+        });
+        // let bufs_len = bufs.iter().map(|buf| buf.len()).sum();
+        let bufs_len = bufs.iter().map(|buf| buf.len()).fold(0, |x, y| x + y);
+        try!(self.write_identifier(TAG_SET, PC::Constructed));
+        try!(self.write_length(bufs_len));
+        for buf in bufs.iter() {
+            self.buf.extend_from_slice(buf);
+        }
+        return Ok(result);
+    }
 }
 
 /// A writer object that accepts an ASN.1 value.
@@ -569,7 +606,10 @@ impl<'a> DERWriter<'a> {
     /// Writes ASN.1 SEQUENCE.
     ///
     /// This function uses the loan pattern: `callback` is called back with
-    /// a `DERWriter`, to which the contents of the SEQUENCE is written.
+    /// a [`DERWriterSeq`][derwriterseq], to which the contents of the
+    /// SEQUENCE is written.
+    ///
+    /// [derwriterseq]: struct.DERWriterSeq.html
     ///
     /// # Examples
     ///
@@ -586,7 +626,71 @@ impl<'a> DERWriter<'a> {
     /// ```
     pub fn write_sequence<T, F>(self, callback: F) -> io::Result<T>
         where F: FnOnce(&mut DERWriterSeq) -> io::Result<T> {
-        self.inner.write_sequence(callback)
+        self.inner().write_sequence(callback)
+    }
+
+
+    /// Writes ASN.1 SET.
+    ///
+    /// This function uses the loan pattern: `callback` is called back with
+    /// a [`DERWriterSet`][derwriterset], to which the contents of the
+    /// SET is written.
+    ///
+    /// [derwriterset]: struct.DERWriterSet.html
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_set(|writer| {
+    ///         try!(writer.next().write_i64(10));
+    ///         try!(writer.next().write_bool(true));
+    ///         return Ok(());
+    ///     })
+    /// }).unwrap();
+    /// assert_eq!(der, vec![49, 6, 1, 1, 255, 2, 1, 10]);
+    /// ```
+    pub fn write_set<T, F>(self, callback: F) -> io::Result<T>
+        where F: FnOnce(&mut DERWriterSet) -> io::Result<T> {
+        self.inner().write_set(callback)
+    }
+}
+
+/// A writer object that accepts ASN.1 values.
+///
+/// The main source of this object is the `write_set` method from
+/// [`DERWriter`][derwriter].
+///
+/// [derwriter]: struct.DERWriter.html
+///
+/// # Examples
+///
+/// ```
+/// use yasna;
+/// let der = yasna::construct_der(|writer| {
+///     writer.write_set(|writer : &mut yasna::DERWriterSet| {
+///         try!(writer.next().write_i64(10));
+///         try!(writer.next().write_bool(true));
+///         return Ok(());
+///     })
+/// }).unwrap();
+/// assert_eq!(der, vec![49, 6, 1, 1, 255, 2, 1, 10]);
+/// ```
+#[derive(Debug)]
+pub struct DERWriterSet<'a> {
+    bufs: &'a mut Vec<Vec<u8>>,
+}
+
+impl<'a> DERWriterSet<'a> {
+    /// Generates a new [`DERWriter`][derwriter].
+    ///
+    /// [derwriter]: struct.DERWriter.html
+    pub fn next<'b>(&'b mut self) -> DERWriter<'b> {
+        self.bufs.push(Vec::new());
+        return DERWriter {
+            buf: self.bufs.last_mut().unwrap(),
+        };
     }
 }
 

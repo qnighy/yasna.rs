@@ -38,4 +38,4 @@ pub mod ber;
 
 pub use basics::*;
 
-pub use writer::{construct_der,construct_der_seq,DERWriterSeq,DERWriter};
+pub use writer::{construct_der,construct_der_seq,DERWriterSeq,DERWriter,DERWriterSet};
