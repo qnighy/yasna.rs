@@ -90,41 +90,32 @@ pub fn construct_der_seq<F>(callback: F) -> io::Result<Vec<u8>>
     return Ok(buf);
 }
 
-/// A writer object that accepts ASN.1 values.
+/// A writer object that accepts an ASN.1 value.
 ///
-/// The main source of this object is the `write_sequence` method from
-/// [`DERWriter`][derwriter].
+/// The two main sources of `DERWriterSeq` are:
 ///
-/// [derwriter]: struct.DERWriter.html
+/// - The [`construct_der`][construct_der] function, the starting point of
+///   DER serialization.
+/// - The `next` method of [`DERWriterSeq`][derwriterseq].
+///
+/// [construct_der]: fn.construct_der.html
+/// [derwriterseq]: struct.DERWriterSeq.html
 ///
 /// # Examples
 ///
 /// ```
 /// use yasna;
 /// let der = yasna::construct_der(|writer| {
-///     writer.write_sequence(|writer : &mut yasna::DERWriterSeq| {
-///         try!(writer.next().write_i64(10));
-///         try!(writer.next().write_bool(true));
-///         return Ok(());
-///     })
+///     writer.write_i64(10)
 /// }).unwrap();
-/// assert_eq!(der, vec![48, 6, 2, 1, 10, 1, 1, 255]);
+/// assert_eq!(der, vec![2, 1, 10]);
 /// ```
 #[derive(Debug)]
-pub struct DERWriterSeq<'a> {
+pub struct DERWriter<'a> {
     buf: &'a mut Vec<u8>,
 }
 
-impl<'a> DERWriterSeq<'a> {
-    /// Generates a new [`DERWriter`][derwriter].
-    ///
-    /// [derwriter]: struct.DERWriter.html
-    pub fn next<'b>(&'b mut self) -> DERWriter<'b> {
-        return DERWriter {
-            buf: self.buf,
-        };
-    }
-
+impl<'a> DERWriter<'a> {
     /// Writes BER identifier (tag + primitive/constructed) octets.
     fn write_identifier(&mut self, tag: Tag, pc: PC) -> io::Result<()> {
         let classid = tag.tag_class as u8;
@@ -175,7 +166,7 @@ impl<'a> DERWriterSeq<'a> {
     /// It then calculates the length and moves the written data
     /// to the actual position. Finally, it writes the length.
     fn with_length<T, F>(&mut self, callback: F) -> io::Result<T>
-        where F: FnOnce(&mut DERWriterSeq) -> io::Result<T> {
+        where F: FnOnce(&mut Self) -> io::Result<T> {
         let expected_length_length = 3;
         for _ in 0..3 {
             self.buf.push(255);
@@ -224,7 +215,17 @@ impl<'a> DERWriterSeq<'a> {
     }
 
     /// Writes `bool` as an ASN.1 BOOLEAN value.
-    fn write_bool(&mut self, val: bool) -> io::Result<()> {
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_bool(true)
+    /// }).unwrap();
+    /// assert_eq!(der, vec![1, 1, 255]);
+    /// ```
+    pub fn write_bool(mut self, val: bool) -> io::Result<()> {
         try!(self.write_identifier(TAG_BOOLEAN, PC::Primitive));
         try!(self.write_length(1));
         self.buf.push(if val { 255 } else { 0 });
@@ -232,7 +233,17 @@ impl<'a> DERWriterSeq<'a> {
     }
 
     /// Writes `i64` as an ASN.1 INTEGER value.
-    fn write_i64(&mut self, val: i64) -> io::Result<()> {
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_i64(1234567890)
+    /// }).unwrap();
+    /// assert_eq!(der, vec![2, 4, 73, 150, 2, 210]);
+    /// ```
+    pub fn write_i64(mut self, val: i64) -> io::Result<()> {
         let mut shiftnum = 56;
         while shiftnum > 0 &&
                 (val >> (shiftnum-1) == 0 || val >> (shiftnum-1) == -1) {
@@ -251,7 +262,7 @@ impl<'a> DERWriterSeq<'a> {
     }
 
     /// Writes `u64` as an ASN.1 INTEGER value.
-    fn write_u64(&mut self, val: u64) -> io::Result<()> {
+    pub fn write_u64(mut self, val: u64) -> io::Result<()> {
         let mut shiftnum = 64;
         while shiftnum > 0 && val >> (shiftnum-1) == 0 {
             shiftnum -= 8;
@@ -273,38 +284,54 @@ impl<'a> DERWriterSeq<'a> {
     }
 
     /// Writes `i32` as an ASN.1 INTEGER value.
-    fn write_i32(&mut self, val: i32) -> io::Result<()> {
+    pub fn write_i32(self, val: i32) -> io::Result<()> {
         self.write_i64(val as i64)
     }
 
     /// Writes `u32` as an ASN.1 INTEGER value.
-    fn write_u32(&mut self, val: u32) -> io::Result<()> {
+    pub fn write_u32(self, val: u32) -> io::Result<()> {
         self.write_i64(val as i64)
     }
 
     /// Writes `i16` as an ASN.1 INTEGER value.
-    fn write_i16(&mut self, val: i16) -> io::Result<()> {
+    pub fn write_i16(self, val: i16) -> io::Result<()> {
         self.write_i64(val as i64)
     }
 
     /// Writes `u16` as an ASN.1 INTEGER value.
-    fn write_u16(&mut self, val: u16) -> io::Result<()> {
+    pub fn write_u16(self, val: u16) -> io::Result<()> {
         self.write_i64(val as i64)
     }
 
     /// Writes `i8` as an ASN.1 INTEGER value.
-    fn write_i8(&mut self, val: i8) -> io::Result<()> {
+    pub fn write_i8(self, val: i8) -> io::Result<()> {
         self.write_i64(val as i64)
     }
 
     /// Writes `u8` as an ASN.1 INTEGER value.
-    fn write_u8(&mut self, val: u8) -> io::Result<()> {
+    pub fn write_u8(self, val: u8) -> io::Result<()> {
         self.write_i64(val as i64)
     }
 
     #[cfg(feature = "bigint")]
     /// Writes `BigInt` as an ASN.1 INTEGER value.
-    fn write_bigint(&mut self, val: &BigInt) -> io::Result<()> {
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate num;
+    /// # extern crate yasna;
+    /// # fn main() {
+    /// use yasna;
+    /// use num::bigint::BigInt;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_bigint(
+    ///         &BigInt::parse_bytes(b"1234567890", 10).unwrap())
+    /// }).unwrap();
+    /// assert_eq!(der, vec![2, 4, 73, 150, 2, 210]);
+    /// # }
+    /// ```
+    pub fn write_bigint(mut self, val: &BigInt) -> io::Result<()> {
         use num::bigint::Sign;
         try!(self.write_identifier(TAG_INTEGER, PC::Primitive));
         let (sign, mut bytes) = val.to_bytes_le();
@@ -351,7 +378,23 @@ impl<'a> DERWriterSeq<'a> {
 
     #[cfg(feature = "bigint")]
     /// Writes `BigUint` as an ASN.1 INTEGER value.
-    fn write_biguint(&mut self, val: &BigUint) -> io::Result<()> {
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate num;
+    /// # extern crate yasna;
+    /// # fn main() {
+    /// use yasna;
+    /// use num::bigint::BigUint;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_biguint(
+    ///         &BigUint::parse_bytes(b"1234567890", 10).unwrap())
+    /// }).unwrap();
+    /// assert_eq!(der, vec![2, 4, 73, 150, 2, 210]);
+    /// # }
+    /// ```
+    pub fn write_biguint(mut self, val: &BigUint) -> io::Result<()> {
         try!(self.write_identifier(TAG_INTEGER, PC::Primitive));
         let mut bytes = val.to_bytes_le();
         if &bytes == &[0] {
@@ -373,7 +416,17 @@ impl<'a> DERWriterSeq<'a> {
     }
 
     /// Writes `&[u8]` as an ASN.1 OCTETSTRING value.
-    fn write_bytes(&mut self, bytes: &[u8]) -> io::Result<()> {
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_bytes(b"Hello!")
+    /// }).unwrap();
+    /// assert_eq!(der, vec![4, 6, 72, 101, 108, 108, 111, 33]);
+    /// ```
+    pub fn write_bytes(mut self, bytes: &[u8]) -> io::Result<()> {
         try!(self.write_identifier(TAG_OCTETSTRING, PC::Primitive));
         try!(self.write_length(bytes.len()));
         self.buf.extend_from_slice(bytes);
@@ -381,30 +434,81 @@ impl<'a> DERWriterSeq<'a> {
     }
 
     /// Writes the ASN.1 NULL value.
-    fn write_null(&mut self) -> io::Result<()> {
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_null()
+    /// }).unwrap();
+    /// assert_eq!(der, vec![5, 0]);
+    /// ```
+    pub fn write_null(mut self) -> io::Result<()> {
         try!(self.write_identifier(TAG_NULL, PC::Primitive));
         try!(self.write_length(0));
         return Ok(());
     }
 
     /// Writes ASN.1 SEQUENCE.
-    fn write_sequence<T, F>(&mut self, callback: F) -> io::Result<T>
+    ///
+    /// This function uses the loan pattern: `callback` is called back with
+    /// a [`DERWriterSeq`][derwriterseq], to which the contents of the
+    /// SEQUENCE is written.
+    ///
+    /// [derwriterseq]: struct.DERWriterSeq.html
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_sequence(|writer| {
+    ///         try!(writer.next().write_i64(10));
+    ///         try!(writer.next().write_bool(true));
+    ///         return Ok(());
+    ///     })
+    /// }).unwrap();
+    /// assert_eq!(der, vec![48, 6, 2, 1, 10, 1, 1, 255]);
+    /// ```
+    pub fn write_sequence<T, F>(mut self, callback: F) -> io::Result<T>
         where F: FnOnce(&mut DERWriterSeq) -> io::Result<T> {
         try!(self.write_identifier(TAG_SEQUENCE, PC::Constructed));
-        return self.with_length(callback);
+        return self.with_length(|writer| {
+            callback(&mut DERWriterSeq {
+                buf: writer.buf,
+            })
+        });
     }
 
+
     /// Writes ASN.1 SET.
-    fn write_set<T, F>(&mut self, callback: F) -> io::Result<T>
+    ///
+    /// This function uses the loan pattern: `callback` is called back with
+    /// a [`DERWriterSet`][derwriterset], to which the contents of the
+    /// SET is written.
+    ///
+    /// [derwriterset]: struct.DERWriterSet.html
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_set(|writer| {
+    ///         try!(writer.next().write_i64(10));
+    ///         try!(writer.next().write_bool(true));
+    ///         return Ok(());
+    ///     })
+    /// }).unwrap();
+    /// assert_eq!(der, vec![49, 6, 1, 1, 255, 2, 1, 10]);
+    /// ```
+    pub fn write_set<T, F>(mut self, callback: F) -> io::Result<T>
         where F: FnOnce(&mut DERWriterSet) -> io::Result<T> {
         let mut bufs = Vec::new();
-        let result;
-        {
-            let mut writer = DERWriterSet {
-                bufs: &mut bufs,
-            };
-            result = try!(callback(&mut writer));
-        }
+        let result = try!(callback(&mut DERWriterSet {
+            bufs: &mut bufs,
+        }));
         for buf in bufs.iter() {
             assert!(buf.len() > 0, "Empty output in write_set()");
         }
@@ -432,228 +536,39 @@ impl<'a> DERWriterSeq<'a> {
     }
 }
 
-/// A writer object that accepts an ASN.1 value.
+/// A writer object that accepts ASN.1 values.
 ///
-/// The two main sources of `DERWriterSeq` are:
+/// The main source of this object is the `write_sequence` method from
+/// [`DERWriter`][derwriter].
 ///
-/// - The [`construct_der`][construct_der] function, the starting point of
-///   DER serialization.
-/// - The `next` method of [`DERWriterSeq`][derwriterseq].
-///
-/// [construct_der]: fn.construct_der.html
-/// [derwriterseq]: struct.DERWriterSeq.html
+/// [derwriter]: struct.DERWriter.html
 ///
 /// # Examples
 ///
 /// ```
 /// use yasna;
 /// let der = yasna::construct_der(|writer| {
-///     writer.write_i64(10)
+///     writer.write_sequence(|writer : &mut yasna::DERWriterSeq| {
+///         try!(writer.next().write_i64(10));
+///         try!(writer.next().write_bool(true));
+///         return Ok(());
+///     })
 /// }).unwrap();
-/// assert_eq!(der, vec![2, 1, 10]);
+/// assert_eq!(der, vec![48, 6, 2, 1, 10, 1, 1, 255]);
 /// ```
 #[derive(Debug)]
-pub struct DERWriter<'a> {
+pub struct DERWriterSeq<'a> {
     buf: &'a mut Vec<u8>,
 }
 
-impl<'a> DERWriter<'a> {
-    fn inner(self) -> DERWriterSeq<'a> {
-        return DERWriterSeq {
+impl<'a> DERWriterSeq<'a> {
+    /// Generates a new [`DERWriter`][derwriter].
+    ///
+    /// [derwriter]: struct.DERWriter.html
+    pub fn next<'b>(&'b mut self) -> DERWriter<'b> {
+        return DERWriter {
             buf: self.buf,
-        }
-    }
-
-    /// Writes `bool` as an ASN.1 BOOLEAN value.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use yasna;
-    /// let der = yasna::construct_der(|writer| {
-    ///     writer.write_bool(true)
-    /// }).unwrap();
-    /// assert_eq!(der, vec![1, 1, 255]);
-    /// ```
-    pub fn write_bool(self, val: bool) -> io::Result<()> {
-        self.inner().write_bool(val)
-    }
-
-    /// Writes `i64` as an ASN.1 INTEGER value.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use yasna;
-    /// let der = yasna::construct_der(|writer| {
-    ///     writer.write_i64(1234567890)
-    /// }).unwrap();
-    /// assert_eq!(der, vec![2, 4, 73, 150, 2, 210]);
-    /// ```
-    pub fn write_i64(self, val: i64) -> io::Result<()> {
-        self.inner().write_i64(val)
-    }
-
-    /// Writes `u64` as an ASN.1 INTEGER value.
-    pub fn write_u64(self, val: u64) -> io::Result<()> {
-        self.inner().write_u64(val)
-    }
-
-    /// Writes `i32` as an ASN.1 INTEGER value.
-    pub fn write_i32(self, val: i32) -> io::Result<()> {
-        self.inner().write_i32(val)
-    }
-
-    /// Writes `u32` as an ASN.1 INTEGER value.
-    pub fn write_u32(self, val: u32) -> io::Result<()> {
-        self.inner().write_u32(val)
-    }
-
-    /// Writes `i16` as an ASN.1 INTEGER value.
-    pub fn write_i16(self, val: i16) -> io::Result<()> {
-        self.inner().write_i16(val)
-    }
-
-    /// Writes `u16` as an ASN.1 INTEGER value.
-    pub fn write_u16(self, val: u16) -> io::Result<()> {
-        self.inner().write_u16(val)
-    }
-
-    /// Writes `i8` as an ASN.1 INTEGER value.
-    pub fn write_i8(self, val: i8) -> io::Result<()> {
-        self.inner().write_i8(val)
-    }
-
-    /// Writes `u8` as an ASN.1 INTEGER value.
-    pub fn write_u8(self, val: u8) -> io::Result<()> {
-        self.inner().write_u8(val)
-    }
-
-    #[cfg(feature = "bigint")]
-    /// Writes `BigInt` as an ASN.1 INTEGER value.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # extern crate num;
-    /// # extern crate yasna;
-    /// # fn main() {
-    /// use yasna;
-    /// use num::bigint::BigInt;
-    /// let der = yasna::construct_der(|writer| {
-    ///     writer.write_bigint(
-    ///         &BigInt::parse_bytes(b"1234567890", 10).unwrap())
-    /// }).unwrap();
-    /// assert_eq!(der, vec![2, 4, 73, 150, 2, 210]);
-    /// # }
-    /// ```
-    pub fn write_bigint(self, val: &BigInt) -> io::Result<()> {
-        self.inner().write_bigint(val)
-    }
-
-    #[cfg(feature = "bigint")]
-    /// Writes `BigUint` as an ASN.1 INTEGER value.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # extern crate num;
-    /// # extern crate yasna;
-    /// # fn main() {
-    /// use yasna;
-    /// use num::bigint::BigUint;
-    /// let der = yasna::construct_der(|writer| {
-    ///     writer.write_biguint(
-    ///         &BigUint::parse_bytes(b"1234567890", 10).unwrap())
-    /// }).unwrap();
-    /// assert_eq!(der, vec![2, 4, 73, 150, 2, 210]);
-    /// # }
-    /// ```
-    pub fn write_biguint(self, val: &BigUint) -> io::Result<()> {
-        self.inner().write_biguint(val)
-    }
-
-    /// Writes `&[u8]` as an ASN.1 OCTETSTRING value.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use yasna;
-    /// let der = yasna::construct_der(|writer| {
-    ///     writer.write_bytes(b"Hello!")
-    /// }).unwrap();
-    /// assert_eq!(der, vec![4, 6, 72, 101, 108, 108, 111, 33]);
-    /// ```
-    pub fn write_bytes(self, bytes: &[u8]) -> io::Result<()> {
-        self.inner().write_bytes(bytes)
-    }
-
-    /// Writes the ASN.1 NULL value.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use yasna;
-    /// let der = yasna::construct_der(|writer| {
-    ///     writer.write_null()
-    /// }).unwrap();
-    /// assert_eq!(der, vec![5, 0]);
-    /// ```
-    pub fn write_null(self) -> io::Result<()> {
-        self.inner().write_null()
-    }
-
-    /// Writes ASN.1 SEQUENCE.
-    ///
-    /// This function uses the loan pattern: `callback` is called back with
-    /// a [`DERWriterSeq`][derwriterseq], to which the contents of the
-    /// SEQUENCE is written.
-    ///
-    /// [derwriterseq]: struct.DERWriterSeq.html
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use yasna;
-    /// let der = yasna::construct_der(|writer| {
-    ///     writer.write_sequence(|writer| {
-    ///         try!(writer.next().write_i64(10));
-    ///         try!(writer.next().write_bool(true));
-    ///         return Ok(());
-    ///     })
-    /// }).unwrap();
-    /// assert_eq!(der, vec![48, 6, 2, 1, 10, 1, 1, 255]);
-    /// ```
-    pub fn write_sequence<T, F>(self, callback: F) -> io::Result<T>
-        where F: FnOnce(&mut DERWriterSeq) -> io::Result<T> {
-        self.inner().write_sequence(callback)
-    }
-
-
-    /// Writes ASN.1 SET.
-    ///
-    /// This function uses the loan pattern: `callback` is called back with
-    /// a [`DERWriterSet`][derwriterset], to which the contents of the
-    /// SET is written.
-    ///
-    /// [derwriterset]: struct.DERWriterSet.html
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use yasna;
-    /// let der = yasna::construct_der(|writer| {
-    ///     writer.write_set(|writer| {
-    ///         try!(writer.next().write_i64(10));
-    ///         try!(writer.next().write_bool(true));
-    ///         return Ok(());
-    ///     })
-    /// }).unwrap();
-    /// assert_eq!(der, vec![49, 6, 1, 1, 255, 2, 1, 10]);
-    /// ```
-    pub fn write_set<T, F>(self, callback: F) -> io::Result<T>
-        where F: FnOnce(&mut DERWriterSet) -> io::Result<T> {
-        self.inner().write_set(callback)
+        };
     }
 }
 
