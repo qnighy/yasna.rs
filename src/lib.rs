@@ -33,8 +33,9 @@ extern crate num;
 
 mod basics;
 mod writer;
-pub mod reader;
+mod reader;
 
 pub use basics::*;
 
 pub use writer::{construct_der,construct_der_seq,DERWriterSeq,DERWriter,DERWriterSet};
+pub use reader::{BerReader,BerError,BerMode,FromBer,BerResult};
