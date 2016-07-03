@@ -6,48 +6,18 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+mod error;
+
 use std::cmp::Ordering;
-use std::error::{Error};
-use std::fmt::{self,Display};
 use std::hash::Hash;
-use std::io;
 
 #[cfg(feature = "bigint")]
 use num::bigint::{BigInt,BigUint,ToBigUint};
 
-use super::*;
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub enum ASN1Error {
-    Eof, Extra, IntegerOverflow, StackOverflow, Invalid,
-}
-
-pub type ASN1Result<T> = Result<T, ASN1Error>;
-
-impl Display for ASN1Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        try!(write!(f, "{:?}", self));
-        return Ok(());
-    }
-}
-
-impl Error for ASN1Error {
-    fn description(&self) -> &str {
-        match *self {
-            ASN1Error::Eof => "End of file",
-            ASN1Error::Extra => "Extra data in file",
-            ASN1Error::IntegerOverflow => "Integer overflow",
-            ASN1Error::StackOverflow => "Stack overflow",
-            ASN1Error::Invalid => "Invalid data",
-        }
-    }
-}
-
-impl From<ASN1Error> for io::Error {
-    fn from(e: ASN1Error) -> Self {
-        return io::Error::new(io::ErrorKind::InvalidData, e);
-    }
-}
+use super::{Tag,TagClass,TagType};
+use super::{TAG_BOOLEAN,TAG_INTEGER,TAG_BITSTRING,TAG_OCTETSTRING,TAG_NULL,TAG_OID,TAG_UTF8STRING,TAG_SEQUENCE,TAG_SET,TAG_PRINTABLESTRING,TAG_UTCTIME};
+use super::{PrintableString,UtcTime,ObjectIdentifier,BitString,SetOf};
+pub use self::error::*;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum BERMode {
