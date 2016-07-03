@@ -21,7 +21,7 @@ pub use self::error::*;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum BERMode {
-    Ber, Cer, Der,
+    Ber, Der,
 }
 
 #[derive(Debug)]
@@ -139,8 +139,7 @@ impl<'a> BERReader<'a> {
                 self.generate_error(ASN1ErrorKind::Eof)));
             length = x + (try!(self.read_u8()) as usize);
         }
-        if (self.mode == BERMode::Der || self.mode == BERMode::Cer)
-                && length < 128 {
+        if self.mode == BERMode::Der && length < 128 {
             return Err(self.generate_error(ASN1ErrorKind::Invalid));
         }
         return Ok(Some(length));
@@ -184,9 +183,6 @@ impl<'a> BERReader<'a> {
         }
         match length_spec {
             Some(length) => {
-                if self.mode == BERMode::Cer && pc != PC::Primitive {
-                    return Err(self.generate_error(ASN1ErrorKind::Invalid));
-                }
                 let limit = self.pos+length;
                 if old_buf.len() < limit {
                     return Err(self.generate_error(ASN1ErrorKind::Eof));
@@ -244,8 +240,7 @@ impl<'a> BERReader<'a> {
             where F: FnMut(&mut Self) -> ASN1Result<T>, T: Eq {
         match try!(self.parse_optional(fun)) {
             Some(result) => {
-                if (self.mode == BERMode::Der || self.mode == BERMode::Cer) &&
-                        result == default {
+                if self.mode == BERMode::Der && result == default {
                     return Err(self.generate_error(ASN1ErrorKind::Invalid));
                 }
                 return Ok(result);
@@ -318,51 +313,24 @@ impl<'a> BERReader<'a> {
             }
         })
     }
-    fn parse_octetstring_impl(&mut self, vec: &mut Vec<u8>, depth: usize)
+    fn parse_octetstring_impl(&mut self, vec: &mut Vec<u8>)
             -> ASN1Result<()> {
         self.parse_general(TAG_OCTETSTRING, TagType::Explicit, |parser, pc| {
-            if parser.mode == BERMode::Cer && depth >= 2 {
-                return Err(parser.generate_error(ASN1ErrorKind::Invalid));
-            }
             if pc == PC::Constructed {
                 if parser.mode == BERMode::Der {
                     return Err(parser.generate_error(ASN1ErrorKind::Invalid));
                 }
-                if parser.mode == BERMode::Cer && depth >= 1 {
-                    return Err(parser.generate_error(ASN1ErrorKind::Invalid));
-                }
-                let mut expected_len : Option<usize> = None;
                 loop {
                     let result = try!(parser.parse_optional(|parser| {
-                        parser.parse_octetstring_impl(vec, depth+1)
+                        parser.parse_octetstring_impl(vec)
                     }));
                     match result {
-                        Some(()) => {
-                            if parser.mode == BERMode::Cer &&
-                                    vec.len() % 1000 != 0 {
-                                if expected_len != None {
-                                    return Err(parser.generate_error(
-                                        ASN1ErrorKind::Invalid));
-                                }
-                                expected_len = Some(vec.len());
-                            }
-                        },
+                        Some(()) => {},
                         None => { break; },
                     }
                 }
-                match expected_len {
-                    Some(el) => if el != vec.len() {
-                        return Err(parser.generate_error(
-                            ASN1ErrorKind::Invalid));
-                    },
-                    None => {},
-                };
                 return Ok(());
             } else {
-                if parser.mode == BERMode::Cer &&
-                        parser.remaining_buffer().len() > 1000 {
-                    return Err(parser.generate_error(ASN1ErrorKind::Invalid));
-                }
                 vec.extend(parser.fetch_remaining_buffer());
                 return Ok(());
             }
@@ -370,7 +338,7 @@ impl<'a> BERReader<'a> {
     }
     pub fn parse_octetstring(&mut self) -> ASN1Result<Vec<u8>> {
         let mut ret = Vec::new();
-        try!(self.parse_octetstring_impl(&mut ret, 0));
+        try!(self.parse_octetstring_impl(&mut ret));
         return Ok(ret);
     }
     pub fn parse<T:FromBER>(&mut self) -> ASN1Result<T> {
@@ -429,7 +397,7 @@ impl<T> FromBER for SetOf<T> where T: Sized + Eq + Hash + FromBER {
                         break;
                     },
                 };
-                if parser.mode == BERMode::Der || parser.mode == BERMode::Cer {
+                if parser.mode == BERMode::Der {
                     match old_buf {
                         Some(old_buf) => {
                             match old_buf.iter().cmp(buf.iter()) {
@@ -565,8 +533,7 @@ impl FromBER for bool {
                 return Err(parser.generate_error(ASN1ErrorKind::Invalid));
             }
             let b = buf[0];
-            if (parser.mode == BERMode::Der || parser.mode == BERMode::Cer) &&
-                    b != 0 && b != 255 {
+            if parser.mode == BERMode::Der && b != 0 && b != 255 {
                 return Err(parser.generate_error(ASN1ErrorKind::Invalid));
             }
             return Ok(b != 0);
