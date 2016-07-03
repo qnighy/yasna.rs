@@ -22,9 +22,9 @@ pub use self::error::*;
 pub fn parse_ber_general<'a, T, F>(buf: &'a [u8], mode: BERMode, mut fun: F)
         -> ASN1Result<T>
         where F: for<'b> FnMut(&mut BERReader<'b>) -> ASN1Result<T> {
-    let mut parser = BERReader::new(buf, mode);
-    let result = try!(fun(&mut parser));
-    try!(parser.end_of_buf());
+    let mut reader = BERReader::new(buf, mode);
+    let result = try!(fun(&mut reader));
+    try!(reader.end_of_buf());
     return Ok(result);
 }
 
@@ -270,39 +270,39 @@ impl<'a> BERReader<'a> {
             (&mut self, tag: Tag, tag_type: TagType, mut fun: F)
             -> ASN1Result<T>
             where F: FnMut(&mut Self) -> ASN1Result<T> {
-        self.parse_general(tag, tag_type, |parser, pc| {
+        self.parse_general(tag, tag_type, |reader, pc| {
             if tag_type == TagType::Explicit && pc != PC::Constructed {
-                return Err(parser.generate_error(ASN1ErrorKind::Invalid));
+                return Err(reader.generate_error(ASN1ErrorKind::Invalid));
             }
-            fun(parser)
+            fun(reader)
         })
     }
     pub fn parse_sequence<T, F>(&mut self, mut fun: F) -> ASN1Result<T>
             where F: FnMut(&mut Self) -> ASN1Result<T> {
-        self.parse_general(TAG_SEQUENCE, TagType::Explicit, |parser, pc| {
+        self.parse_general(TAG_SEQUENCE, TagType::Explicit, |reader, pc| {
             if pc != PC::Constructed {
-                return Err(parser.generate_error(ASN1ErrorKind::Invalid));
+                return Err(reader.generate_error(ASN1ErrorKind::Invalid));
             }
-            return fun(parser);
+            return fun(reader);
         })
     }
     pub fn parse_set<T, F>(&mut self, mut fun: F) -> ASN1Result<T>
             where F: FnMut(&mut Self) -> ASN1Result<T> {
-        self.parse_general(TAG_SET, TagType::Explicit, |parser, pc| {
+        self.parse_general(TAG_SET, TagType::Explicit, |reader, pc| {
             if pc != PC::Constructed {
-                return Err(parser.generate_error(ASN1ErrorKind::Invalid));
+                return Err(reader.generate_error(ASN1ErrorKind::Invalid));
             }
-            return fun(parser);
+            return fun(reader);
         })
     }
     fn parse_bitstring(&mut self) -> ASN1Result<BitString> {
-        self.parse_general(TAG_BITSTRING, TagType::Explicit, |parser, pc| {
+        self.parse_general(TAG_BITSTRING, TagType::Explicit, |reader, pc| {
             if pc == PC::Constructed {
                 // TODO: implement recursive encoding
-                return Err(parser.generate_error(ASN1ErrorKind::Invalid));
+                return Err(reader.generate_error(ASN1ErrorKind::Invalid));
             } else {
                 // TODO: Canonicity check in DER
-                let buf = parser.fetch_remaining_buffer();
+                let buf = reader.fetch_remaining_buffer();
                 if buf.len() == 0 {
                     return Ok(BitString::from_buf(0, Vec::new()));
                 }
@@ -316,14 +316,14 @@ impl<'a> BERReader<'a> {
     }
     fn parse_octetstring_impl(&mut self, vec: &mut Vec<u8>)
             -> ASN1Result<()> {
-        self.parse_general(TAG_OCTETSTRING, TagType::Explicit, |parser, pc| {
+        self.parse_general(TAG_OCTETSTRING, TagType::Explicit, |reader, pc| {
             if pc == PC::Constructed {
-                if parser.mode == BERMode::Der {
-                    return Err(parser.generate_error(ASN1ErrorKind::Invalid));
+                if reader.mode == BERMode::Der {
+                    return Err(reader.generate_error(ASN1ErrorKind::Invalid));
                 }
                 loop {
-                    let result = try!(parser.parse_optional(|parser| {
-                        parser.parse_octetstring_impl(vec)
+                    let result = try!(reader.parse_optional(|reader| {
+                        reader.parse_octetstring_impl(vec)
                     }));
                     match result {
                         Some(()) => {},
@@ -332,7 +332,7 @@ impl<'a> BERReader<'a> {
                 }
                 return Ok(());
             } else {
-                vec.extend(parser.fetch_remaining_buffer());
+                vec.extend(reader.fetch_remaining_buffer());
                 return Ok(());
             }
         })
@@ -348,22 +348,22 @@ impl<'a> BERReader<'a> {
 }
 
 pub trait FromBER: Sized + Eq + Hash {
-    fn from_ber<'a>(parser: &mut BERReader<'a>) -> ASN1Result<Self>;
+    fn from_ber<'a>(reader: &mut BERReader<'a>) -> ASN1Result<Self>;
 
     fn deserialize_ber_general(src: &[u8], mode: BERMode) -> ASN1Result<Self> {
-        return parse_ber_general(src, mode, |parser| {
-            return Self::from_ber(parser);
+        return parse_ber_general(src, mode, |reader| {
+            return Self::from_ber(reader);
         });
     }
 }
 
 impl<T> FromBER for Vec<T> where T: Sized + Eq + Hash + FromBER {
-    fn from_ber(parser: &mut BERReader) -> ASN1Result<Self> {
-        parser.parse_sequence(|parser| {
+    fn from_ber(reader: &mut BERReader) -> ASN1Result<Self> {
+        reader.parse_sequence(|reader| {
             let mut ret = Vec::new();
             loop {
-                let result = try!(parser.parse_optional(|parser| {
-                    T::from_ber(parser)
+                let result = try!(reader.parse_optional(|reader| {
+                    T::from_ber(reader)
                 }));
                 match result {
                     Some(result) => {
@@ -380,14 +380,14 @@ impl<T> FromBER for Vec<T> where T: Sized + Eq + Hash + FromBER {
 }
 
 impl<T> FromBER for SetOf<T> where T: Sized + Eq + Hash + FromBER {
-    fn from_ber<'a>(parser: &mut BERReader<'a>) -> ASN1Result<Self> {
-        parser.parse_set(|parser| {
+    fn from_ber<'a>(reader: &mut BERReader<'a>) -> ASN1Result<Self> {
+        reader.parse_set(|reader| {
             let mut ret = SetOf::new();
             let mut old_buf : Option<&'a [u8]> = None;
             loop {
-                let (result, buf) = try!(parser.parse_with_buffer(|parser| {
-                    parser.parse_optional(|parser| {
-                        T::from_ber(parser)
+                let (result, buf) = try!(reader.parse_with_buffer(|reader| {
+                    reader.parse_optional(|reader| {
+                        T::from_ber(reader)
                     })
                 }));
                 match result {
@@ -398,19 +398,19 @@ impl<T> FromBER for SetOf<T> where T: Sized + Eq + Hash + FromBER {
                         break;
                     },
                 };
-                if parser.mode == BERMode::Der {
+                if reader.mode == BERMode::Der {
                     match old_buf {
                         Some(old_buf) => {
                             match old_buf.iter().cmp(buf.iter()) {
                                 Ordering::Less => {},
                                 Ordering::Equal => {
                                     if old_buf.len() > buf.len() {
-                                        return Err(parser.generate_error(
+                                        return Err(reader.generate_error(
                                             ASN1ErrorKind::Invalid));
                                     }
                                 },
                                 Ordering::Greater => {
-                                    return Err(parser.generate_error(
+                                    return Err(reader.generate_error(
                                         ASN1ErrorKind::Invalid));
                                 },
                             }
@@ -426,23 +426,23 @@ impl<T> FromBER for SetOf<T> where T: Sized + Eq + Hash + FromBER {
 }
 
 impl FromBER for i64 {
-    fn from_ber(parser: &mut BERReader) -> ASN1Result<Self> {
-        parser.parse_general(TAG_INTEGER, TagType::Explicit, |parser, pc| {
+    fn from_ber(reader: &mut BERReader) -> ASN1Result<Self> {
+        reader.parse_general(TAG_INTEGER, TagType::Explicit, |reader, pc| {
             if pc != PC::Primitive {
-                return Err(parser.generate_error(ASN1ErrorKind::Invalid));
+                return Err(reader.generate_error(ASN1ErrorKind::Invalid));
             }
-            let buf = parser.fetch_remaining_buffer();
+            let buf = reader.fetch_remaining_buffer();
             if buf.len() == 0 {
-                return Err(parser.generate_error(ASN1ErrorKind::Invalid));
+                return Err(reader.generate_error(ASN1ErrorKind::Invalid));
             } else if buf.len() == 1 {
                 return Ok(buf[0] as i8 as i64);
             }
             let mut x = ((buf[0] as i8 as i64) << 8) + (buf[1] as i64);
             if -128 <= x && x < 128 {
-                return Err(parser.generate_error(ASN1ErrorKind::Invalid));
+                return Err(reader.generate_error(ASN1ErrorKind::Invalid));
             }
             if buf.len() > 8 {
-                return Err(parser.generate_error(
+                return Err(reader.generate_error(
                     ASN1ErrorKind::IntegerOverflow));
             }
             for &b in buf[2..].iter() {
@@ -455,21 +455,21 @@ impl FromBER for i64 {
 
 #[cfg(feature = "bigint")]
 impl FromBER for BigInt {
-    fn from_ber(parser: &mut BERReader) -> ASN1Result<Self> {
-        parser.parse_general(TAG_INTEGER, TagType::Explicit, |parser, pc| {
+    fn from_ber(reader: &mut BERReader) -> ASN1Result<Self> {
+        reader.parse_general(TAG_INTEGER, TagType::Explicit, |reader, pc| {
             if pc != PC::Primitive {
-                return Err(parser.generate_error(ASN1ErrorKind::Invalid));
+                return Err(reader.generate_error(ASN1ErrorKind::Invalid));
             }
-            let buf = parser.fetch_remaining_buffer();
+            let buf = reader.fetch_remaining_buffer();
             if buf.len() == 0 {
-                return Err(parser.generate_error(ASN1ErrorKind::Invalid));
+                return Err(reader.generate_error(ASN1ErrorKind::Invalid));
             } else if buf.len() == 1 {
                 return Ok(BigInt::from(buf[0] as i8));
             }
             let mut x = (BigInt::from(buf[0] as i8) << 8) +
                 BigInt::from(buf[1] as i64);
             if BigInt::from(-128) <= x && x < BigInt::from(128) {
-                return Err(parser.generate_error(ASN1ErrorKind::Invalid));
+                return Err(reader.generate_error(ASN1ErrorKind::Invalid));
             }
             for &b in buf[2..].iter() {
                 x = (x << 8) + BigInt::from(b);
@@ -481,23 +481,23 @@ impl FromBER for BigInt {
 
 #[cfg(feature = "bigint")]
 impl FromBER for BigUint {
-    fn from_ber(parser: &mut BERReader) -> ASN1Result<Self> {
-        match try!(parser.parse::<BigInt>()).to_biguint() {
+    fn from_ber(reader: &mut BERReader) -> ASN1Result<Self> {
+        match try!(reader.parse::<BigInt>()).to_biguint() {
             Some(result) => Ok(result),
-            None => Err(parser.generate_error(ASN1ErrorKind::Invalid)),
+            None => Err(reader.generate_error(ASN1ErrorKind::Invalid)),
         }
     }
 }
 
 impl FromBER for () {
-    fn from_ber(parser: &mut BERReader) -> ASN1Result<Self> {
-        parser.parse_general(TAG_NULL, TagType::Explicit, |parser, pc| {
+    fn from_ber(reader: &mut BERReader) -> ASN1Result<Self> {
+        reader.parse_general(TAG_NULL, TagType::Explicit, |reader, pc| {
             if pc != PC::Primitive {
-                return Err(parser.generate_error(ASN1ErrorKind::Invalid));
+                return Err(reader.generate_error(ASN1ErrorKind::Invalid));
             }
-            let buf = parser.fetch_remaining_buffer();
+            let buf = reader.fetch_remaining_buffer();
             if buf.len() != 0 {
-                return Err(parser.generate_error(ASN1ErrorKind::Invalid));
+                return Err(reader.generate_error(ASN1ErrorKind::Invalid));
             }
             return Ok(());
         })
@@ -524,18 +524,18 @@ enum PC {
 const PCS : [PC; 2] = [PC::Primitive, PC::Constructed];
 
 impl FromBER for bool {
-    fn from_ber(parser: &mut BERReader) -> ASN1Result<Self> {
-        parser.parse_general(TAG_BOOLEAN, TagType::Explicit, |parser, pc| {
+    fn from_ber(reader: &mut BERReader) -> ASN1Result<Self> {
+        reader.parse_general(TAG_BOOLEAN, TagType::Explicit, |reader, pc| {
             if pc != PC::Primitive {
-                return Err(parser.generate_error(ASN1ErrorKind::Invalid));
+                return Err(reader.generate_error(ASN1ErrorKind::Invalid));
             }
-            let buf = parser.fetch_remaining_buffer();
+            let buf = reader.fetch_remaining_buffer();
             if buf.len() != 1 {
-                return Err(parser.generate_error(ASN1ErrorKind::Invalid));
+                return Err(reader.generate_error(ASN1ErrorKind::Invalid));
             }
             let b = buf[0];
-            if parser.mode == BERMode::Der && b != 0 && b != 255 {
-                return Err(parser.generate_error(ASN1ErrorKind::Invalid));
+            if reader.mode == BERMode::Der && b != 0 && b != 255 {
+                return Err(reader.generate_error(ASN1ErrorKind::Invalid));
             }
             return Ok(b != 0);
         })
@@ -543,35 +543,35 @@ impl FromBER for bool {
 }
 
 impl FromBER for BitString {
-    fn from_ber(parser: &mut BERReader) -> ASN1Result<Self> {
-        parser.parse_bitstring()
+    fn from_ber(reader: &mut BERReader) -> ASN1Result<Self> {
+        reader.parse_bitstring()
     }
 }
 
 impl FromBER for Vec<u8> {
-    fn from_ber(parser: &mut BERReader) -> ASN1Result<Self> {
-        parser.parse_octetstring()
+    fn from_ber(reader: &mut BERReader) -> ASN1Result<Self> {
+        reader.parse_octetstring()
     }
 }
 
 impl FromBER for ObjectIdentifier {
-    fn from_ber(parser: &mut BERReader) -> ASN1Result<Self> {
-        parser.parse_general(TAG_OID, TagType::Explicit, |parser, pc| {
+    fn from_ber(reader: &mut BERReader) -> ASN1Result<Self> {
+        reader.parse_general(TAG_OID, TagType::Explicit, |reader, pc| {
             if pc != PC::Primitive {
-                return Err(parser.generate_error(ASN1ErrorKind::Invalid));
+                return Err(reader.generate_error(ASN1ErrorKind::Invalid));
             }
             let mut ids = Vec::new();
-            let buf = parser.fetch_remaining_buffer();
+            let buf = reader.fetch_remaining_buffer();
             if buf.len() == 0 || buf[buf.len()-1] >= 128 {
-                return Err(parser.generate_error(ASN1ErrorKind::Invalid));
+                return Err(reader.generate_error(ASN1ErrorKind::Invalid));
             }
             let mut subid : u64 = 0;
             for &b in buf.iter() {
                 if b == 128 {
-                    return Err(parser.generate_error(ASN1ErrorKind::Invalid));
+                    return Err(reader.generate_error(ASN1ErrorKind::Invalid));
                 }
                 subid = try!(subid.checked_mul(128)
-                    .ok_or(parser.generate_error(
+                    .ok_or(reader.generate_error(
                         ASN1ErrorKind::IntegerOverflow))) + ((b & 127) as u64);
                 if (b & 128) == 0 {
                     if ids.len() == 0 {
@@ -597,19 +597,19 @@ impl FromBER for ObjectIdentifier {
 }
 
 impl FromBER for PrintableString {
-    fn from_ber(parser: &mut BERReader) -> ASN1Result<Self> {
-        parser.parse_tagged(TAG_PRINTABLESTRING, TagType::Implicit, |parser| {
-            let octets = try!(parser.parse_octetstring());
+    fn from_ber(reader: &mut BERReader) -> ASN1Result<Self> {
+        reader.parse_tagged(TAG_PRINTABLESTRING, TagType::Implicit, |reader| {
+            let octets = try!(reader.parse_octetstring());
             return PrintableString::from_bytes(octets)
-                .ok_or(parser.generate_error(ASN1ErrorKind::Invalid));
+                .ok_or(reader.generate_error(ASN1ErrorKind::Invalid));
         })
     }
 }
 
 impl FromBER for UtcTime {
-    fn from_ber(parser: &mut BERReader) -> ASN1Result<Self> {
-        parser.parse_tagged(TAG_UTCTIME, TagType::Implicit, |parser| {
-            let octets = try!(parser.parse_octetstring());
+    fn from_ber(reader: &mut BERReader) -> ASN1Result<Self> {
+        reader.parse_tagged(TAG_UTCTIME, TagType::Implicit, |reader| {
+            let octets = try!(reader.parse_octetstring());
             // TODO: format check
             return Ok(UtcTime::new(octets));
         })
