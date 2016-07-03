@@ -89,6 +89,12 @@ impl<'a> BERReaderImpl<'a> {
         if self.pos != self.buf.len() {
             return Err(self.generate_error(ASN1ErrorKind::Extra));
         }
+        match self.tag_state {
+            TagState::None => {},
+            _ => {
+                return Err(self.generate_error(ASN1ErrorKind::Invalid));
+            },
+        };
         return Ok(());
     }
 
@@ -100,6 +106,7 @@ impl<'a> BERReaderImpl<'a> {
                 return Err(self.generate_error(ASN1ErrorKind::Invalid));
             },
         };
+        self.tag_state = TagState::None;
         if tag != TAG_EOC || pc != PC::Primitive {
             return Err(self.generate_error(ASN1ErrorKind::Invalid));
         }
