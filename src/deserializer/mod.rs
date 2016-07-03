@@ -18,7 +18,7 @@ use super::{ASN1Result,ASN1ErrorKind,BERMode,BERReader,parse_ber_general};
 use super::{PrintableString,UtcTime,ObjectIdentifier,BitString,SetOf};
 
 pub trait FromBER: Sized + Eq + Hash {
-    fn from_ber<'a>(reader: &mut BERReader<'a>) -> ASN1Result<Self>;
+    fn from_ber<'a, 'b>(reader: &mut BERReader<'a, 'b>) -> ASN1Result<Self>;
 
     fn deserialize_ber_general(src: &[u8], mode: BERMode) -> ASN1Result<Self> {
         return parse_ber_general(src, mode, |reader| {
@@ -50,7 +50,7 @@ impl<T> FromBER for Vec<T> where T: Sized + Eq + Hash + FromBER {
 }
 
 impl<T> FromBER for SetOf<T> where T: Sized + Eq + Hash + FromBER {
-    fn from_ber<'a>(reader: &mut BERReader<'a>) -> ASN1Result<Self> {
+    fn from_ber<'a, 'b>(reader: &mut BERReader<'a, 'b>) -> ASN1Result<Self> {
         reader.parse_set(|reader| {
             let mut ret = SetOf::new();
             let mut old_buf : Option<&'a [u8]> = None;
