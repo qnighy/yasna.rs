@@ -111,7 +111,7 @@ impl FromBER for BigInt {
 #[cfg(feature = "bigint")]
 impl FromBER for BigUint {
     fn from_ber(reader: BERReader) -> ASN1Result<Self> {
-        match try!(reader.parse::<BigInt>()).to_biguint() {
+        match try!(BigInt::from_ber(reader)).to_biguint() {
             Some(result) => Ok(result),
             None => Err(ASN1Error::new(ASN1ErrorKind::Invalid)),
         }

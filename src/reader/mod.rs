@@ -15,7 +15,6 @@ use super::{Tag,TAG_CLASSES};
 use super::{TAG_EOC,TAG_BOOLEAN,TAG_INTEGER,TAG_BITSTRING,TAG_OCTETSTRING};
 use super::{TAG_NULL,TAG_OID,TAG_SEQUENCE,TAG_SET};
 use super::models::{ObjectIdentifier,BitString};
-use super::FromBER;
 pub use self::error::*;
 
 /// Parses DER/BER-encoded data.
@@ -730,10 +729,6 @@ impl<'a, 'b> BERReader<'a, 'b> {
             reader.implicit_tag = implicit_tag;
             callback(reader)
         })
-    }
-
-    pub fn parse<T:FromBER>(self) -> ASN1Result<T> {
-        T::from_ber(self)
     }
 }
 
