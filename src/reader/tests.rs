@@ -6,6 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+use super::super::Tag;
 use super::*;
 
 #[test]
@@ -395,6 +396,328 @@ fn test_ber_read_sequence_err() {
                 let i = try!(reader.next().read_i64());
                 let b = try!(reader.next().read_bool());
                 return Ok((i, b));
+            })
+        }).unwrap_err();
+    }
+}
+
+#[test]
+fn test_der_read_tagged_ok() {
+    let tests : &[(i64, &[u8])] = &[
+        (10, &[163, 3, 2, 1, 10]),
+        (266, &[163, 4, 2, 2, 1, 10]),
+    ];
+    for &(evalue, data) in tests {
+        let value = parse_der(data, |reader| {
+            reader.read_tagged(Tag::context(3), |reader| {
+                reader.read_i64()
+            })
+        }).unwrap();
+        assert_eq!(value, evalue);
+    }
+
+    let tests : &[((i64, bool), &[u8])] = &[
+        ((10, false), &[163, 8, 48, 6, 2, 1, 10, 1, 1, 0]),
+        ((266, false), &[163, 9, 48, 7, 2, 2, 1, 10, 1, 1, 0]),
+    ];
+    for &(evalue, data) in tests {
+        let value = parse_der(data, |reader| {
+            reader.read_tagged(Tag::context(3), |reader| {
+                reader.read_sequence(|reader| {
+                    let i = try!(reader.next().read_i64());
+                    let b = try!(reader.next().read_bool());
+                    return Ok((i, b));
+                })
+            })
+        }).unwrap();
+        assert_eq!(value, evalue);
+    }
+}
+
+#[test]
+fn test_der_read_tagged_err() {
+    let tests : &[&[u8]] = &[
+        &[], &[163], &[0, 0], &[0, 1, 0], &[160, 3, 2, 1, 10],
+        &[35, 3, 2, 1, 10], &[131, 3, 2, 1, 10],
+        &[131, 1, 10],
+        &[163, 128, 2, 1, 10, 0, 0],
+    ];
+    for &data in tests {
+        parse_der(data, |reader| {
+            reader.read_tagged(Tag::context(3), |reader| {
+                reader.read_sequence(|reader| {
+                    let i = try!(reader.next().read_i64());
+                    let b = try!(reader.next().read_bool());
+                    return Ok((i, b));
+                })
+            })
+        }).unwrap_err();
+    }
+
+    let tests : &[&[u8]] = &[
+        &[], &[163], &[0, 0], &[0, 1, 0],
+        &[160, 8, 48, 6, 2, 1, 10, 1, 1, 0],
+        &[35, 8, 48, 6, 2, 1, 10, 1, 1, 0],
+        &[131, 8, 48, 6, 2, 1, 10, 1, 1, 0],
+        &[163, 8, 48, 6, 2, 1, 10, 1, 1, 0, 0],
+        &[163, 8, 48, 6, 2, 1, 10, 1, 1],
+        &[163, 9, 48, 7, 2, 2, 1, 10, 1, 1, 0, 0],
+        &[163, 9, 48, 7, 2, 2, 1, 10, 1, 1],
+        &[163, 6, 2, 1, 10, 1, 1, 0],
+        &[163, 7, 2, 2, 1, 10, 1, 1, 0],
+        &[163, 128, 48, 6, 2, 1, 10, 1, 1, 0, 0, 0, 0],
+        &[163, 128, 48, 6, 2, 1, 10, 1, 1, 0, 0, 0],
+        &[163, 128, 48, 6, 2, 1, 10, 1, 1, 0, 0],
+        &[163, 128, 48, 7, 2, 2, 1, 10, 1, 1, 0, 0, 0, 0],
+        &[163, 128, 48, 7, 2, 2, 1, 10, 1, 1, 0, 0, 0],
+        &[163, 128, 48, 7, 2, 2, 1, 10, 1, 1, 0, 0],
+    ];
+    for &data in tests {
+        parse_der(data, |reader| {
+            reader.read_tagged(Tag::context(3), |reader| {
+                reader.read_i64()
+            })
+        }).unwrap_err();
+    }
+}
+
+#[test]
+fn test_ber_read_tagged_ok() {
+    let tests : &[(i64, &[u8])] = &[
+        (10, &[163, 3, 2, 1, 10]),
+        (266, &[163, 4, 2, 2, 1, 10]),
+        (10, &[163, 128, 2, 1, 10, 0, 0]),
+    ];
+    for &(evalue, data) in tests {
+        let value = parse_ber(data, |reader| {
+            reader.read_tagged(Tag::context(3), |reader| {
+                reader.read_i64()
+            })
+        }).unwrap();
+        assert_eq!(value, evalue);
+    }
+
+    let tests : &[((i64, bool), &[u8])] = &[
+        ((10, false), &[163, 8, 48, 6, 2, 1, 10, 1, 1, 0]),
+        ((266, false), &[163, 9, 48, 7, 2, 2, 1, 10, 1, 1, 0]),
+        ((10, false), &[163, 128, 48, 6, 2, 1, 10, 1, 1, 0, 0, 0]),
+        ((266, false), &[163, 128, 48, 7, 2, 2, 1, 10, 1, 1, 0, 0, 0]),
+    ];
+    for &(evalue, data) in tests {
+        let value = parse_ber(data, |reader| {
+            reader.read_tagged(Tag::context(3), |reader| {
+                reader.read_sequence(|reader| {
+                    let i = try!(reader.next().read_i64());
+                    let b = try!(reader.next().read_bool());
+                    return Ok((i, b));
+                })
+            })
+        }).unwrap();
+        assert_eq!(value, evalue);
+    }
+}
+
+#[test]
+fn test_ber_read_tagged_err() {
+    let tests : &[&[u8]] = &[
+        &[], &[163], &[0, 0], &[0, 1, 0], &[160, 3, 2, 1, 10],
+        &[35, 3, 2, 1, 10], &[131, 3, 2, 1, 10],
+        &[131, 1, 10],
+    ];
+    for &data in tests {
+        parse_ber(data, |reader| {
+            reader.read_tagged(Tag::context(3), |reader| {
+                reader.read_sequence(|reader| {
+                    let i = try!(reader.next().read_i64());
+                    let b = try!(reader.next().read_bool());
+                    return Ok((i, b));
+                })
+            })
+        }).unwrap_err();
+    }
+
+    let tests : &[&[u8]] = &[
+        &[], &[163], &[0, 0], &[0, 1, 0],
+        &[160, 8, 48, 6, 2, 1, 10, 1, 1, 0],
+        &[35, 8, 48, 6, 2, 1, 10, 1, 1, 0],
+        &[131, 8, 48, 6, 2, 1, 10, 1, 1, 0],
+        &[163, 8, 48, 6, 2, 1, 10, 1, 1, 0, 0],
+        &[163, 8, 48, 6, 2, 1, 10, 1, 1],
+        &[163, 9, 48, 7, 2, 2, 1, 10, 1, 1, 0, 0],
+        &[163, 9, 48, 7, 2, 2, 1, 10, 1, 1],
+        &[163, 6, 2, 1, 10, 1, 1, 0],
+        &[163, 7, 2, 2, 1, 10, 1, 1, 0],
+        &[163, 128, 48, 6, 2, 1, 10, 1, 1, 0, 0, 0, 0],
+        &[163, 128, 48, 6, 2, 1, 10, 1, 1, 0, 0],
+        &[163, 128, 48, 7, 2, 2, 1, 10, 1, 1, 0, 0, 0, 0],
+        &[163, 128, 48, 7, 2, 2, 1, 10, 1, 1, 0, 0],
+    ];
+    for &data in tests {
+        parse_ber(data, |reader| {
+            reader.read_tagged(Tag::context(3), |reader| {
+                reader.read_i64()
+            })
+        }).unwrap_err();
+    }
+}
+
+#[test]
+fn test_der_read_tagged_implicit_ok() {
+    let tests : &[(i64, &[u8])] = &[
+        (10, &[131, 1, 10]),
+        (266, &[131, 2, 1, 10]),
+    ];
+    for &(evalue, data) in tests {
+        let value = parse_der(data, |reader| {
+            reader.read_tagged_implicit(Tag::context(3), |reader| {
+                reader.read_i64()
+            })
+        }).unwrap();
+        assert_eq!(value, evalue);
+    }
+
+    let tests : &[((i64, bool), &[u8])] = &[
+        ((10, false), &[163, 6, 2, 1, 10, 1, 1, 0]),
+        ((266, false), &[163, 7, 2, 2, 1, 10, 1, 1, 0]),
+    ];
+    for &(evalue, data) in tests {
+        let value = parse_der(data, |reader| {
+            reader.read_tagged_implicit(Tag::context(3), |reader| {
+                reader.read_sequence(|reader| {
+                    let i = try!(reader.next().read_i64());
+                    let b = try!(reader.next().read_bool());
+                    return Ok((i, b));
+                })
+            })
+        }).unwrap();
+        assert_eq!(value, evalue);
+    }
+}
+
+#[test]
+fn test_der_read_tagged_implicit_err() {
+    let tests : &[&[u8]] = &[
+        &[], &[131], &[0, 0], &[0, 1, 0], &[128, 3, 2, 1, 10],
+        &[3, 3, 2, 1, 10], &[163, 3, 2, 1, 10],
+        &[163, 3, 2, 1, 10],
+        &[131, 128, 1, 10, 0, 0],
+        &[163, 128, 2, 1, 10, 0, 0],
+    ];
+    for &data in tests {
+        parse_der(data, |reader| {
+            reader.read_tagged(Tag::context(3), |reader| {
+                reader.read_sequence(|reader| {
+                    let i = try!(reader.next().read_i64());
+                    let b = try!(reader.next().read_bool());
+                    return Ok((i, b));
+                })
+            })
+        }).unwrap_err();
+    }
+
+    let tests : &[&[u8]] = &[
+        &[], &[163], &[0, 0], &[0, 1, 0],
+        &[160, 6, 2, 1, 10, 1, 1, 0],
+        &[35, 6, 2, 1, 10, 1, 1, 0],
+        &[131, 6, 2, 1, 10, 1, 1, 0],
+        &[163, 6, 2, 1, 10, 1, 1, 0, 0],
+        &[163, 6, 2, 1, 10, 1, 1],
+        &[163, 7, 2, 2, 1, 10, 1, 1, 0, 0],
+        &[163, 7, 2, 2, 1, 10, 1, 1],
+        &[163, 8, 48, 6, 2, 1, 10, 1, 1, 0],
+        &[163, 9, 48, 7, 2, 2, 1, 10, 1, 1, 0],
+        &[163, 128, 2, 1, 10, 1, 1, 0, 0, 0, 0],
+        &[163, 128, 2, 1, 10, 1, 1, 0, 0, 0],
+        &[163, 128, 2, 1, 10, 1, 1, 0, 0],
+        &[163, 128, 2, 2, 1, 10, 1, 1, 0, 0, 0, 0],
+        &[163, 128, 2, 2, 1, 10, 1, 1, 0, 0, 0],
+        &[163, 128, 2, 2, 1, 10, 1, 1, 0, 0],
+    ];
+    for &data in tests {
+        parse_der(data, |reader| {
+            reader.read_tagged(Tag::context(3), |reader| {
+                reader.read_i64()
+            })
+        }).unwrap_err();
+    }
+}
+
+#[test]
+fn test_ber_read_tagged_implicit_ok() {
+    let tests : &[(i64, &[u8])] = &[
+        (10, &[131, 1, 10]),
+        (266, &[131, 2, 1, 10]),
+    ];
+    for &(evalue, data) in tests {
+        let value = parse_ber(data, |reader| {
+            reader.read_tagged_implicit(Tag::context(3), |reader| {
+                reader.read_i64()
+            })
+        }).unwrap();
+        assert_eq!(value, evalue);
+    }
+
+    let tests : &[((i64, bool), &[u8])] = &[
+        ((10, false), &[163, 6, 2, 1, 10, 1, 1, 0]),
+        ((266, false), &[163, 7, 2, 2, 1, 10, 1, 1, 0]),
+        ((10, false), &[163, 128, 2, 1, 10, 1, 1, 0, 0, 0]),
+        ((266, false), &[163, 128, 2, 2, 1, 10, 1, 1, 0, 0, 0]),
+    ];
+    for &(evalue, data) in tests {
+        let value = parse_ber(data, |reader| {
+            reader.read_tagged_implicit(Tag::context(3), |reader| {
+                reader.read_sequence(|reader| {
+                    let i = try!(reader.next().read_i64());
+                    let b = try!(reader.next().read_bool());
+                    return Ok((i, b));
+                })
+            })
+        }).unwrap();
+        assert_eq!(value, evalue);
+    }
+}
+
+#[test]
+fn test_ber_read_tagged_implicit_err() {
+    let tests : &[&[u8]] = &[
+        &[], &[131], &[0, 0], &[0, 1, 0], &[128, 3, 2, 1, 10],
+        &[3, 3, 2, 1, 10], &[163, 3, 2, 1, 10],
+        &[163, 3, 2, 1, 10],
+        &[131, 128, 1, 10, 0, 0],
+        &[163, 128, 2, 1, 10, 0, 0],
+    ];
+    for &data in tests {
+        parse_ber(data, |reader| {
+            reader.read_tagged(Tag::context(3), |reader| {
+                reader.read_sequence(|reader| {
+                    let i = try!(reader.next().read_i64());
+                    let b = try!(reader.next().read_bool());
+                    return Ok((i, b));
+                })
+            })
+        }).unwrap_err();
+    }
+
+    let tests : &[&[u8]] = &[
+        &[], &[163], &[0, 0], &[0, 1, 0],
+        &[160, 6, 2, 1, 10, 1, 1, 0],
+        &[35, 6, 2, 1, 10, 1, 1, 0],
+        &[131, 6, 2, 1, 10, 1, 1, 0],
+        &[163, 6, 2, 1, 10, 1, 1, 0, 0],
+        &[163, 6, 2, 1, 10, 1, 1],
+        &[163, 7, 2, 2, 1, 10, 1, 1, 0, 0],
+        &[163, 7, 2, 2, 1, 10, 1, 1],
+        &[163, 8, 48, 6, 2, 1, 10, 1, 1, 0],
+        &[163, 9, 48, 7, 2, 2, 1, 10, 1, 1, 0],
+        &[163, 128, 2, 1, 10, 1, 1, 0, 0, 0, 0],
+        &[163, 128, 2, 1, 10, 1, 1, 0, 0],
+        &[163, 128, 2, 2, 1, 10, 1, 1, 0, 0, 0, 0],
+        &[163, 128, 2, 2, 1, 10, 1, 1, 0, 0],
+    ];
+    for &data in tests {
+        parse_ber(data, |reader| {
+            reader.read_tagged(Tag::context(3), |reader| {
+                reader.read_i64()
             })
         }).unwrap_err();
     }

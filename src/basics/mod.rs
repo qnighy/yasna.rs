@@ -119,11 +119,6 @@ impl Tag {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub enum TagType {
-    Explicit, Implicit,
-}
-
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct BitString {
     pub unused_bits: usize,
