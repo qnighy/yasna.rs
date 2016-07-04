@@ -76,6 +76,13 @@ pub enum TagClass {
     Universal = 0, Application = 1, ContextSpecific = 2, Private = 3,
 }
 
+const TAG_CLASSES : [TagClass; 4] = [
+    TagClass::Universal,
+    TagClass::Application,
+    TagClass::ContextSpecific,
+    TagClass::Private,
+];
+
 /// An ASN.1 tag.
 ///
 /// An ASN.1 tag is a pair of a tag class and a tag number.
@@ -116,6 +123,11 @@ impl Tag {
         }
     }
 }
+
+const TAG_EOC : Tag = Tag {
+    tag_class: TagClass::Universal,
+    tag_number: 0,
+};
 
 const TAG_BOOLEAN : Tag = Tag {
     tag_class: TagClass::Universal,

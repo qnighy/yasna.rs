@@ -11,8 +11,9 @@ mod error;
 #[cfg(feature = "bigint")]
 use num::bigint::BigInt;
 
-use super::{Tag,TagClass};
-use super::{TAG_BOOLEAN,TAG_INTEGER,TAG_BITSTRING,TAG_OCTETSTRING,TAG_NULL,TAG_OID,TAG_SEQUENCE,TAG_SET};
+use super::{Tag,TAG_CLASSES};
+use super::{TAG_EOC,TAG_BOOLEAN,TAG_INTEGER,TAG_BITSTRING,TAG_OCTETSTRING};
+use super::{TAG_NULL,TAG_OID,TAG_SEQUENCE,TAG_SET};
 use super::models::{ObjectIdentifier,BitString};
 use super::FromBER;
 pub use self::error::*;
@@ -808,18 +809,6 @@ impl<'a, 'b> BERReaderSeq<'a, 'b> {
         })
     }
 }
-
-const TAG_CLASSES : [TagClass; 4] = [
-    TagClass::Universal,
-    TagClass::Application,
-    TagClass::ContextSpecific,
-    TagClass::Private,
-];
-
-const TAG_EOC : Tag = Tag {
-    tag_class: TagClass::Universal,
-    tag_number: 0,
-};
 
 #[cfg(test)]
 mod tests;
