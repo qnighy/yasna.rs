@@ -75,13 +75,13 @@ impl<T> FromBER for SetOf<T> where T: Sized + Eq + Hash + FromBER {
                                 Ordering::Less => {},
                                 Ordering::Equal => {
                                     if old_buf.len() > buf.len() {
-                                        return Err(reader.generate_error(
-                                            ASN1ErrorKind::Invalid));
+                                        return Err(ASN1Error::new(
+                                            ASN1ErrorKind::Invalid))
                                     }
                                 },
                                 Ordering::Greater => {
-                                    return Err(reader.generate_error(
-                                        ASN1ErrorKind::Invalid));
+                                    return Err(ASN1Error::new(
+                                        ASN1ErrorKind::Invalid))
                                 },
                             }
                         }
