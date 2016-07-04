@@ -9,7 +9,7 @@
 mod error;
 
 #[cfg(feature = "bigint")]
-use num::bigint::BigInt;
+use num::bigint::{BigInt,BigUint,Sign};
 
 use super::{Tag,TAG_CLASSES};
 use super::{TAG_EOC,TAG_BOOLEAN,TAG_INTEGER,TAG_BITSTRING,TAG_OCTETSTRING};
@@ -567,15 +567,54 @@ impl<'a, 'b> BERReader<'a, 'b> {
             } else if buf.len() == 1 {
                 return Ok(BigInt::from(buf[0] as i8));
             }
-            let mut x = (BigInt::from(buf[0] as i8) << 8) +
-                BigInt::from(buf[1] as i64);
-            if BigInt::from(-128) <= x && x < BigInt::from(128) {
+            let x2 = ((buf[0] as i8 as i32) << 8) + (buf[1] as i32);
+            if -128 <= x2 && x2 < 128 {
                 return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
             }
-            for &b in buf[2..].iter() {
-                x = (x << 8) + BigInt::from(b);
+            if 0 <= x2 {
+                return Ok(BigInt::from_bytes_be(Sign::Plus, buf));
+            } else {
+                let mut buf = buf.to_vec();
+                buf.reverse();
+                let mut carry : usize = 1;
+                for b in buf.iter_mut() {
+                    let bval = 255 - (*b as usize);
+                    *b = (bval + carry) as u8;
+                    carry = (bval + carry) >> 8;
+                }
+                return Ok(BigInt::from_bytes_le(Sign::Minus, &buf));
             }
-            return Ok(x);
+        })
+    }
+
+    #[cfg(feature = "bigint")]
+    /// Reads an ASN.1 INTEGER value as `BigUint`.
+    ///
+    /// # Errors
+    ///
+    /// Except parse errors, it can raise integer overflow errors.
+    pub fn read_biguint(self) -> ASN1Result<BigUint> {
+        self.read_general(TAG_INTEGER, |contents| {
+            let buf = match contents {
+                Contents::Primitive(buf) => buf,
+                Contents::Constructed(_) => {
+                    return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+                },
+            };
+            if buf.len() == 0 {
+                return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+            } else if buf[0] >= 128 {
+                return Err(ASN1Error::new(ASN1ErrorKind::IntegerOverflow));
+            } else if buf.len() == 1 {
+                return Ok(BigUint::from(buf[0]));
+            }
+            let x2 = ((buf[0] as i8 as i32) << 8) + (buf[1] as i32);
+            if -128 <= x2 && x2 < 128 {
+                return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+            } else if x2 < 0 {
+                return Err(ASN1Error::new(ASN1ErrorKind::IntegerOverflow));
+            }
+            return Ok(BigUint::from_bytes_be(buf));
         })
     }
 

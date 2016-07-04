@@ -6,6 +6,9 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+#[cfg(feature = "bigint")]
+use num::bigint::{BigUint, BigInt};
+
 use super::super::Tag;
 use super::*;
 
@@ -522,6 +525,187 @@ fn test_general_read_u8_err(mode: BERMode) {
     for &data in tests {
         parse_ber_general(data, mode, |reader| {
             reader.read_u8()
+        }).unwrap_err();
+    }
+}
+
+#[cfg(feature = "bigint")]
+#[test]
+fn test_der_read_bigint_ok() {
+    test_general_read_bigint_ok(BERMode::Der);
+}
+
+#[cfg(feature = "bigint")]
+#[test]
+fn test_der_read_bigint_err() {
+    test_general_read_bigint_err(BERMode::Der);
+}
+
+#[cfg(feature = "bigint")]
+#[test]
+fn test_ber_read_bigint_ok() {
+    test_general_read_bigint_ok(BERMode::Ber);
+}
+
+#[cfg(feature = "bigint")]
+#[test]
+fn test_ber_read_bigint_err() {
+    test_general_read_bigint_err(BERMode::Ber);
+}
+
+#[cfg(feature = "bigint")]
+fn test_general_read_bigint_ok(mode: BERMode) {
+    use num::FromPrimitive;
+    let tests : &[(i64, &[u8])] = &[
+        (-9223372036854775808, &[2, 8, 128, 0, 0, 0, 0, 0, 0, 0]),
+        (-65537, &[2, 3, 254, 255, 255]),
+        (-65536, &[2, 3, 255, 0, 0]),
+        (-32769, &[2, 3, 255, 127, 255]),
+        (-32768, &[2, 2, 128, 0]),
+        (-129, &[2, 2, 255, 127]),
+        (-128, &[2, 1, 128]),
+        (-1, &[2, 1, 255]),
+        (0, &[2, 1, 0]),
+        (1, &[2, 1, 1]),
+        (127, &[2, 1, 127]),
+        (128, &[2, 2, 0, 128]),
+        (32767, &[2, 2, 127, 255]),
+        (32768, &[2, 3, 0, 128, 0]),
+        (65535, &[2, 3, 0, 255, 255]),
+        (65536, &[2, 3, 1, 0, 0]),
+        (9223372036854775807, &[2, 8, 127, 255, 255, 255, 255, 255, 255, 255]),
+    ];
+    for &(evalue, data) in tests {
+        let value = parse_ber_general(data, mode, |reader| {
+            reader.read_bigint()
+        }).unwrap();
+        assert_eq!(value, BigInt::from_i64(evalue).unwrap());
+    }
+
+    let tests : &[(BigInt, &[u8])] = &[
+        (BigInt::parse_bytes(
+            b"1234567890123456789012345678901234567890", 10).unwrap(),
+            &[2, 17, 3, 160, 201, 32, 117, 192, 219,
+            243, 184, 172, 188, 95, 150, 206, 63, 10, 210]),
+        (BigInt::parse_bytes(
+            b"-1234567890123456789012345678901234567890", 10).unwrap(),
+            &[2, 17, 252, 95, 54, 223, 138, 63, 36,
+            12, 71, 83, 67, 160, 105, 49, 192, 245, 46]),
+        (BigInt::parse_bytes(b"-18446744073709551616", 10).unwrap(),
+            &[2, 9, 255, 0, 0, 0, 0, 0, 0, 0, 0]),
+        (BigInt::parse_bytes(b"-9223372036854775809", 10).unwrap(),
+            &[2, 9, 255, 127, 255, 255, 255, 255, 255, 255, 255]),
+        (BigInt::parse_bytes(b"9223372036854775808", 10).unwrap(),
+            &[2, 9, 0, 128, 0, 0, 0, 0, 0, 0, 0]),
+        (BigInt::parse_bytes(b"18446744073709551615", 10).unwrap(),
+            &[2, 9, 0, 255, 255, 255, 255, 255, 255, 255, 255]),
+    ];
+    for &(ref evalue, data) in tests {
+        let value = parse_ber_general(data, mode, |reader| {
+            reader.read_bigint()
+        }).unwrap();
+        assert_eq!(&value, evalue);
+    }
+}
+
+#[cfg(feature = "bigint")]
+fn test_general_read_bigint_err(mode: BERMode) {
+    let tests : &[&[u8]] = &[
+        &[], &[2], &[0, 0], &[0, 1, 0], &[1, 1, 0], &[34, 1, 0], &[66, 1, 0],
+        &[2, 0], &[2, 128, 2, 1, 0, 0, 0], &[2, 2, 0], &[2, 1, 1, 1],
+        &[2, 2, 255, 128], &[2, 2, 255, 200], &[2, 2, 0, 127], &[2, 2, 0, 56],
+        &[2, 3, 255, 151, 55], &[2, 3, 0, 1, 2],
+    ];
+    for &data in tests {
+        parse_ber_general(data, mode, |reader| {
+            reader.read_bigint()
+        }).unwrap_err();
+    }
+}
+
+#[cfg(feature = "bigint")]
+#[test]
+fn test_der_read_biguint_ok() {
+    test_general_read_biguint_ok(BERMode::Der);
+}
+
+#[cfg(feature = "bigint")]
+#[test]
+fn test_der_read_biguint_err() {
+    test_general_read_biguint_err(BERMode::Der);
+}
+
+#[cfg(feature = "bigint")]
+#[test]
+fn test_ber_read_biguint_ok() {
+    test_general_read_biguint_ok(BERMode::Ber);
+}
+
+#[cfg(feature = "bigint")]
+#[test]
+fn test_ber_read_biguint_err() {
+    test_general_read_biguint_err(BERMode::Ber);
+}
+
+#[cfg(feature = "bigint")]
+fn test_general_read_biguint_ok(mode: BERMode) {
+    use num::FromPrimitive;
+    let tests : &[(u64, &[u8])] = &[
+        (0, &[2, 1, 0]),
+        (1, &[2, 1, 1]),
+        (127, &[2, 1, 127]),
+        (128, &[2, 2, 0, 128]),
+        (32767, &[2, 2, 127, 255]),
+        (32768, &[2, 3, 0, 128, 0]),
+        (65535, &[2, 3, 0, 255, 255]),
+        (65536, &[2, 3, 1, 0, 0]),
+        (9223372036854775807, &[2, 8, 127, 255, 255, 255, 255, 255, 255, 255]),
+        (18446744073709551615,
+            &[2, 9, 0, 255, 255, 255, 255, 255, 255, 255, 255]),
+    ];
+    for &(evalue, data) in tests {
+        let value = parse_ber_general(data, mode, |reader| {
+            reader.read_biguint()
+        }).unwrap();
+        assert_eq!(value, BigUint::from_u64(evalue).unwrap());
+    }
+
+    let tests : &[(BigUint, &[u8])] = &[
+        (BigUint::parse_bytes(
+            b"1234567890123456789012345678901234567890", 10).unwrap(),
+            &[2, 17, 3, 160, 201, 32, 117, 192, 219,
+            243, 184, 172, 188, 95, 150, 206, 63, 10, 210]),
+        (BigUint::parse_bytes(b"9223372036854775808", 10).unwrap(),
+            &[2, 9, 0, 128, 0, 0, 0, 0, 0, 0, 0]),
+        (BigUint::parse_bytes(b"18446744073709551615", 10).unwrap(),
+            &[2, 9, 0, 255, 255, 255, 255, 255, 255, 255, 255]),
+    ];
+    for &(ref evalue, data) in tests {
+        let value = parse_ber_general(data, mode, |reader| {
+            reader.read_biguint()
+        }).unwrap();
+        assert_eq!(&value, evalue);
+    }
+}
+
+#[cfg(feature = "bigint")]
+fn test_general_read_biguint_err(mode: BERMode) {
+    let tests : &[&[u8]] = &[
+        &[], &[2], &[0, 0], &[0, 1, 0], &[1, 1, 0], &[34, 1, 0], &[66, 1, 0],
+        &[2, 0], &[2, 128, 2, 1, 0, 0, 0], &[2, 2, 0], &[2, 1, 1, 1],
+        &[2, 2, 255, 128], &[2, 2, 255, 200], &[2, 2, 0, 127], &[2, 2, 0, 56],
+        &[2, 3, 255, 151, 55], &[2, 3, 0, 1, 2],
+        &[2, 8, 128, 0, 0, 0, 0, 0, 0, 0], &[2, 3, 254, 255, 255],
+        &[2, 3, 255, 0, 0], &[2, 3, 255, 127, 255], &[2, 2, 128, 0],
+        &[2, 2, 255, 127], &[2, 1, 128], &[2, 1, 255],
+        &[2, 17, 252, 95, 54, 223, 138, 63, 36,
+            12, 71, 83, 67, 160, 105, 49, 192, 245, 46],
+        &[2, 9, 255, 0, 0, 0, 0, 0, 0, 0, 0],
+        &[2, 9, 255, 127, 255, 255, 255, 255, 255, 255, 255],
+    ];
+    for &data in tests {
+        parse_ber_general(data, mode, |reader| {
+            reader.read_biguint()
         }).unwrap_err();
     }
 }
