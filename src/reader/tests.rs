@@ -211,7 +211,6 @@ fn test_ber_read_bytes_ok() {
         (&[12, 34, 56], &[36, 7, 36, 5, 4, 3, 12 ,34, 56]),
     ];
     for &(evalue, data) in tests {
-        println!("{:?}", data);
         let value = parse_ber(data, |reader| {
             reader.read_bytes()
         }).unwrap();
@@ -226,7 +225,6 @@ fn test_ber_read_bytes_err() {
         &[4, 4, 0], &[4, 1, 1, 1], &[4, 128, 1, 0, 0],
     ];
     for &data in tests {
-        println!("{:?}", data);
         parse_ber(data, |reader| {
             reader.read_bytes()
         }).unwrap_err();
@@ -273,6 +271,131 @@ fn test_ber_read_null_err() {
     for &data in tests {
         parse_ber(data, |reader| {
             reader.read_null()
+        }).unwrap_err();
+    }
+}
+
+#[test]
+fn test_der_read_sequence_ok() {
+    let tests : &[((i64, bool), &[u8])] = &[
+        ((10, true), &[48, 6, 2, 1, 10, 1, 1, 255]),
+        ((266, true), &[48, 7, 2, 2, 1, 10, 1, 1, 255]),
+    ];
+    for &(evalue, data) in tests {
+        let value = parse_der(data, |reader| {
+            reader.read_sequence(|reader| {
+                let i = try!(reader.next().read_i64());
+                let b = try!(reader.next().read_bool());
+                return Ok((i, b));
+            })
+        }).unwrap();
+        assert_eq!(value, evalue);
+    }
+
+    let tests : &[((), &[u8])] = &[
+        ((), &[48, 0]),
+    ];
+    for &(evalue, data) in tests {
+        let value = parse_der(data, |reader| {
+            reader.read_sequence(|_| {
+                Ok(())
+            })
+        }).unwrap();
+        assert_eq!(value, evalue);
+    }
+}
+
+#[test]
+fn test_der_read_sequence_err() {
+    let tests : &[&[u8]] = &[
+        &[], &[48], &[0, 0], &[0, 1, 0],
+        &[49, 6, 2, 1, 10, 1, 1, 255],
+        &[16, 6, 2, 1, 10, 1, 1, 255],
+        &[112, 6, 2, 1, 10, 1, 1, 255],
+        &[48, 6, 2, 1, 10, 1, 1, 255, 0],
+        &[48, 6, 2, 2, 1, 10, 1, 1, 255],
+        &[48, 7, 2, 1, 10, 1, 1, 255, 0],
+        &[48, 7, 2, 1, 10, 1, 1, 255],
+        &[48, 8, 48, 6, 2, 1, 10, 1, 1, 255],
+        &[49, 128, 2, 1, 10, 1, 1, 255, 0, 0],
+        &[16, 128, 2, 1, 10, 1, 1, 255, 0, 0],
+        &[112, 128, 2, 1, 10, 1, 1, 255, 0, 0],
+        &[48, 128, 2, 1, 10, 1, 1, 255, 0, 0, 0],
+        &[48, 128, 48, 6, 2, 1, 10, 1, 1, 255, 0, 0],
+        &[48, 10, 48, 128, 2, 1, 10, 1, 1, 255, 0, 0],
+        &[48, 128, 48, 128, 2, 1, 10, 1, 1, 255, 0, 0, 0, 0],
+        &[48, 128, 2, 1, 10, 1, 1, 255, 0, 0],
+        &[48, 128, 2, 2, 1, 10, 1, 1, 255, 0, 0],
+    ];
+    for &data in tests {
+        parse_der(data, |reader| {
+            reader.read_sequence(|reader| {
+                let i = try!(reader.next().read_i64());
+                let b = try!(reader.next().read_bool());
+                return Ok((i, b));
+            })
+        }).unwrap_err();
+    }
+}
+
+#[test]
+fn test_ber_read_sequence_ok() {
+    let tests : &[((i64, bool), &[u8])] = &[
+        ((10, true), &[48, 6, 2, 1, 10, 1, 1, 255]),
+        ((266, true), &[48, 7, 2, 2, 1, 10, 1, 1, 255]),
+        ((10, true), &[48, 128, 2, 1, 10, 1, 1, 255, 0, 0]),
+        ((266, true), &[48, 128, 2, 2, 1, 10, 1, 1, 255, 0, 0]),
+    ];
+    for &(evalue, data) in tests {
+        let value = parse_ber(data, |reader| {
+            reader.read_sequence(|reader| {
+                let i = try!(reader.next().read_i64());
+                let b = try!(reader.next().read_bool());
+                return Ok((i, b));
+            })
+        }).unwrap();
+        assert_eq!(value, evalue);
+    }
+
+    let tests : &[((), &[u8])] = &[
+        ((), &[48, 0]),
+        ((), &[48, 128, 0, 0]),
+    ];
+    for &(evalue, data) in tests {
+        let value = parse_ber(data, |reader| {
+            reader.read_sequence(|_| {
+                Ok(())
+            })
+        }).unwrap();
+        assert_eq!(value, evalue);
+    }
+}
+
+#[test]
+fn test_ber_read_sequence_err() {
+    let tests : &[&[u8]] = &[
+        &[], &[48], &[0, 0], &[0, 1, 0],
+        &[49, 6, 2, 1, 10, 1, 1, 255],
+        &[16, 6, 2, 1, 10, 1, 1, 255],
+        &[112, 6, 2, 1, 10, 1, 1, 255],
+        &[48, 6, 2, 1, 10, 1, 1, 255, 0],
+        &[48, 6, 2, 2, 1, 10, 1, 1, 255],
+        &[48, 7, 2, 1, 10, 1, 1, 255, 0],
+        &[48, 7, 2, 1, 10, 1, 1, 255],
+        &[48, 8, 48, 6, 2, 1, 10, 1, 1, 255],
+        &[49, 128, 2, 1, 10, 1, 1, 255, 0, 0],
+        &[16, 128, 2, 1, 10, 1, 1, 255, 0, 0],
+        &[112, 128, 2, 1, 10, 1, 1, 255, 0, 0],
+        &[48, 128, 2, 1, 10, 1, 1, 255, 0, 0, 0],
+        &[48, 128, 48, 6, 2, 1, 10, 1, 1, 255, 0, 0],
+    ];
+    for &data in tests {
+        parse_ber(data, |reader| {
+            reader.read_sequence(|reader| {
+                let i = try!(reader.next().read_i64());
+                let b = try!(reader.next().read_bool());
+                return Ok((i, b));
+            })
         }).unwrap_err();
     }
 }
