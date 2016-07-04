@@ -13,7 +13,7 @@ use num::bigint::BigInt;
 
 use super::{Tag,TagClass};
 use super::{TAG_BOOLEAN,TAG_INTEGER,TAG_BITSTRING,TAG_OCTETSTRING,TAG_NULL,TAG_OID,TAG_SEQUENCE,TAG_SET};
-use super::{ObjectIdentifier,BitString};
+use super::models::{ObjectIdentifier,BitString};
 use super::FromBER;
 pub use self::error::*;
 

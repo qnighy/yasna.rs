@@ -52,12 +52,10 @@
 #[cfg(feature = "bigint")]
 extern crate num;
 
-mod basics;
+pub mod models;
 mod writer;
 mod reader;
 mod deserializer;
-
-pub use basics::{BitString,SetOf,ObjectIdentifier,PrintableString,UtcTime};
 
 pub use writer::{construct_der,construct_der_seq,DERWriterSeq,DERWriter,DERWriterSet};
 pub use reader::{BERReader,BERReaderSeq,ASN1Error,ASN1ErrorKind,BERMode,ASN1Result,parse_ber_general,parse_ber,parse_der};

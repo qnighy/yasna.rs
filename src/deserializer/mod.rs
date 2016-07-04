@@ -15,7 +15,7 @@ use num::bigint::{BigInt,BigUint};
 use super::{TAG_PRINTABLESTRING,TAG_UTCTIME};
 
 use super::{ASN1Error,ASN1Result,ASN1ErrorKind,BERMode,BERReader,parse_ber_general};
-use super::{PrintableString,UtcTime,ObjectIdentifier,BitString,SetOf};
+use super::models::{PrintableString,UtcTime,ObjectIdentifier,BitString,SetOf};
 
 pub trait FromBER: Sized + Eq + Hash {
     fn from_ber<'a, 'b>(reader: BERReader<'a, 'b>) -> ASN1Result<Self>;
