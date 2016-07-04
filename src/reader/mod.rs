@@ -388,8 +388,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
     ///
     /// # Errors
     ///
-    /// Except parse errors, it raises an error when the integer doesn't
-    /// fit in `i64`.
+    /// Except parse errors, it can raise integer overflow errors.
     pub fn read_i64(self) -> ASN1Result<i64> {
         self.read_general(TAG_INTEGER, |contents| {
             let buf = match contents {
@@ -416,6 +415,125 @@ impl<'a, 'b> BERReader<'a, 'b> {
             }
             return Ok(x);
         })
+    }
+
+    /// Reads an ASN.1 INTEGER value as `u64`.
+    ///
+    /// # Errors
+    ///
+    /// Except parse errors, it can raise integer overflow errors.
+    pub fn read_u64(self) -> ASN1Result<u64> {
+        self.read_general(TAG_INTEGER, |contents| {
+            let buf = match contents {
+                Contents::Primitive(buf) => buf,
+                Contents::Constructed(_) => {
+                    return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+                },
+            };
+            if buf.len() == 0 {
+                return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+            } else if buf[0] >= 128 {
+                return Err(ASN1Error::new(ASN1ErrorKind::IntegerOverflow));
+            } else if buf.len() == 1 {
+                return Ok(buf[0] as u64);
+            }
+            let mut x = ((buf[0] as u64) << 8) + (buf[1] as u64);
+            if x < 128 {
+                return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+            }
+            if buf.len() > 9 || (buf.len() == 9 && buf[0] != 0) {
+                return Err(ASN1Error::new(
+                    ASN1ErrorKind::IntegerOverflow));
+            }
+            for &b in buf[2..].iter() {
+                x = (x << 8) | (b as u64);
+            }
+            return Ok(x);
+        })
+    }
+
+    /// Reads an ASN.1 INTEGER value as `i32`.
+    ///
+    /// # Errors
+    ///
+    /// Except parse errors, it can raise integer overflow errors.
+    pub fn read_i32(self) -> ASN1Result<i32> {
+        let val = try!(self.read_i64());
+        if -(1 << 31) <= val && val < (1 << 31) {
+            return Ok(val as i32);
+        } else {
+            return Err(ASN1Error::new(ASN1ErrorKind::IntegerOverflow));
+        }
+    }
+
+    /// Reads an ASN.1 INTEGER value as `u32`.
+    ///
+    /// # Errors
+    ///
+    /// Except parse errors, it can raise integer overflow errors.
+    pub fn read_u32(self) -> ASN1Result<u32> {
+        let val = try!(self.read_u64());
+        if val < (1 << 32) {
+            return Ok(val as u32);
+        } else {
+            return Err(ASN1Error::new(ASN1ErrorKind::IntegerOverflow));
+        }
+    }
+
+    /// Reads an ASN.1 INTEGER value as `i16`.
+    ///
+    /// # Errors
+    ///
+    /// Except parse errors, it can raise integer overflow errors.
+    pub fn read_i16(self) -> ASN1Result<i16> {
+        let val = try!(self.read_i64());
+        if -(1 << 15) <= val && val < (1 << 15) {
+            return Ok(val as i16);
+        } else {
+            return Err(ASN1Error::new(ASN1ErrorKind::IntegerOverflow));
+        }
+    }
+
+    /// Reads an ASN.1 INTEGER value as `u16`.
+    ///
+    /// # Errors
+    ///
+    /// Except parse errors, it can raise integer overflow errors.
+    pub fn read_u16(self) -> ASN1Result<u16> {
+        let val = try!(self.read_u64());
+        if val < (1 << 16) {
+            return Ok(val as u16);
+        } else {
+            return Err(ASN1Error::new(ASN1ErrorKind::IntegerOverflow));
+        }
+    }
+
+    /// Reads an ASN.1 INTEGER value as `i8`.
+    ///
+    /// # Errors
+    ///
+    /// Except parse errors, it can raise integer overflow errors.
+    pub fn read_i8(self) -> ASN1Result<i8> {
+        let val = try!(self.read_i64());
+        if -(1 << 7) <= val && val < (1 << 7) {
+            return Ok(val as i8);
+        } else {
+            return Err(ASN1Error::new(ASN1ErrorKind::IntegerOverflow));
+        }
+    }
+
+    /// Reads an ASN.1 INTEGER value as `u8`.
+    ///
+    /// # Errors
+    ///
+    /// Except parse errors, it can raise integer overflow errors.
+    pub fn read_u8(self) -> ASN1Result<u8> {
+        let val = try!(self.read_u64());
+        if val < (1 << 8) {
+            return Ok(val as u8);
+        } else {
+            return Err(ASN1Error::new(ASN1ErrorKind::IntegerOverflow));
+        }
     }
 
     #[cfg(feature = "bigint")]

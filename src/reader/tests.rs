@@ -69,6 +69,25 @@ fn test_ber_read_bool_err() {
 
 #[test]
 fn test_der_read_i64_ok() {
+    test_general_read_i64_ok(BERMode::Der);
+}
+
+#[test]
+fn test_der_read_i64_err() {
+    test_general_read_i64_err(BERMode::Der);
+}
+
+#[test]
+fn test_ber_read_i64_ok() {
+    test_general_read_i64_ok(BERMode::Ber);
+}
+
+#[test]
+fn test_ber_read_i64_err() {
+    test_general_read_i64_err(BERMode::Ber);
+}
+
+fn test_general_read_i64_ok(mode: BERMode) {
     let tests : &[(i64, &[u8])] = &[
         (-9223372036854775808, &[2, 8, 128, 0, 0, 0, 0, 0, 0, 0]),
         (-65537, &[2, 3, 254, 255, 255]),
@@ -89,32 +108,115 @@ fn test_der_read_i64_ok() {
         (9223372036854775807, &[2, 8, 127, 255, 255, 255, 255, 255, 255, 255]),
     ];
     for &(evalue, data) in tests {
-        let value = parse_der(data, |reader| {
+        let value = parse_ber_general(data, mode, |reader| {
             reader.read_i64()
         }).unwrap();
         assert_eq!(value, evalue);
     }
 }
 
-#[test]
-fn test_der_read_i64_err() {
+fn test_general_read_i64_err(mode: BERMode) {
     let tests : &[&[u8]] = &[
         &[], &[2], &[0, 0], &[0, 1, 0], &[1, 1, 0], &[34, 1, 0], &[66, 1, 0],
         &[2, 0], &[2, 128, 2, 1, 0, 0, 0], &[2, 2, 0], &[2, 1, 1, 1],
         &[2, 2, 255, 128], &[2, 2, 255, 200], &[2, 2, 0, 127], &[2, 2, 0, 56],
         &[2, 3, 255, 151, 55], &[2, 3, 0, 1, 2],
+        &[2, 9, 255, 0, 0, 0, 0, 0, 0, 0, 0],
+        &[2, 9, 255, 127, 255, 255, 255, 255, 255, 255, 255],
+        &[2, 9, 0, 128, 0, 0, 0, 0, 0, 0, 0],
+        &[2, 9, 0, 255, 255, 255, 255, 255, 255, 255, 255],
     ];
     for &data in tests {
-        parse_der(data, |reader| {
+        parse_ber_general(data, mode, |reader| {
             reader.read_i64()
         }).unwrap_err();
     }
 }
 
 #[test]
-fn test_ber_read_i64_ok() {
-    let tests : &[(i64, &[u8])] = &[
-        (-9223372036854775808, &[2, 8, 128, 0, 0, 0, 0, 0, 0, 0]),
+fn test_der_read_u64_ok() {
+    test_general_read_u64_ok(BERMode::Der);
+}
+
+#[test]
+fn test_der_read_u64_err() {
+    test_general_read_u64_err(BERMode::Der);
+}
+
+#[test]
+fn test_ber_read_u64_ok() {
+    test_general_read_u64_ok(BERMode::Ber);
+}
+
+#[test]
+fn test_ber_read_u64_err() {
+    test_general_read_u64_err(BERMode::Ber);
+}
+
+fn test_general_read_u64_ok(mode: BERMode) {
+    let tests : &[(u64, &[u8])] = &[
+        (0, &[2, 1, 0]),
+        (1, &[2, 1, 1]),
+        (127, &[2, 1, 127]),
+        (128, &[2, 2, 0, 128]),
+        (32767, &[2, 2, 127, 255]),
+        (32768, &[2, 3, 0, 128, 0]),
+        (65535, &[2, 3, 0, 255, 255]),
+        (65536, &[2, 3, 1, 0, 0]),
+        (9223372036854775807, &[2, 8, 127, 255, 255, 255, 255, 255, 255, 255]),
+        (18446744073709551615,
+            &[2, 9, 0, 255, 255, 255, 255, 255, 255, 255, 255]),
+    ];
+    for &(evalue, data) in tests {
+        let value = parse_ber_general(data, mode, |reader| {
+            reader.read_u64()
+        }).unwrap();
+        assert_eq!(value, evalue);
+    }
+}
+
+fn test_general_read_u64_err(mode: BERMode) {
+    let tests : &[&[u8]] = &[
+        &[], &[2], &[0, 0], &[0, 1, 0], &[1, 1, 0], &[34, 1, 0], &[66, 1, 0],
+        &[2, 0], &[2, 128, 2, 1, 0, 0, 0], &[2, 2, 0], &[2, 1, 1, 1],
+        &[2, 2, 255, 128], &[2, 2, 255, 200], &[2, 2, 0, 127], &[2, 2, 0, 56],
+        &[2, 3, 255, 151, 55], &[2, 3, 0, 1, 2],
+        &[2, 8, 128, 0, 0, 0, 0, 0, 0, 0], &[2, 3, 254, 255, 255],
+        &[2, 3, 255, 0, 0], &[2, 3, 255, 127, 255], &[2, 2, 128, 0],
+        &[2, 2, 255, 127], &[2, 1, 128], &[2, 1, 255],
+        &[2, 9, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        &[2, 9, 1, 128, 0, 0, 0, 0, 0, 0, 0],
+    ];
+    for &data in tests {
+        parse_ber_general(data, mode, |reader| {
+            reader.read_u64()
+        }).unwrap_err();
+    }
+}
+
+#[test]
+fn test_der_read_i32_ok() {
+    test_general_read_i32_ok(BERMode::Der);
+}
+
+#[test]
+fn test_der_read_i32_err() {
+    test_general_read_i32_err(BERMode::Der);
+}
+
+#[test]
+fn test_ber_read_i32_ok() {
+    test_general_read_i32_ok(BERMode::Ber);
+}
+
+#[test]
+fn test_ber_read_i32_err() {
+    test_general_read_i32_err(BERMode::Ber);
+}
+
+fn test_general_read_i32_ok(mode: BERMode) {
+    let tests : &[(i32, &[u8])] = &[
+        (-2147483648, &[2, 4, 128, 0, 0, 0]),
         (-65537, &[2, 3, 254, 255, 255]),
         (-65536, &[2, 3, 255, 0, 0]),
         (-32769, &[2, 3, 255, 127, 255]),
@@ -130,27 +232,296 @@ fn test_ber_read_i64_ok() {
         (32768, &[2, 3, 0, 128, 0]),
         (65535, &[2, 3, 0, 255, 255]),
         (65536, &[2, 3, 1, 0, 0]),
-        (9223372036854775807, &[2, 8, 127, 255, 255, 255, 255, 255, 255, 255]),
+        (2147483647, &[2, 4, 127, 255, 255, 255]),
     ];
     for &(evalue, data) in tests {
-        let value = parse_ber(data, |reader| {
-            reader.read_i64()
+        let value = parse_ber_general(data, mode, |reader| {
+            reader.read_i32()
         }).unwrap();
         assert_eq!(value, evalue);
     }
 }
 
-#[test]
-fn test_ber_read_i64_err() {
+fn test_general_read_i32_err(mode: BERMode) {
     let tests : &[&[u8]] = &[
         &[], &[2], &[0, 0], &[0, 1, 0], &[1, 1, 0], &[34, 1, 0], &[66, 1, 0],
         &[2, 0], &[2, 128, 2, 1, 0, 0, 0], &[2, 2, 0], &[2, 1, 1, 1],
         &[2, 2, 255, 128], &[2, 2, 255, 200], &[2, 2, 0, 127], &[2, 2, 0, 56],
         &[2, 3, 255, 151, 55], &[2, 3, 0, 1, 2],
+        &[2, 5, 255, 0, 0, 0, 0],
+        &[2, 5, 255, 127, 255, 255, 255],
+        &[2, 5, 0, 128, 0, 0, 0],
+        &[2, 5, 0, 255, 255, 255, 255],
     ];
     for &data in tests {
-        parse_ber(data, |reader| {
-            reader.read_i64()
+        parse_ber_general(data, mode, |reader| {
+            reader.read_i32()
+        }).unwrap_err();
+    }
+}
+
+#[test]
+fn test_der_read_u32_err() {
+    test_general_read_u32_err(BERMode::Der);
+}
+
+#[test]
+fn test_ber_read_u32_ok() {
+    test_general_read_u32_ok(BERMode::Ber);
+}
+
+#[test]
+fn test_ber_read_u32_err() {
+    test_general_read_u32_err(BERMode::Ber);
+}
+
+fn test_general_read_u32_ok(mode: BERMode) {
+    let tests : &[(u32, &[u8])] = &[
+        (0, &[2, 1, 0]),
+        (1, &[2, 1, 1]),
+        (127, &[2, 1, 127]),
+        (128, &[2, 2, 0, 128]),
+        (32767, &[2, 2, 127, 255]),
+        (32768, &[2, 3, 0, 128, 0]),
+        (65535, &[2, 3, 0, 255, 255]),
+        (65536, &[2, 3, 1, 0, 0]),
+        (2147483647, &[2, 4, 127, 255, 255, 255]),
+        (4294967295, &[2, 5, 0, 255, 255, 255, 255]),
+    ];
+    for &(evalue, data) in tests {
+        let value = parse_ber_general(data, mode, |reader| {
+            reader.read_u32()
+        }).unwrap();
+        assert_eq!(value, evalue);
+    }
+}
+
+fn test_general_read_u32_err(mode: BERMode) {
+    let tests : &[&[u8]] = &[
+        &[], &[2], &[0, 0], &[0, 1, 0], &[1, 1, 0], &[34, 1, 0], &[66, 1, 0],
+        &[2, 0], &[2, 128, 2, 1, 0, 0, 0], &[2, 2, 0], &[2, 1, 1, 1],
+        &[2, 2, 255, 128], &[2, 2, 255, 200], &[2, 2, 0, 127], &[2, 2, 0, 56],
+        &[2, 3, 255, 151, 55], &[2, 3, 0, 1, 2],
+        &[2, 4, 128, 0, 0, 0], &[2, 3, 254, 255, 255], &[2, 3, 255, 0, 0],
+        &[2, 3, 255, 127, 255], &[2, 2, 128, 0], &[2, 2, 255, 127],
+        &[2, 1, 128], &[2, 1, 255],
+        &[2, 5, 1, 0, 0, 0, 0],
+        &[2, 5, 1, 128, 0, 0, 0],
+    ];
+    for &data in tests {
+        parse_ber_general(data, mode, |reader| {
+            reader.read_u32()
+        }).unwrap_err();
+    }
+}
+
+#[test]
+fn test_der_read_i16_ok() {
+    test_general_read_i16_ok(BERMode::Der);
+}
+
+#[test]
+fn test_der_read_i16_err() {
+    test_general_read_i16_err(BERMode::Der);
+}
+
+#[test]
+fn test_ber_read_i16_ok() {
+    test_general_read_i16_ok(BERMode::Ber);
+}
+
+#[test]
+fn test_ber_read_i16_err() {
+    test_general_read_i16_err(BERMode::Ber);
+}
+
+fn test_general_read_i16_ok(mode: BERMode) {
+    let tests : &[(i16, &[u8])] = &[
+        (-32768, &[2, 2, 128, 0]),
+        (-129, &[2, 2, 255, 127]),
+        (-128, &[2, 1, 128]),
+        (-1, &[2, 1, 255]),
+        (0, &[2, 1, 0]),
+        (1, &[2, 1, 1]),
+        (127, &[2, 1, 127]),
+        (128, &[2, 2, 0, 128]),
+        (32767, &[2, 2, 127, 255]),
+    ];
+    for &(evalue, data) in tests {
+        let value = parse_ber_general(data, mode, |reader| {
+            reader.read_i16()
+        }).unwrap();
+        assert_eq!(value, evalue);
+    }
+}
+
+fn test_general_read_i16_err(mode: BERMode) {
+    let tests : &[&[u8]] = &[
+        &[], &[2], &[0, 0], &[0, 1, 0], &[1, 1, 0], &[34, 1, 0], &[66, 1, 0],
+        &[2, 0], &[2, 128, 2, 1, 0, 0, 0], &[2, 2, 0], &[2, 1, 1, 1],
+        &[2, 2, 255, 128], &[2, 2, 255, 200], &[2, 2, 0, 127], &[2, 2, 0, 56],
+        &[2, 3, 255, 151, 55], &[2, 3, 0, 1, 2],
+        &[2, 3, 255, 0, 0], &[2, 3, 255, 127, 255],
+        &[2, 3, 0, 128, 0], &[2, 3, 0, 255, 255],
+    ];
+    for &data in tests {
+        parse_ber_general(data, mode, |reader| {
+            reader.read_i16()
+        }).unwrap_err();
+    }
+}
+
+#[test]
+fn test_der_read_u16_ok() {
+    test_general_read_u16_ok(BERMode::Der);
+}
+
+#[test]
+fn test_der_read_u16_err() {
+    test_general_read_u16_err(BERMode::Der);
+}
+
+#[test]
+fn test_ber_read_u16_ok() {
+    test_general_read_u16_ok(BERMode::Ber);
+}
+
+#[test]
+fn test_ber_read_u16_err() {
+    test_general_read_u16_err(BERMode::Ber);
+}
+
+fn test_general_read_u16_ok(mode: BERMode) {
+    let tests : &[(u16, &[u8])] = &[
+        (0, &[2, 1, 0]),
+        (1, &[2, 1, 1]),
+        (127, &[2, 1, 127]),
+        (128, &[2, 2, 0, 128]),
+        (32767, &[2, 2, 127, 255]),
+        (65535, &[2, 3, 0, 255, 255]),
+    ];
+    for &(evalue, data) in tests {
+        let value = parse_ber_general(data, mode, |reader| {
+            reader.read_u16()
+        }).unwrap();
+        assert_eq!(value, evalue);
+    }
+}
+
+fn test_general_read_u16_err(mode: BERMode) {
+    let tests : &[&[u8]] = &[
+        &[], &[2], &[0, 0], &[0, 1, 0], &[1, 1, 0], &[34, 1, 0], &[66, 1, 0],
+        &[2, 0], &[2, 128, 2, 1, 0, 0, 0], &[2, 2, 0], &[2, 1, 1, 1],
+        &[2, 2, 255, 128], &[2, 2, 255, 200], &[2, 2, 0, 127], &[2, 2, 0, 56],
+        &[2, 3, 255, 151, 55], &[2, 3, 0, 1, 2],
+        &[2, 2, 128, 0], &[2, 2, 255, 127], &[2, 1, 128], &[2, 1, 255],
+        &[2, 3, 1, 0, 0], &[2, 3, 1, 128, 0],
+    ];
+    for &data in tests {
+        parse_ber_general(data, mode, |reader| {
+            reader.read_u16()
+        }).unwrap_err();
+    }
+}
+
+#[test]
+fn test_der_read_i8_ok() {
+    test_general_read_i8_ok(BERMode::Der);
+}
+
+#[test]
+fn test_der_read_i8_err() {
+    test_general_read_i8_err(BERMode::Der);
+}
+
+#[test]
+fn test_ber_read_i8_ok() {
+    test_general_read_i8_ok(BERMode::Ber);
+}
+
+#[test]
+fn test_ber_read_i8_err() {
+    test_general_read_i8_err(BERMode::Ber);
+}
+
+fn test_general_read_i8_ok(mode: BERMode) {
+    let tests : &[(i8, &[u8])] = &[
+        (-128, &[2, 1, 128]),
+        (-1, &[2, 1, 255]),
+        (0, &[2, 1, 0]),
+        (1, &[2, 1, 1]),
+        (127, &[2, 1, 127]),
+    ];
+    for &(evalue, data) in tests {
+        let value = parse_ber_general(data, mode, |reader| {
+            reader.read_i8()
+        }).unwrap();
+        assert_eq!(value, evalue);
+    }
+}
+
+fn test_general_read_i8_err(mode: BERMode) {
+    let tests : &[&[u8]] = &[
+        &[], &[2], &[0, 0], &[0, 1, 0], &[1, 1, 0], &[34, 1, 0], &[66, 1, 0],
+        &[2, 0], &[2, 128, 2, 1, 0, 0, 0], &[2, 2, 0], &[2, 1, 1, 1],
+        &[2, 2, 255, 128], &[2, 2, 255, 200], &[2, 2, 0, 127], &[2, 2, 0, 56],
+        &[2, 3, 255, 151, 55], &[2, 3, 0, 1, 2],
+        &[2, 2, 255, 0], &[2, 2, 255, 127], &[2, 2, 0, 128], &[2, 2, 0, 255],
+    ];
+    for &data in tests {
+        parse_ber_general(data, mode, |reader| {
+            reader.read_i8()
+        }).unwrap_err();
+    }
+}
+
+#[test]
+fn test_der_read_u8_ok() {
+    test_general_read_u8_ok(BERMode::Der);
+}
+
+#[test]
+fn test_der_read_u8_err() {
+    test_general_read_u8_err(BERMode::Der);
+}
+
+#[test]
+fn test_ber_read_u8_ok() {
+    test_general_read_u8_ok(BERMode::Ber);
+}
+
+#[test]
+fn test_ber_read_u8_err() {
+    test_general_read_u8_err(BERMode::Ber);
+}
+
+fn test_general_read_u8_ok(mode: BERMode) {
+    let tests : &[(u8, &[u8])] = &[
+        (0, &[2, 1, 0]),
+        (1, &[2, 1, 1]),
+        (127, &[2, 1, 127]),
+        (255, &[2, 2, 0, 255]),
+    ];
+    for &(evalue, data) in tests {
+        let value = parse_ber_general(data, mode, |reader| {
+            reader.read_u8()
+        }).unwrap();
+        assert_eq!(value, evalue);
+    }
+}
+
+fn test_general_read_u8_err(mode: BERMode) {
+    let tests : &[&[u8]] = &[
+        &[], &[2], &[0, 0], &[0, 1, 0], &[1, 1, 0], &[34, 1, 0], &[66, 1, 0],
+        &[2, 0], &[2, 128, 2, 1, 0, 0, 0], &[2, 2, 0], &[2, 1, 1, 1],
+        &[2, 2, 255, 128], &[2, 2, 255, 200], &[2, 2, 0, 127], &[2, 2, 0, 56],
+        &[2, 3, 255, 151, 55], &[2, 3, 0, 1, 2],
+        &[2, 1, 128], &[2, 1, 255],
+        &[2, 2, 1, 0], &[2, 2, 1, 128],
+    ];
+    for &data in tests {
+        parse_ber_general(data, mode, |reader| {
+            reader.read_u8()
         }).unwrap_err();
     }
 }
