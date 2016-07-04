@@ -477,7 +477,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
         })
     }
 
-    pub fn read_tagged<T, F>
+    fn read_tagged_general<T, F>
             (mut self, tag: Tag, tag_type: TagType, callback: F)
             -> ASN1Result<T>
             where F: for<'c> FnOnce(BERReader<'a, 'c>) -> ASN1Result<T> {
@@ -487,6 +487,17 @@ impl<'a, 'b> BERReader<'a, 'b> {
             }
             callback(BERReader { inner: inner, })
         })
+    }
+
+    pub fn read_tagged<T, F>(self, tag: Tag, callback: F) -> ASN1Result<T>
+            where F: for<'c> FnOnce(BERReader<'a, 'c>) -> ASN1Result<T> {
+        self.read_tagged_general(tag, TagType::Explicit, callback)
+    }
+
+    pub fn read_tagged_implicit<T, F>(self, tag: Tag, callback: F)
+            -> ASN1Result<T>
+            where F: for<'c> FnOnce(BERReader<'a, 'c>) -> ASN1Result<T> {
+        self.read_tagged_general(tag, TagType::Implicit, callback)
     }
 
     pub fn read_sequence<T, F>(mut self, callback: F) -> ASN1Result<T>

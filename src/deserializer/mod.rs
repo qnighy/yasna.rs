@@ -12,7 +12,6 @@ use std::hash::Hash;
 #[cfg(feature = "bigint")]
 use num::bigint::{BigInt,BigUint};
 
-use super::TagType;
 use super::{TAG_PRINTABLESTRING,TAG_UTCTIME};
 
 use super::{ASN1Error,ASN1Result,ASN1ErrorKind,BERMode,BERReader,parse_ber_general};
@@ -151,7 +150,7 @@ impl FromBER for ObjectIdentifier {
 
 impl FromBER for PrintableString {
     fn from_ber(reader: BERReader) -> ASN1Result<Self> {
-        reader.read_tagged(TAG_PRINTABLESTRING, TagType::Implicit, |reader| {
+        reader.read_tagged_implicit(TAG_PRINTABLESTRING, |reader| {
             let octets = try!(reader.read_bytes());
             return PrintableString::from_bytes(octets)
                 .ok_or(ASN1Error::new(ASN1ErrorKind::Invalid));
@@ -161,7 +160,7 @@ impl FromBER for PrintableString {
 
 impl FromBER for UtcTime {
     fn from_ber(reader: BERReader) -> ASN1Result<Self> {
-        reader.read_tagged(TAG_UTCTIME, TagType::Implicit, |reader| {
+        reader.read_tagged_implicit(TAG_UTCTIME, |reader| {
             let octets = try!(reader.read_bytes());
             // TODO: format check
             return Ok(UtcTime::new(octets));
