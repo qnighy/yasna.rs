@@ -667,25 +667,72 @@ impl<'a, 'b> BERReader<'a, 'b> {
         })
     }
 
-    pub fn read_bitstring(self) -> ASN1Result<BitString> {
+    fn read_bitstring_impl(self, bsbuf: &mut BitString) -> ASN1Result<()> {
+        if bsbuf.unused_bits() != 0 {
+            return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+        }
+        let mode = self.inner.mode;
         self.read_general(TAG_BITSTRING, |contents| {
             match contents {
                 Contents::Primitive(buf) => {
-                    // TODO: Canonicity check in DER
                     if buf.len() == 0 {
-                        return Ok(BitString::from_buf(0, Vec::new()));
+                        return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
                     }
-                    let remain = buf[0] as usize;
-                    return Ok(BitString::from_buf(
-                        remain % 8,
-                        buf[1..buf.len()-remain/8].to_vec()
-                    ));
+                    let unused_bits = buf[0] as usize;
+                    if unused_bits >= 8 {
+                        return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+                    }
+                    if unused_bits > 0 {
+                        if buf.len() == 1 {
+                            return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+                        }
+                        if mode == BERMode::Der &&
+                            (buf[buf.len()-1] & ((1<<unused_bits) - 1)) != 0 {
+                            return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+                        }
+                    }
+                    bsbuf.extend_from_bytes(unused_bits, &buf[1..]);
+                    return Ok(());
                 },
-                Contents::Constructed(_) => {
-                    return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+                Contents::Constructed(inner) => {
+                    if mode == BERMode::Der {
+                        return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+                    }
+                    loop {
+                        let result = try!(inner.read_optional(|inner| {
+                            BERReader::new(inner).read_bitstring_impl(bsbuf)
+                        }));
+                        match result {
+                            Some(()) => {},
+                            None => { break; },
+                        }
+                    }
+                    return Ok(());
                 },
             };
         })
+    }
+
+    /// Reads an ASN.1 BITSTRING value as [`BitString`][bitstring].
+    ///
+    /// [bitstring]: models/struct.BitString.html
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// use yasna::models::BitString;
+    /// let data = &[3, 5, 3, 206, 213, 116, 24];
+    /// let asn = yasna::parse_der(data, |reader| {
+    ///     reader.read_bitstring()
+    /// }).unwrap();
+    /// assert_eq!(asn, BitString::from_bytes(3,
+    ///     [206, 213, 116, 24].to_vec()));
+    /// ```
+    pub fn read_bitstring(self) -> ASN1Result<BitString> {
+        let mut ret = BitString::new();
+        try!(self.read_bitstring_impl(&mut ret));
+        return Ok(ret);
     }
 
     fn read_bytes_impl(self, vec: &mut Vec<u8>) -> ASN1Result<()> {

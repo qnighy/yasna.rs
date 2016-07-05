@@ -10,8 +10,9 @@
 use num::bigint::{BigUint, BigInt};
 
 use super::Tag;
-use super::tags::{TAG_BOOLEAN,TAG_INTEGER,TAG_OCTETSTRING,TAG_NULL};
-use super::tags::{TAG_SEQUENCE,TAG_SET};
+use super::tags::{TAG_BOOLEAN,TAG_INTEGER,TAG_BITSTRING,TAG_OCTETSTRING};
+use super::tags::{TAG_NULL,TAG_SEQUENCE,TAG_SET};
+use super::models::BitString;
 
 /// Constructs DER-encoded data as `Vec<u8>`.
 ///
@@ -403,6 +404,28 @@ impl<'a> DERWriter<'a> {
         }
         bytes.reverse();
         self.buf.extend_from_slice(&bytes);
+    }
+
+    /// Writes [`BitString`][bitstring] as an ASN.1 BITSTRING value.
+    ///
+    /// [bitstring]: models/struct.BitString.html
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// use yasna::models::BitString;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_bitstring(&BitString::from_bytes(3,
+    ///         [206, 213, 116, 24].to_vec()))
+    /// });
+    /// assert_eq!(&der, &[3, 5, 3, 206, 213, 116, 24]);
+    /// ```
+    pub fn write_bitstring(mut self, bitstring: &BitString) {
+        self.write_identifier(TAG_BITSTRING, PC::Primitive);
+        self.write_length(1 + bitstring.bytes().len());
+        self.buf.push(bitstring.unused_bits() as u8);
+        self.buf.extend_from_slice(bitstring.bytes());
     }
 
     /// Writes `&[u8]` as an ASN.1 OCTETSTRING value.
