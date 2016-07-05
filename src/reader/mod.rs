@@ -12,8 +12,8 @@ mod error;
 use num::bigint::{BigInt,BigUint,Sign};
 
 use super::{Tag,TAG_CLASSES};
-use super::{TAG_EOC,TAG_BOOLEAN,TAG_INTEGER,TAG_BITSTRING,TAG_OCTETSTRING};
-use super::{TAG_NULL,TAG_OID,TAG_SEQUENCE,TAG_SET};
+use super::tags::{TAG_EOC,TAG_BOOLEAN,TAG_INTEGER,TAG_BITSTRING};
+use super::tags::{TAG_OCTETSTRING,TAG_NULL,TAG_OID,TAG_SEQUENCE,TAG_SET};
 use super::models::{ObjectIdentifier,BitString};
 pub use self::error::*;
 
@@ -99,9 +99,16 @@ pub fn parse_der<'a, T, F>(buf: &'a [u8], callback: F)
     parse_ber_general(buf, BERMode::Der, callback)
 }
 
+/// Used by [`BERReader`][berreader] to determine whether or not to enforce
+/// DER restrictions when parsing.
+///
+/// [berreader]: struct.BERReader.html
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum BERMode {
-    Ber, Der,
+    /// Use BER (Basic Encoding Rules).
+    Ber,
+    /// Use DER (Distinguished Encoding Rules).
+    Der,
 }
 
 #[derive(Debug)]
@@ -132,6 +139,15 @@ impl<'a> BERReaderImpl<'a> {
         return BERReaderImpl {
             buf: buf,
             pos: 0,
+            mode: mode,
+            depth: 0,
+        };
+    }
+
+    fn with_pos(buf: &'a [u8], pos: usize, mode: BERMode) -> Self {
+        return BERReaderImpl {
+            buf: buf,
+            pos: pos,
             mode: mode,
             depth: 0,
         };
@@ -267,6 +283,39 @@ impl<'a> BERReaderImpl<'a> {
         };
         self.buf = old_buf;
         return Ok(result);
+    }
+
+    fn skip_general(&mut self) -> ASN1Result<Tag> {
+        let mut skip_depth = 0;
+        let mut skip_tag = None;
+        while skip_depth > 0 || skip_tag == None {
+            let old_pos = self.pos;
+            let (tag, pcbit) = try!(self.read_identifier());
+            if tag == TAG_EOC {
+                if skip_depth == 0 {
+                    self.pos = old_pos;
+                    return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+                }
+                skip_depth -= 1;
+                continue;
+            }
+            if skip_depth == 0 {
+                skip_tag = Some(tag);
+            }
+            if let Some(length) = try!(self.read_length()) {
+                let limit = self.pos+length;
+                if self.buf.len() < limit {
+                    return Err(ASN1Error::new(ASN1ErrorKind::Eof));
+                }
+                self.pos = limit;
+            } else {
+                if pcbit != PCBit::Constructed {
+                    return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+                }
+                skip_depth += 1;
+            }
+        }
+        return Ok(skip_tag.unwrap());
     }
 
     fn read_with_buffer<'b, T, F>(&'b mut self, callback: F)
@@ -752,7 +801,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
         })
     }
 
-    /// Reads an ASN.1 SEQUENCE value as `Vec<u8>`.
+    /// Reads an ASN.1 SEQUENCE value.
     ///
     /// This function uses the loan pattern: `callback` is called back with
     /// a [`BERReaderSeq`][berreaderseq], from which the contents of the
@@ -788,26 +837,24 @@ impl<'a, 'b> BERReader<'a, 'b> {
         })
     }
 
-    /// Reads an ASN.1 SET value as `Vec<u8>`.
+    /// Reads an ASN.1 SET value.
     ///
     /// This function uses the loan pattern: `callback` is called back with
-    /// a [`BERReaderSeq`][berreaderseq], from which the contents of the
-    /// SEQUENCE is read.
+    /// a [`BERReaderSet`][berreaderset], from which the contents of the
+    /// SET is read.
     ///
-    /// [berreaderseq]: struct.BERReaderSeq.html
-    ///
-    /// Currently it doesn't check the order of contents even if the mode is
-    /// DER.
+    /// [berreaderset]: struct.BERReaderSet.html
     ///
     /// # Examples
     ///
     /// ```
     /// use yasna;
+    /// use yasna::tags::{TAG_INTEGER,TAG_BOOLEAN};
     /// let data = &[49, 6, 1, 1, 255, 2, 1, 10];
     /// let asn = yasna::parse_der(data, |reader| {
     ///     reader.read_set(|reader| {
-    ///         let b = try!(reader.next().read_bool());
-    ///         let i = try!(reader.next().read_i64());
+    ///         let i = try!(try!(reader.next(&[TAG_INTEGER])).read_i64());
+    ///         let b = try!(try!(reader.next(&[TAG_BOOLEAN])).read_bool());
     ///         return Ok((i, b));
     ///     })
     /// }).unwrap();
@@ -815,7 +862,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// ```
     pub fn read_set<T, F>(self, callback: F) -> ASN1Result<T>
             where F: for<'c> FnOnce(
-                &mut BERReaderSeq<'a, 'c>) -> ASN1Result<T> {
+                &mut BERReaderSet<'a, 'c>) -> ASN1Result<T> {
         self.read_general(TAG_SET, |contents| {
             let inner = match contents {
                 Contents::Primitive(_) => {
@@ -823,8 +870,121 @@ impl<'a, 'b> BERReader<'a, 'b> {
                 },
                 Contents::Constructed(inner) => inner,
             };
-            return callback(&mut BERReaderSeq { inner: inner, });
+            let mut elements = Vec::new();
+            loop {
+                let old_pos = inner.pos;
+                if let Some(tag) = try!(inner.read_optional(|inner| {
+                    inner.skip_general()
+                })) {
+                    let new_pos = inner.pos;
+                    elements.push((tag, &inner.buf[..new_pos], old_pos));
+                } else {
+                    break;
+                }
+            }
+            if inner.mode == BERMode::Der {
+                for i in 1..elements.len() {
+                    if elements[i] <= elements[i-1] {
+                        return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+                    }
+                }
+            }
+            let mut new_impl = BERReaderImpl::new(&[], inner.mode);
+            return callback(&mut BERReaderSet {
+                impl_ref: &mut new_impl,
+                elements: &mut elements,
+            });
         })
+    }
+
+    /// Reads an ASN.1 SET OF value.
+    ///
+    /// This function uses the loan pattern: `callback` is called back with
+    /// a [`BERReader`][berreader], from which the contents of the
+    /// SET OF is read.
+    ///
+    /// This function doesn't return values. Instead, use mutable values to
+    /// maintain read values. `collect_set_of` can be an alternative.
+    ///
+    /// This function doesn't sort the elements. In DER, it is assumed that
+    /// the elements occur in an order determined by DER encodings of them.
+    ///
+    /// [berreader]: struct.BERReader.html
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let data = &[49, 7, 2, 1, 10, 2, 2, 255, 127];
+    /// let asn = yasna::parse_der(data, |reader| {
+    ///     let mut numbers = Vec::new();
+    ///     try!(reader.read_set_of(|reader| {
+    ///         numbers.push(try!(reader.read_i64()));
+    ///         return Ok(());
+    ///     }));
+    ///     return Ok(numbers);
+    /// }).unwrap();
+    /// assert_eq!(asn, vec![10, -129]);
+    /// ```
+    pub fn read_set_of<F>(self, mut callback: F) -> ASN1Result<()>
+            where F: for<'c> FnMut(BERReader<'a, 'c>) -> ASN1Result<()> {
+        self.read_general(TAG_SET, |contents| {
+            let inner = match contents {
+                Contents::Primitive(_) => {
+                    return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+                },
+                Contents::Constructed(inner) => inner,
+            };
+            let mut last_buf = None;
+            while let Some((_, buf)) = try!(inner.read_optional(|inner| {
+                    inner.read_with_buffer(|inner| {
+                        callback(BERReader::new(inner))
+                    })
+            })) {
+                if let Some(last_buf) = last_buf {
+                    if inner.mode == BERMode::Der && buf < last_buf {
+                        return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+                    }
+                }
+                last_buf = Some(buf);
+            }
+            return Ok(());
+        })
+    }
+
+    /// Collects an ASN.1 SET OF value.
+    ///
+    /// This function uses the loan pattern: `callback` is called back with
+    /// a [`BERReader`][berreader], from which the contents of the
+    /// SET OF is read.
+    ///
+    /// If you don't like `Vec`, you can use `read_set_of` instead.
+    ///
+    /// This function doesn't sort the elements. In DER, it is assumed that
+    /// the elements occur in an order determined by DER encodings of them.
+    ///
+    /// [berreader]: struct.BERReader.html
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let data = &[49, 7, 2, 1, 10, 2, 2, 255, 127];
+    /// let asn = yasna::parse_der(data, |reader| {
+    ///     reader.collect_set_of(|reader| {
+    ///         reader.read_i64()
+    ///     })
+    /// }).unwrap();
+    /// assert_eq!(asn, vec![10, -129]);
+    /// ```
+    pub fn collect_set_of<T, F>(self, mut callback: F) -> ASN1Result<Vec<T>>
+            where F: for<'c> FnMut(BERReader<'a, 'c>) -> ASN1Result<T> {
+        let mut collection = Vec::new();
+        try!(self.read_set_of(|reader| {
+            collection.push(try!(callback(reader)));
+            return Ok(());
+        }));
+        return Ok(collection);
     }
 
     /// Reads a (explicitly) tagged value.
@@ -872,9 +1032,10 @@ impl<'a, 'b> BERReader<'a, 'b> {
             -> ASN1Result<T>
             where F: for<'c> FnOnce(BERReader<'a, 'c>) -> ASN1Result<T> {
         let tag = self.implicit_tag.unwrap_or(tag);
-        let mut reader = BERReader::new(self.inner);
-        reader.implicit_tag = Some(tag);
-        return callback(reader);
+        return callback(BERReader {
+            inner: self.inner,
+            implicit_tag: Some(tag),
+        });
     }
 
     pub fn read_with_buffer<T, F>(mut self, callback: F)
@@ -882,9 +1043,10 @@ impl<'a, 'b> BERReader<'a, 'b> {
             where F: for<'c> FnOnce(BERReader<'a, 'c>) -> ASN1Result<T> {
         let implicit_tag = self.implicit_tag;
         self.inner.read_with_buffer(|inner| {
-            let mut reader = BERReader::new(inner);
-            reader.implicit_tag = implicit_tag;
-            callback(reader)
+            callback(BERReader {
+                inner: inner,
+                implicit_tag: implicit_tag,
+            })
         })
     }
 }
@@ -961,6 +1123,61 @@ impl<'a, 'b> BERReaderSeq<'a, 'b> {
         })
     }
 }
+
+/// A reader object for a set of BER/DER-encoded ASN.1 data.
+///
+/// The main source of this object is the `read_set` method from
+/// [`BERReader`][berreader].
+///
+/// [berreader]: struct.BERReader.html
+///
+/// # Examples
+///
+/// ```
+/// use yasna;
+/// use yasna::tags::{TAG_INTEGER,TAG_BOOLEAN};
+/// let data = &[49, 6, 1, 1, 255, 2, 1, 10];
+/// let asn = yasna::parse_der(data, |reader| {
+///     reader.read_set(|reader| {
+///         let i = try!(try!(reader.next(&[TAG_INTEGER])).read_i64());
+///         let b = try!(try!(reader.next(&[TAG_BOOLEAN])).read_bool());
+///         return Ok((i, b));
+///     })
+/// }).unwrap();
+/// assert_eq!(asn, (10, true));
+/// ```
+#[derive(Debug)]
+pub struct BERReaderSet<'a, 'b> where 'a: 'b {
+    impl_ref: &'b mut BERReaderImpl<'a>,
+    elements: &'b mut Vec<(Tag, &'a [u8], usize)>,
+}
+
+impl<'a, 'b> BERReaderSet<'a, 'b> {
+    /// Tells which format we are parsing, BER or DER.
+    pub fn mode(&self) -> BERMode {
+        self.impl_ref.mode
+    }
+
+    /// Generates a new [`BERReader`][berreader].
+    ///
+    /// [berreader]: struct.BERReader.html
+    ///
+    /// This method needs `tag_hint` to determine the position of the data.
+    pub fn next<'c>(&'c mut self, tag_hint: &[Tag])
+            -> ASN1Result<BERReader<'a, 'c>> {
+        if let Some(elem_pos) = self.elements.iter().position(|&(tag,_,_)| {
+            tag_hint.contains(&tag)
+        }) {
+            let (_, buf, pos) = self.elements.remove(elem_pos);
+            *self.impl_ref = BERReaderImpl::with_pos(
+                buf, pos, self.impl_ref.mode);
+            return Ok(BERReader::new(self.impl_ref))
+        } else {
+            return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+        }
+    }
+}
+
 
 #[cfg(test)]
 mod tests;

@@ -10,8 +10,8 @@
 use num::bigint::{BigUint, BigInt};
 
 use super::Tag;
-use super::{TAG_BOOLEAN,TAG_INTEGER,TAG_OCTETSTRING,TAG_NULL};
-use super::{TAG_SEQUENCE,TAG_SET};
+use super::tags::{TAG_BOOLEAN,TAG_INTEGER,TAG_OCTETSTRING,TAG_NULL};
+use super::tags::{TAG_SEQUENCE,TAG_SET};
 
 /// Constructs DER-encoded data as `Vec<u8>`.
 ///

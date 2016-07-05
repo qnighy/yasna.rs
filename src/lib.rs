@@ -52,6 +52,7 @@
 #[cfg(feature = "bigint")]
 extern crate num;
 
+pub mod tags;
 pub mod models;
 mod writer;
 mod reader;
@@ -123,58 +124,3 @@ impl Tag {
         }
     }
 }
-
-const TAG_EOC : Tag = Tag {
-    tag_class: TagClass::Universal,
-    tag_number: 0,
-};
-
-const TAG_BOOLEAN : Tag = Tag {
-    tag_class: TagClass::Universal,
-    tag_number: 1,
-};
-
-const TAG_INTEGER : Tag = Tag {
-    tag_class: TagClass::Universal,
-    tag_number: 2,
-};
-
-const TAG_BITSTRING : Tag = Tag {
-    tag_class: TagClass::Universal,
-    tag_number: 3,
-};
-
-const TAG_OCTETSTRING : Tag = Tag {
-    tag_class: TagClass::Universal,
-    tag_number: 4,
-};
-
-const TAG_NULL : Tag = Tag {
-    tag_class: TagClass::Universal,
-    tag_number: 5,
-};
-
-const TAG_OID : Tag = Tag {
-    tag_class: TagClass::Universal,
-    tag_number: 6,
-};
-
-const TAG_SEQUENCE : Tag = Tag {
-    tag_class: TagClass::Universal,
-    tag_number: 16,
-};
-
-const TAG_SET : Tag = Tag {
-    tag_class: TagClass::Universal,
-    tag_number: 17,
-};
-
-const TAG_PRINTABLESTRING : Tag = Tag {
-    tag_class: TagClass::Universal,
-    tag_number: 19,
-};
-
-const TAG_UTCTIME : Tag = Tag {
-    tag_class: TagClass::Universal,
-    tag_number: 23,
-};
