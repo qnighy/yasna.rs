@@ -396,6 +396,29 @@ fn test_der_write_set() {
 }
 
 #[test]
+fn test_der_write_set_of() {
+    let tests : &[(&[i64], &[u8])] = &[
+        (&[-129, -128, 127, 128], &[
+            49, 14, 2, 1, 127, 2, 1, 128, 2, 2, 0, 128, 2, 2, 255, 127]),
+        (&[-128, 127, 128], &[
+            49, 10, 2, 1, 127, 2, 1, 128, 2, 2, 0, 128]),
+        (&[-129, -128, 127, 128, 32768], &[
+            49, 19, 2, 1, 127, 2, 1, 128, 2, 2, 0, 128, 2, 2, 255, 127,
+            2, 3, 0, 128, 0]),
+    ];
+    for &(value, edata) in tests {
+        let data = construct_der(|writer| {
+            writer.write_set_of(|writer| {
+                for &x in value {
+                    writer.next().write_i64(x);
+                }
+            })
+        });
+        assert_eq!(data, edata);
+    }
+}
+
+#[test]
 fn test_der_write_tagged() {
     let data = construct_der(|writer| {
         writer.write_tagged(Tag::context(3), |writer| {

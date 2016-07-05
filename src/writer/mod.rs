@@ -8,8 +8,13 @@
 
 #[cfg(feature = "bigint")]
 use num::bigint::{BigUint, BigInt};
+#[cfg(feature = "bitvec")]
+use bit_vec::BitVec;
 
-use super::*;
+use super::Tag;
+use super::tags::{TAG_BOOLEAN,TAG_INTEGER,TAG_OCTETSTRING};
+use super::tags::{TAG_NULL,TAG_OID,TAG_SEQUENCE,TAG_SET};
+use super::models::ObjectIdentifier;
 
 /// Constructs DER-encoded data as `Vec<u8>`.
 ///
@@ -403,6 +408,38 @@ impl<'a> DERWriter<'a> {
         self.buf.extend_from_slice(&bytes);
     }
 
+    #[cfg(feature = "bitvec")]
+    /// Writes `BitVec` as an ASN.1 BITSTRING value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate bit_vec;
+    /// # extern crate yasna;
+    /// # fn main() {
+    /// use yasna;
+    /// use bit_vec::BitVec;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_bitvec(&
+    ///         [1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1,
+    ///             0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1]
+    ///         .iter().map(|&i| i != 0).collect())
+    /// });
+    /// assert_eq!(&der, &[3, 5, 3, 206, 213, 116, 24]);
+    /// # }
+    /// ```
+    pub fn write_bitvec(mut self, bitvec: &BitVec) {
+        use super::tags::TAG_BITSTRING;
+        self.write_identifier(TAG_BITSTRING, PC::Primitive);
+        let len = bitvec.len();
+        let bytes = bitvec.to_bytes();
+        debug_assert!(len <= 8 * bytes.len());
+        debug_assert!(8 * bytes.len() < len + 8);
+        self.write_length(1 + bytes.len());
+        self.buf.push((8 * bytes.len() - len) as u8);
+        self.buf.extend_from_slice(&bytes);
+    }
+
     /// Writes `&[u8]` as an ASN.1 OCTETSTRING value.
     ///
     /// # Examples
@@ -434,6 +471,64 @@ impl<'a> DERWriter<'a> {
     pub fn write_null(mut self) {
         self.write_identifier(TAG_NULL, PC::Primitive);
         self.write_length(0);
+    }
+
+    /// Writes an ASN.1 object identifier.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// use yasna::models::ObjectIdentifier;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_oid(&ObjectIdentifier::from_slice(
+    ///         &[1, 2, 840, 113549, 1, 1]))
+    /// });
+    /// assert_eq!(&der, &[6, 8, 42, 134, 72, 134, 247, 13, 1, 1]);
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// It panics when the OID cannot be canonically encoded in BER.
+    pub fn write_oid(mut self, oid: &ObjectIdentifier) {
+        assert!(oid.components().len() >= 2, "Invalid OID: too short");
+        let id0 = oid.components()[0];
+        let id1 = oid.components()[1];
+        assert!(
+            (id0 < 3) && (id1 < 18446744073709551535) &&
+            (id0 >= 2 || id1 < 40),
+            "Invalid OID {{{} {} ...}}", id0, id1);
+        let subid0 = id0 * 40 + id1;
+        let mut length = 0;
+        for i in 1..oid.components().len() {
+            let mut subid = if i == 1 {
+                subid0
+            } else {
+                oid.components()[i]
+            } | 1;
+            while subid > 0 {
+                length += 1;
+                subid >>= 7;
+            }
+        }
+        self.write_identifier(TAG_OID, PC::Primitive);
+        self.write_length(length);
+        for i in 1..oid.components().len() {
+            let subid = if i == 1 {
+                subid0
+            } else {
+                oid.components()[i]
+            };
+            let mut shiftnum = 63; // ceil(64 / 7) * 7 - 7
+            while ((subid|1) >> shiftnum) == 0 {
+                shiftnum -= 7;
+            }
+            while shiftnum > 0 {
+                self.buf.push(128 | ((((subid|1) >> shiftnum) & 127) as u8));
+                shiftnum -= 7;
+            }
+            self.buf.push((subid & 127) as u8);
+        }
     }
 
     /// Writes ASN.1 SEQUENCE.
@@ -470,9 +565,11 @@ impl<'a> DERWriter<'a> {
     ///
     /// This function uses the loan pattern: `callback` is called back with
     /// a [`DERWriterSet`][derwriterset], to which the contents of the
-    /// SET is written.
+    /// SET are written.
     ///
     /// [derwriterset]: struct.DERWriterSet.html
+    ///
+    /// For SET OF values, use `write_set_of` instead.
     ///
     /// # Examples
     ///
@@ -508,6 +605,49 @@ impl<'a> DERWriter<'a> {
             }
             return buf0[1..].cmp(&buf1[1..]);
         });
+        // let bufs_len = bufs.iter().map(|buf| buf.len()).sum();
+        let bufs_len = bufs.iter().map(|buf| buf.len()).fold(0, |x, y| x + y);
+        self.write_identifier(TAG_SET, PC::Constructed);
+        self.write_length(bufs_len);
+        for buf in bufs.iter() {
+            self.buf.extend_from_slice(buf);
+        }
+        return result;
+    }
+
+    /// Writes ASN.1 SET OF.
+    ///
+    /// This function uses the loan pattern: `callback` is called back with
+    /// a [`DERWriterSet`][derwriterset], to which the contents of the
+    /// SET OF are written.
+    ///
+    /// [derwriterset]: struct.DERWriterSet.html
+    ///
+    /// For SET values, use `write_set` instead.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_set_of(|writer| {
+    ///         for &i in &[10, -129] {
+    ///             writer.next().write_i64(i);
+    ///         }
+    ///     })
+    /// });
+    /// assert_eq!(der, vec![49, 7, 2, 1, 10, 2, 2, 255, 127]);
+    /// ```
+    pub fn write_set_of<T, F>(mut self, callback: F) -> T
+        where F: FnOnce(&mut DERWriterSet) -> T {
+        let mut bufs = Vec::new();
+        let result = callback(&mut DERWriterSet {
+            bufs: &mut bufs,
+        });
+        for buf in bufs.iter() {
+            assert!(buf.len() > 0, "Empty output in write_set_of()");
+        }
+        bufs.sort();
         // let bufs_len = bufs.iter().map(|buf| buf.len()).sum();
         let bufs_len = bufs.iter().map(|buf| buf.len()).fold(0, |x, y| x + y);
         self.write_identifier(TAG_SET, PC::Constructed);

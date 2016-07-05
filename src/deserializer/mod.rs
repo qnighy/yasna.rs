@@ -6,17 +6,17 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::cmp::Ordering;
 use std::hash::Hash;
 
 #[cfg(feature = "bigint")]
 use num::bigint::{BigInt,BigUint};
+#[cfg(feature = "bitvec")]
+use bit_vec::BitVec;
 
-use super::TagType;
-use super::{TAG_PRINTABLESTRING,TAG_UTCTIME};
+use super::tags::{TAG_PRINTABLESTRING,TAG_UTCTIME};
 
 use super::{ASN1Error,ASN1Result,ASN1ErrorKind,BERMode,BERReader,parse_ber_general};
-use super::{PrintableString,UtcTime,ObjectIdentifier,BitString,SetOf};
+use super::models::{PrintableString,UtcTime,ObjectIdentifier,SetOf};
 
 pub trait FromBER: Sized + Eq + Hash {
     fn from_ber<'a, 'b>(reader: BERReader<'a, 'b>) -> ASN1Result<Self>;
@@ -52,47 +52,12 @@ impl<T> FromBER for Vec<T> where T: Sized + Eq + Hash + FromBER {
 
 impl<T> FromBER for SetOf<T> where T: Sized + Eq + Hash + FromBER {
     fn from_ber<'a, 'b>(reader: BERReader<'a, 'b>) -> ASN1Result<Self> {
-        reader.read_set(|reader| {
-            let mut ret = SetOf::new();
-            let mut old_buf : Option<&'a [u8]> = None;
-            loop {
-                let (result, buf) = try!(reader.read_with_buffer(|reader| {
-                    reader.read_optional(|reader| {
-                        T::from_ber(reader)
-                    })
-                }));
-                match result {
-                    Some(result) => {
-                        ret.vec.push(result);
-                    },
-                    None => {
-                        break;
-                    },
-                };
-                if reader.mode() == BERMode::Der {
-                    match old_buf {
-                        Some(old_buf) => {
-                            match old_buf.iter().cmp(buf.iter()) {
-                                Ordering::Less => {},
-                                Ordering::Equal => {
-                                    if old_buf.len() > buf.len() {
-                                        return Err(reader.generate_error(
-                                            ASN1ErrorKind::Invalid));
-                                    }
-                                },
-                                Ordering::Greater => {
-                                    return Err(reader.generate_error(
-                                        ASN1ErrorKind::Invalid));
-                                },
-                            }
-                        }
-                        None => {},
-                    }
-                }
-                old_buf = Some(buf);
-            }
-            return Ok(ret);
-        })
+        let mut ret = SetOf::new();
+        try!(reader.read_set_of(|reader| {
+            ret.vec.push(try!(T::from_ber(reader)));
+            return Ok(());
+        }));
+        return Ok(ret);
     }
 }
 
@@ -112,7 +77,7 @@ impl FromBER for BigInt {
 #[cfg(feature = "bigint")]
 impl FromBER for BigUint {
     fn from_ber(reader: BERReader) -> ASN1Result<Self> {
-        match try!(reader.parse::<BigInt>()).to_biguint() {
+        match try!(BigInt::from_ber(reader)).to_biguint() {
             Some(result) => Ok(result),
             None => Err(ASN1Error::new(ASN1ErrorKind::Invalid)),
         }
@@ -131,9 +96,10 @@ impl FromBER for bool {
     }
 }
 
-impl FromBER for BitString {
+#[cfg(feature = "bitvec")]
+impl FromBER for BitVec {
     fn from_ber(reader: BERReader) -> ASN1Result<Self> {
-        reader.read_bitstring()
+        reader.read_bitvec()
     }
 }
 
@@ -151,7 +117,7 @@ impl FromBER for ObjectIdentifier {
 
 impl FromBER for PrintableString {
     fn from_ber(reader: BERReader) -> ASN1Result<Self> {
-        reader.read_tagged(TAG_PRINTABLESTRING, TagType::Implicit, |reader| {
+        reader.read_tagged_implicit(TAG_PRINTABLESTRING, |reader| {
             let octets = try!(reader.read_bytes());
             return PrintableString::from_bytes(octets)
                 .ok_or(ASN1Error::new(ASN1ErrorKind::Invalid));
@@ -161,7 +127,7 @@ impl FromBER for PrintableString {
 
 impl FromBER for UtcTime {
     fn from_ber(reader: BERReader) -> ASN1Result<Self> {
-        reader.read_tagged(TAG_UTCTIME, TagType::Implicit, |reader| {
+        reader.read_tagged_implicit(TAG_UTCTIME, |reader| {
             let octets = try!(reader.read_bytes());
             // TODO: format check
             return Ok(UtcTime::new(octets));

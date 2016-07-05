@@ -1,3 +1,13 @@
+# 0.1.3
+
+- Both readers and writers implement common core datatypes, including:
+  - BOOLEAN, INTEGER, BITSTRING, OCTETSTRING, NULL, OBJECT IDENTIFIER,
+  - SEQUENCE, SET, SET OF,
+  - Explicitly/Implicitly tagged types.
+- Public APIs of readers and writers are documented and most of them are tested. These seem almost frozen.
+- Now it depends on "bit-vec" crate to handle bit strings.
+- ASN.1 data models are now in `asn1::models`. These are waiting for refactoring and API change, as well as `FromBer` traits.
+
 # 0.1.2
 
 Both writers and readers are refactored.
