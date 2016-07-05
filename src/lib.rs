@@ -58,8 +58,11 @@ mod writer;
 mod reader;
 mod deserializer;
 
-pub use writer::{construct_der,construct_der_seq,DERWriterSeq,DERWriter,DERWriterSet};
-pub use reader::{BERReader,BERReaderSeq,ASN1Error,ASN1ErrorKind,BERMode,ASN1Result,parse_ber_general,parse_ber,parse_der};
+pub use writer::{construct_der,construct_der_seq};
+pub use writer::{DERWriter,DERWriterSeq,DERWriterSet};
+pub use reader::{parse_ber_general,parse_ber,parse_der,BERMode};
+pub use reader::{BERReader,BERReaderSeq,BERReaderSet};
+pub use reader::{ASN1Error,ASN1ErrorKind,ASN1Result};
 pub use deserializer::FromBER;
 
 /// An ASN.1 tag class, used in [`Tag`][tag].
