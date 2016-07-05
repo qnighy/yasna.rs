@@ -957,6 +957,330 @@ fn test_ber_read_sequence_err() {
 }
 
 #[test]
+fn test_der_read_set_ok() {
+    let tests : &[((i64, Vec<u8>, i64, Vec<u8>), &[u8])] = &[
+        ((456789, b"Foo".to_vec(), 456790, b"Bar".to_vec()), &[
+        49, 32, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
+        77, 5, 4, 3, 66, 97, 114, 191, 149, 140, 78, 5, 4, 3, 70, 111, 111]),
+    ];
+    for &(ref evalue, data) in tests {
+        let value = parse_der(data, |reader| {
+            reader.read_set(|reader| {
+                let a = try!(try!(reader.next(&[Tag::context(28)]))
+                    .read_tagged_implicit(Tag::context(28), |reader| {
+                    reader.read_i64()
+                }));
+                let b = try!(try!(reader.next(&[Tag::context(345678)]))
+                    .read_tagged(Tag::context(345678), |reader| {
+                    reader.read_bytes()
+                }));
+                let c = try!(try!(reader.next(&[Tag::context(27)]))
+                    .read_tagged(Tag::context(27), |reader| {
+                    reader.read_i64()
+                }));
+                let d = try!(try!(reader.next(&[Tag::context(345677)]))
+                    .read_tagged(Tag::context(345677), |reader| {
+                    reader.read_bytes()
+                }));
+                return Ok((a, b, c, d));
+            })
+        }).unwrap();
+        assert_eq!(&value, evalue);
+    }
+}
+
+#[test]
+fn test_der_read_set_err() {
+    let tests : &[&[u8]] = &[
+        &[], &[49], &[0, 0], &[0, 1, 0],
+        &[17, 32, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
+        77, 5, 4, 3, 66, 97, 114, 191, 149, 140, 78, 5, 4, 3, 70, 111, 111],
+        &[113, 32, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
+        77, 5, 4, 3, 66, 97, 114, 191, 149, 140, 78, 5, 4, 3, 70, 111, 111],
+        &[48, 32, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
+        77, 5, 4, 3, 66, 97, 114, 191, 149, 140, 78, 5, 4, 3, 70, 111, 111],
+        &[49, 33, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
+        77, 5, 4, 3, 66, 97, 114, 191, 149, 140, 78, 5, 4, 3, 70, 111, 111],
+        &[49, 33, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
+        77, 5, 4, 3, 66, 97, 114, 191, 149, 140, 78, 5, 4, 3, 70, 111, 111, 0],
+        &[49, 31, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
+        77, 5, 4, 3, 66, 97, 114, 191, 149, 140, 78, 5, 4, 3, 70, 111, 111],
+        &[49, 31, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
+        77, 5, 4, 3, 66, 97, 114, 191, 149, 140, 78, 5, 4, 3, 70, 111],
+        &[49, 22, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
+        77, 5, 4, 3, 66, 97, 114],
+        &[49, 32, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
+        77, 5, 4, 3, 66, 97, 114, 191, 149, 140, 78, 5, 4, 3, 70, 111, 111,
+        191, 149, 140, 79, 5, 4, 3, 70, 111, 111],
+        &[49, 128, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
+            77, 5, 4, 3, 66, 97, 114, 191, 149,
+            140, 78, 5, 4, 3, 70, 111, 111, 0, 0],
+        &[49, 32, 156, 3, 6, 248, 85, 187, 5, 2, 3, 6, 248, 86, 191, 149, 140,
+        77, 5, 4, 3, 66, 97, 114, 191, 149, 140, 78, 5, 4, 3, 70, 111, 111],
+        &[49, 32, 187, 5, 2, 3, 6, 248, 86, 191, 149, 140, 77, 5, 4, 3, 66, 97,
+        114, 156, 3, 6, 248, 85, 191, 149, 140, 78, 5, 4, 3, 70, 111, 111],
+        &[49, 32, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
+        78, 5, 4, 3, 70, 111, 111, 191, 149, 140, 77, 5, 4, 3, 66, 97, 114],
+    ];
+    for &data in tests {
+        parse_der(data, |reader| {
+            reader.read_set(|reader| {
+                let a = try!(try!(reader.next(&[Tag::context(28)]))
+                    .read_tagged_implicit(Tag::context(28), |reader| {
+                    reader.read_i64()
+                }));
+                let b = try!(try!(reader.next(&[Tag::context(345678)]))
+                    .read_tagged(Tag::context(345678), |reader| {
+                    reader.read_bytes()
+                }));
+                let c = try!(try!(reader.next(&[Tag::context(27)]))
+                    .read_tagged(Tag::context(27), |reader| {
+                    reader.read_i64()
+                }));
+                let d = try!(try!(reader.next(&[Tag::context(345677)]))
+                    .read_tagged(Tag::context(345677), |reader| {
+                    reader.read_bytes()
+                }));
+                return Ok((a, b, c, d));
+            })
+        }).unwrap_err();
+    }
+}
+
+#[test]
+fn test_ber_read_set_ok() {
+    let tests : &[((i64, Vec<u8>, i64, Vec<u8>), &[u8])] = &[
+        ((456789, b"Foo".to_vec(), 456790, b"Bar".to_vec()), &[
+        49, 32, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
+        77, 5, 4, 3, 66, 97, 114, 191, 149, 140, 78, 5, 4, 3, 70, 111, 111]),
+        ((456789, b"Foo".to_vec(), 456790, b"Bar".to_vec()), &[
+        49, 128, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
+            77, 5, 4, 3, 66, 97, 114, 191, 149,
+            140, 78, 5, 4, 3, 70, 111, 111, 0, 0]),
+        ((456789, b"Foo".to_vec(), 456790, b"Bar".to_vec()), &[
+        49, 32, 156, 3, 6, 248, 85, 187, 5, 2, 3, 6, 248, 86, 191, 149, 140,
+        77, 5, 4, 3, 66, 97, 114, 191, 149, 140, 78, 5, 4, 3, 70, 111, 111]),
+        ((456789, b"Foo".to_vec(), 456790, b"Bar".to_vec()), &[
+        49, 32, 187, 5, 2, 3, 6, 248, 86, 191, 149, 140, 77, 5, 4, 3, 66, 97,
+        114, 156, 3, 6, 248, 85, 191, 149, 140, 78, 5, 4, 3, 70, 111, 111]),
+        ((456789, b"Foo".to_vec(), 456790, b"Bar".to_vec()), &[
+        49, 32, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
+        78, 5, 4, 3, 70, 111, 111, 191, 149, 140, 77, 5, 4, 3, 66, 97, 114]),
+    ];
+    for &(ref evalue, data) in tests {
+        let value = parse_ber(data, |reader| {
+            reader.read_set(|reader| {
+                let a = try!(try!(reader.next(&[Tag::context(28)]))
+                    .read_tagged_implicit(Tag::context(28), |reader| {
+                    reader.read_i64()
+                }));
+                let b = try!(try!(reader.next(&[Tag::context(345678)]))
+                    .read_tagged(Tag::context(345678), |reader| {
+                    reader.read_bytes()
+                }));
+                let c = try!(try!(reader.next(&[Tag::context(27)]))
+                    .read_tagged(Tag::context(27), |reader| {
+                    reader.read_i64()
+                }));
+                let d = try!(try!(reader.next(&[Tag::context(345677)]))
+                    .read_tagged(Tag::context(345677), |reader| {
+                    reader.read_bytes()
+                }));
+                return Ok((a, b, c, d));
+            })
+        }).unwrap();
+        assert_eq!(&value, evalue);
+    }
+}
+
+#[test]
+fn test_ber_read_set_err() {
+    let tests : &[&[u8]] = &[
+        &[], &[49], &[0, 0], &[0, 1, 0],
+        &[17, 32, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
+        77, 5, 4, 3, 66, 97, 114, 191, 149, 140, 78, 5, 4, 3, 70, 111, 111],
+        &[113, 32, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
+        77, 5, 4, 3, 66, 97, 114, 191, 149, 140, 78, 5, 4, 3, 70, 111, 111],
+        &[48, 32, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
+        77, 5, 4, 3, 66, 97, 114, 191, 149, 140, 78, 5, 4, 3, 70, 111, 111],
+        &[49, 33, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
+        77, 5, 4, 3, 66, 97, 114, 191, 149, 140, 78, 5, 4, 3, 70, 111, 111],
+        &[49, 33, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
+        77, 5, 4, 3, 66, 97, 114, 191, 149, 140, 78, 5, 4, 3, 70, 111, 111, 0],
+        &[49, 31, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
+        77, 5, 4, 3, 66, 97, 114, 191, 149, 140, 78, 5, 4, 3, 70, 111, 111],
+        &[49, 31, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
+        77, 5, 4, 3, 66, 97, 114, 191, 149, 140, 78, 5, 4, 3, 70, 111],
+        &[49, 22, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
+        77, 5, 4, 3, 66, 97, 114],
+        &[49, 32, 187, 5, 2, 3, 6, 248, 86, 156, 3, 6, 248, 85, 191, 149, 140,
+        77, 5, 4, 3, 66, 97, 114, 191, 149, 140, 78, 5, 4, 3, 70, 111, 111,
+        191, 149, 140, 79, 5, 4, 3, 70, 111, 111],
+    ];
+    for &data in tests {
+        parse_ber(data, |reader| {
+            reader.read_set(|reader| {
+                let a = try!(try!(reader.next(&[Tag::context(28)]))
+                    .read_tagged_implicit(Tag::context(28), |reader| {
+                    reader.read_i64()
+                }));
+                let b = try!(try!(reader.next(&[Tag::context(345678)]))
+                    .read_tagged(Tag::context(345678), |reader| {
+                    reader.read_bytes()
+                }));
+                let c = try!(try!(reader.next(&[Tag::context(27)]))
+                    .read_tagged(Tag::context(27), |reader| {
+                    reader.read_i64()
+                }));
+                let d = try!(try!(reader.next(&[Tag::context(345677)]))
+                    .read_tagged(Tag::context(345677), |reader| {
+                    reader.read_bytes()
+                }));
+                return Ok((a, b, c, d));
+            })
+        }).unwrap_err();
+    }
+}
+
+#[test]
+fn test_der_read_set_of_ok() {
+    use std::collections::HashSet;
+    let tests : &[(&[i64], &[u8])] = &[
+        (&[-129, -128, 127, 128], &[
+            49, 14, 2, 1, 127, 2, 1, 128, 2, 2, 0, 128, 2, 2, 255, 127]),
+        (&[-128, 127, 128], &[
+            49, 10, 2, 1, 127, 2, 1, 128, 2, 2, 0, 128]),
+        (&[-129, -128, 127, 128, 32768], &[
+            49, 19, 2, 1, 127, 2, 1, 128, 2, 2, 0, 128, 2, 2, 255, 127,
+            2, 3, 0, 128, 0]),
+    ];
+    for &(evalue, data) in tests {
+        let value = parse_der(data, |reader| {
+            reader.collect_set_of(|reader| {
+                reader.read_i64()
+            })
+        }).unwrap();
+        let value_set = value.iter().collect::<HashSet<_>>();
+        let evalue_set = evalue.iter().collect::<HashSet<_>>();
+        assert_eq!(value_set, evalue_set);
+    }
+}
+
+#[test]
+fn test_der_read_set_of_err() {
+    let tests : &[&[u8]] = &[
+        &[], &[49], &[0, 0], &[0, 1, 0],
+        &[17, 14, 2, 1, 127, 2, 1, 128, 2, 2, 0, 128, 2, 2, 255, 127],
+        &[113, 14, 2, 1, 127, 2, 1, 128, 2, 2, 0, 128, 2, 2, 255, 127],
+        &[48, 14, 2, 1, 127, 2, 1, 128, 2, 2, 0, 128, 2, 2, 255, 127],
+        &[49, 15, 2, 1, 127, 2, 1, 128, 2, 2, 0, 128, 2, 2, 255, 127],
+        &[49, 15, 2, 1, 127, 2, 1, 128, 2, 2, 0, 128, 2, 2, 255, 127, 0],
+        &[49, 13, 2, 1, 127, 2, 1, 128, 2, 2, 0, 128, 2, 2, 255, 127],
+        &[49, 13, 2, 1, 127, 2, 1, 128, 2, 2, 0, 128, 2, 2, 255],
+        &[49, 128, 2, 1, 127, 2, 1, 128, 2, 2, 0, 128, 2, 2, 255, 127, 0, 0],
+        &[49, 14, 2, 1, 128, 2, 1, 127, 2, 2, 0, 128, 2, 2, 255, 127],
+        &[49, 14, 2, 1, 127, 2, 2, 0, 128, 2, 1, 128, 2, 2, 255, 127],
+        &[49, 14, 2, 1, 127, 2, 1, 128, 2, 2, 255, 127, 2, 2, 0, 128],
+        &[49, 14, 2, 2, 255, 127, 2, 1, 128, 2, 2, 0, 128, 2, 1, 127],
+    ];
+    for &data in tests {
+        parse_der(data, |reader| {
+            reader.read_set(|reader| {
+                let a = try!(try!(reader.next(&[Tag::context(28)]))
+                    .read_tagged_implicit(Tag::context(28), |reader| {
+                    reader.read_i64()
+                }));
+                let b = try!(try!(reader.next(&[Tag::context(345678)]))
+                    .read_tagged(Tag::context(345678), |reader| {
+                    reader.read_bytes()
+                }));
+                let c = try!(try!(reader.next(&[Tag::context(27)]))
+                    .read_tagged(Tag::context(27), |reader| {
+                    reader.read_i64()
+                }));
+                let d = try!(try!(reader.next(&[Tag::context(345677)]))
+                    .read_tagged(Tag::context(345677), |reader| {
+                    reader.read_bytes()
+                }));
+                return Ok((a, b, c, d));
+            })
+        }).unwrap_err();
+    }
+}
+
+#[test]
+fn test_ber_read_set_of_ok() {
+    use std::collections::HashSet;
+    let tests : &[(&[i64], &[u8])] = &[
+        (&[-129, -128, 127, 128], &[
+            49, 14, 2, 1, 127, 2, 1, 128, 2, 2, 0, 128, 2, 2, 255, 127]),
+        (&[-128, 127, 128], &[
+            49, 10, 2, 1, 127, 2, 1, 128, 2, 2, 0, 128]),
+        (&[-129, -128, 127, 128, 32768], &[
+            49, 19, 2, 1, 127, 2, 1, 128, 2, 2, 0, 128, 2, 2, 255, 127,
+            2, 3, 0, 128, 0]),
+        (&[-129, -128, 127, 128], &[
+            49, 128, 2, 1, 127, 2, 1, 128, 2, 2, 0, 128, 2, 2, 255, 127,
+            0, 0]),
+        (&[-129, -128, 127, 128], &[
+            49, 14, 2, 1, 128, 2, 1, 127, 2, 2, 0, 128, 2, 2, 255, 127]),
+        (&[-129, -128, 127, 128], &[
+            49, 14, 2, 1, 127, 2, 2, 0, 128, 2, 1, 128, 2, 2, 255, 127]),
+        (&[-129, -128, 127, 128], &[
+            49, 14, 2, 1, 127, 2, 1, 128, 2, 2, 255, 127, 2, 2, 0, 128]),
+        (&[-129, -128, 127, 128], &[
+            49, 14, 2, 2, 255, 127, 2, 1, 128, 2, 2, 0, 128, 2, 1, 127]),
+    ];
+    for &(evalue, data) in tests {
+        let value = parse_ber(data, |reader| {
+            reader.collect_set_of(|reader| {
+                reader.read_i64()
+            })
+        }).unwrap();
+        let value_set = value.iter().collect::<HashSet<_>>();
+        let evalue_set = evalue.iter().collect::<HashSet<_>>();
+        assert_eq!(value_set, evalue_set);
+    }
+}
+
+#[test]
+fn test_ber_read_set_of_err() {
+    let tests : &[&[u8]] = &[
+        &[], &[49], &[0, 0], &[0, 1, 0],
+        &[17, 14, 2, 1, 127, 2, 1, 128, 2, 2, 0, 128, 2, 2, 255, 127],
+        &[113, 14, 2, 1, 127, 2, 1, 128, 2, 2, 0, 128, 2, 2, 255, 127],
+        &[48, 14, 2, 1, 127, 2, 1, 128, 2, 2, 0, 128, 2, 2, 255, 127],
+        &[49, 15, 2, 1, 127, 2, 1, 128, 2, 2, 0, 128, 2, 2, 255, 127],
+        &[49, 15, 2, 1, 127, 2, 1, 128, 2, 2, 0, 128, 2, 2, 255, 127, 0],
+        &[49, 13, 2, 1, 127, 2, 1, 128, 2, 2, 0, 128, 2, 2, 255, 127],
+        &[49, 13, 2, 1, 127, 2, 1, 128, 2, 2, 0, 128, 2, 2, 255],
+    ];
+    for &data in tests {
+        parse_ber(data, |reader| {
+            reader.read_set(|reader| {
+                let a = try!(try!(reader.next(&[Tag::context(28)]))
+                    .read_tagged_implicit(Tag::context(28), |reader| {
+                    reader.read_i64()
+                }));
+                let b = try!(try!(reader.next(&[Tag::context(345678)]))
+                    .read_tagged(Tag::context(345678), |reader| {
+                    reader.read_bytes()
+                }));
+                let c = try!(try!(reader.next(&[Tag::context(27)]))
+                    .read_tagged(Tag::context(27), |reader| {
+                    reader.read_i64()
+                }));
+                let d = try!(try!(reader.next(&[Tag::context(345677)]))
+                    .read_tagged(Tag::context(345677), |reader| {
+                    reader.read_bytes()
+                }));
+                return Ok((a, b, c, d));
+            })
+        }).unwrap_err();
+    }
+}
+
+#[test]
 fn test_der_read_tagged_ok() {
     let tests : &[(i64, &[u8])] = &[
         (10, &[163, 3, 2, 1, 10]),

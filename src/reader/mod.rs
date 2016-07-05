@@ -841,9 +841,11 @@ impl<'a, 'b> BERReader<'a, 'b> {
     ///
     /// This function uses the loan pattern: `callback` is called back with
     /// a [`BERReaderSet`][berreaderset], from which the contents of the
-    /// SET is read.
+    /// SET are read.
     ///
     /// [berreaderset]: struct.BERReaderSet.html
+    ///
+    /// For SET OF values, use `read_set_of` instead.
     ///
     /// # Examples
     ///
@@ -890,10 +892,14 @@ impl<'a, 'b> BERReader<'a, 'b> {
                 }
             }
             let mut new_impl = BERReaderImpl::new(&[], inner.mode);
-            return callback(&mut BERReaderSet {
+            let result = try!(callback(&mut BERReaderSet {
                 impl_ref: &mut new_impl,
                 elements: &mut elements,
-            });
+            }));
+            if elements.len() > 0 {
+                return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+            }
+            return Ok(result);
         })
     }
 
@@ -901,7 +907,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
     ///
     /// This function uses the loan pattern: `callback` is called back with
     /// a [`BERReader`][berreader], from which the contents of the
-    /// SET OF is read.
+    /// SET OF are read.
     ///
     /// This function doesn't return values. Instead, use mutable values to
     /// maintain read values. `collect_set_of` can be an alternative.
@@ -910,6 +916,8 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// the elements occur in an order determined by DER encodings of them.
     ///
     /// [berreader]: struct.BERReader.html
+    ///
+    /// For SET values, use `read_set` instead.
     ///
     /// # Examples
     ///

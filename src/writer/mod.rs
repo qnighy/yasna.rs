@@ -472,9 +472,11 @@ impl<'a> DERWriter<'a> {
     ///
     /// This function uses the loan pattern: `callback` is called back with
     /// a [`DERWriterSet`][derwriterset], to which the contents of the
-    /// SET is written.
+    /// SET are written.
     ///
     /// [derwriterset]: struct.DERWriterSet.html
+    ///
+    /// For SET OF values, use `write_set_of` instead.
     ///
     /// # Examples
     ///
@@ -510,6 +512,49 @@ impl<'a> DERWriter<'a> {
             }
             return buf0[1..].cmp(&buf1[1..]);
         });
+        // let bufs_len = bufs.iter().map(|buf| buf.len()).sum();
+        let bufs_len = bufs.iter().map(|buf| buf.len()).fold(0, |x, y| x + y);
+        self.write_identifier(TAG_SET, PC::Constructed);
+        self.write_length(bufs_len);
+        for buf in bufs.iter() {
+            self.buf.extend_from_slice(buf);
+        }
+        return result;
+    }
+
+    /// Writes ASN.1 SET OF.
+    ///
+    /// This function uses the loan pattern: `callback` is called back with
+    /// a [`DERWriterSet`][derwriterset], to which the contents of the
+    /// SET OF are written.
+    ///
+    /// [derwriterset]: struct.DERWriterSet.html
+    ///
+    /// For SET values, use `write_set` instead.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_set_of(|writer| {
+    ///         for &i in &[10, -129] {
+    ///             writer.next().write_i64(i);
+    ///         }
+    ///     })
+    /// });
+    /// assert_eq!(der, vec![49, 7, 2, 1, 10, 2, 2, 255, 127]);
+    /// ```
+    pub fn write_set_of<T, F>(mut self, callback: F) -> T
+        where F: FnOnce(&mut DERWriterSet) -> T {
+        let mut bufs = Vec::new();
+        let result = callback(&mut DERWriterSet {
+            bufs: &mut bufs,
+        });
+        for buf in bufs.iter() {
+            assert!(buf.len() > 0, "Empty output in write_set_of()");
+        }
+        bufs.sort();
         // let bufs_len = bufs.iter().map(|buf| buf.len()).sum();
         let bufs_len = bufs.iter().map(|buf| buf.len()).fold(0, |x, y| x + y);
         self.write_identifier(TAG_SET, PC::Constructed);
