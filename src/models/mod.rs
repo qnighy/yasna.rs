@@ -6,6 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+//! Provides datatypes which correspond to ASN.1 types.
+
 mod setof;
 mod oid;
 mod charstring;

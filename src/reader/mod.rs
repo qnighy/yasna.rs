@@ -821,6 +821,18 @@ impl<'a, 'b> BERReader<'a, 'b> {
         })
     }
 
+    /// Reads an ASN.1 object identifier.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let data = &[6, 8, 42, 134, 72, 134, 247, 13, 1, 1];
+    /// let asn = yasna::parse_der(data, |reader| {
+    ///     reader.read_oid()
+    /// }).unwrap();
+    /// assert_eq!(&*asn.components(), &[1, 2, 840, 113549, 1, 1]);
+    /// ```
     pub fn read_oid(self) -> ASN1Result<ObjectIdentifier> {
         self.read_general(TAG_OID, |contents| {
             let buf = match contents {
@@ -829,7 +841,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
                     return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
                 },
             };
-            let mut ids = Vec::new();
+            let mut components = Vec::new();
             if buf.len() == 0 || buf[buf.len()-1] >= 128 {
                 return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
             }
@@ -842,7 +854,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
                     .ok_or(ASN1Error::new(
                         ASN1ErrorKind::IntegerOverflow))) + ((b & 127) as u64);
                 if (b & 128) == 0 {
-                    if ids.len() == 0 {
+                    if components.len() == 0 {
                         let id0 = if subid < 40 {
                             0
                         } else if subid < 80 {
@@ -851,15 +863,15 @@ impl<'a, 'b> BERReader<'a, 'b> {
                             2
                         };
                         let id1 = subid - 40 * id0;
-                        ids.push(id0);
-                        ids.push(id1);
+                        components.push(id0);
+                        components.push(id1);
                     } else {
-                        ids.push(subid);
+                        components.push(subid);
                     }
                     subid = 0;
                 }
             }
-            return Ok(ObjectIdentifier::new(ids));
+            return Ok(ObjectIdentifier::new(components));
         })
     }
 

@@ -13,7 +13,8 @@ use bit_vec::BitVec;
 
 use super::Tag;
 use super::tags::{TAG_BOOLEAN,TAG_INTEGER,TAG_OCTETSTRING};
-use super::tags::{TAG_NULL,TAG_SEQUENCE,TAG_SET};
+use super::tags::{TAG_NULL,TAG_OID,TAG_SEQUENCE,TAG_SET};
+use super::models::ObjectIdentifier;
 
 /// Constructs DER-encoded data as `Vec<u8>`.
 ///
@@ -470,6 +471,64 @@ impl<'a> DERWriter<'a> {
     pub fn write_null(mut self) {
         self.write_identifier(TAG_NULL, PC::Primitive);
         self.write_length(0);
+    }
+
+    /// Writes an ASN.1 object identifier.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// use yasna::models::ObjectIdentifier;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_oid(&ObjectIdentifier::from_slice(
+    ///         &[1, 2, 840, 113549, 1, 1]))
+    /// });
+    /// assert_eq!(&der, &[6, 8, 42, 134, 72, 134, 247, 13, 1, 1]);
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// It panics when the OID cannot be canonically encoded in BER.
+    pub fn write_oid(mut self, oid: &ObjectIdentifier) {
+        assert!(oid.components().len() >= 2, "Invalid OID: too short");
+        let id0 = oid.components()[0];
+        let id1 = oid.components()[1];
+        assert!(
+            (id0 < 3) && (id1 < 18446744073709551535) &&
+            (id0 >= 2 || id1 < 40),
+            "Invalid OID {{{} {} ...}}", id0, id1);
+        let subid0 = id0 * 40 + id1;
+        let mut length = 0;
+        for i in 1..oid.components().len() {
+            let mut subid = if i == 1 {
+                subid0
+            } else {
+                oid.components()[i]
+            } | 1;
+            while subid > 0 {
+                length += 1;
+                subid >>= 7;
+            }
+        }
+        self.write_identifier(TAG_OID, PC::Primitive);
+        self.write_length(length);
+        for i in 1..oid.components().len() {
+            let subid = if i == 1 {
+                subid0
+            } else {
+                oid.components()[i]
+            };
+            let mut shiftnum = 63; // ceil(64 / 7) * 7 - 7
+            while ((subid|1) >> shiftnum) == 0 {
+                shiftnum -= 7;
+            }
+            while shiftnum > 0 {
+                self.buf.push(128 | ((((subid|1) >> shiftnum) & 127) as u8));
+                shiftnum -= 7;
+            }
+            self.buf.push((subid & 127) as u8);
+        }
     }
 
     /// Writes ASN.1 SEQUENCE.
