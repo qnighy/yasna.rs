@@ -10,11 +10,13 @@ mod error;
 
 #[cfg(feature = "bigint")]
 use num::bigint::{BigInt,BigUint,Sign};
+#[cfg(feature = "bitvec")]
+use bit_vec::BitVec;
 
 use super::{Tag,TAG_CLASSES};
-use super::tags::{TAG_EOC,TAG_BOOLEAN,TAG_INTEGER,TAG_BITSTRING};
+use super::tags::{TAG_EOC,TAG_BOOLEAN,TAG_INTEGER};
 use super::tags::{TAG_OCTETSTRING,TAG_NULL,TAG_OID,TAG_SEQUENCE,TAG_SET};
-use super::models::{ObjectIdentifier,BitString};
+use super::models::ObjectIdentifier;
 pub use self::error::*;
 
 /// Parses DER/BER-encoded data.
@@ -667,8 +669,11 @@ impl<'a, 'b> BERReader<'a, 'b> {
         })
     }
 
-    fn read_bitstring_impl(self, bsbuf: &mut BitString) -> ASN1Result<()> {
-        if bsbuf.unused_bits() != 0 {
+    #[cfg(feature = "bitvec")]
+    fn read_bitvec_impl(self, unused_bits: &mut usize, bytes: &mut Vec<u8>)
+            -> ASN1Result<()> {
+        use super::tags::TAG_BITSTRING;
+        if *unused_bits != 0 {
             return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
         }
         let mode = self.inner.mode;
@@ -678,20 +683,20 @@ impl<'a, 'b> BERReader<'a, 'b> {
                     if buf.len() == 0 {
                         return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
                     }
-                    let unused_bits = buf[0] as usize;
-                    if unused_bits >= 8 {
+                    if buf[0] >= 8 {
                         return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
                     }
-                    if unused_bits > 0 {
+                    if buf[0] > 0 {
                         if buf.len() == 1 {
                             return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
                         }
                         if mode == BERMode::Der &&
-                            (buf[buf.len()-1] & ((1<<unused_bits) - 1)) != 0 {
+                            (buf[buf.len()-1] & ((1<<buf[0]) - 1)) != 0 {
                             return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
                         }
                     }
-                    bsbuf.extend_from_bytes(unused_bits, &buf[1..]);
+                    bytes.extend_from_slice(&buf[1..]);
+                    *unused_bits = buf[0] as usize;
                     return Ok(());
                 },
                 Contents::Constructed(inner) => {
@@ -700,7 +705,8 @@ impl<'a, 'b> BERReader<'a, 'b> {
                     }
                     loop {
                         let result = try!(inner.read_optional(|inner| {
-                            BERReader::new(inner).read_bitstring_impl(bsbuf)
+                            BERReader::new(inner)
+                                .read_bitvec_impl(unused_bits, bytes)
                         }));
                         match result {
                             Some(()) => {},
@@ -713,25 +719,34 @@ impl<'a, 'b> BERReader<'a, 'b> {
         })
     }
 
-    /// Reads an ASN.1 BITSTRING value as [`BitString`][bitstring].
-    ///
-    /// [bitstring]: models/struct.BitString.html
+    #[cfg(feature = "bitvec")]
+    /// Reads an ASN.1 BITSTRING value as `BitVec`.
     ///
     /// # Examples
     ///
     /// ```
+    /// # extern crate bit_vec;
+    /// # extern crate yasna;
+    /// # fn main() {
     /// use yasna;
-    /// use yasna::models::BitString;
+    /// use bit_vec::BitVec;
     /// let data = &[3, 5, 3, 206, 213, 116, 24];
     /// let asn = yasna::parse_der(data, |reader| {
-    ///     reader.read_bitstring()
+    ///     reader.read_bitvec()
     /// }).unwrap();
-    /// assert_eq!(asn, BitString::from_bytes(3,
-    ///     [206, 213, 116, 24].to_vec()));
+    /// assert_eq!(
+    ///     asn.into_iter().map(|b| b as usize).collect::<Vec<_>>(),
+    ///     vec![1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1,
+    ///         0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1]);
+    /// # }
     /// ```
-    pub fn read_bitstring(self) -> ASN1Result<BitString> {
-        let mut ret = BitString::new();
-        try!(self.read_bitstring_impl(&mut ret));
+    pub fn read_bitvec(self) -> ASN1Result<BitVec> {
+        let mut unused_bits = 0;
+        let mut bytes = Vec::new();
+        try!(self.read_bitvec_impl(&mut unused_bits, &mut bytes));
+        let len = bytes.len() * 8 - unused_bits;
+        let mut ret = BitVec::from_bytes(&bytes);
+        ret.truncate(len);
         return Ok(ret);
     }
 

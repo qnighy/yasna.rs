@@ -8,11 +8,12 @@
 
 #[cfg(feature = "bigint")]
 use num::bigint::{BigUint, BigInt};
+#[cfg(feature = "bitvec")]
+use bit_vec::BitVec;
 
 use super::Tag;
-use super::tags::{TAG_BOOLEAN,TAG_INTEGER,TAG_BITSTRING,TAG_OCTETSTRING};
+use super::tags::{TAG_BOOLEAN,TAG_INTEGER,TAG_OCTETSTRING};
 use super::tags::{TAG_NULL,TAG_SEQUENCE,TAG_SET};
-use super::models::BitString;
 
 /// Constructs DER-encoded data as `Vec<u8>`.
 ///
@@ -406,26 +407,36 @@ impl<'a> DERWriter<'a> {
         self.buf.extend_from_slice(&bytes);
     }
 
-    /// Writes [`BitString`][bitstring] as an ASN.1 BITSTRING value.
-    ///
-    /// [bitstring]: models/struct.BitString.html
+    #[cfg(feature = "bitvec")]
+    /// Writes `BitVec` as an ASN.1 BITSTRING value.
     ///
     /// # Examples
     ///
     /// ```
+    /// # extern crate bit_vec;
+    /// # extern crate yasna;
+    /// # fn main() {
     /// use yasna;
-    /// use yasna::models::BitString;
+    /// use bit_vec::BitVec;
     /// let der = yasna::construct_der(|writer| {
-    ///     writer.write_bitstring(&BitString::from_bytes(3,
-    ///         [206, 213, 116, 24].to_vec()))
+    ///     writer.write_bitvec(&
+    ///         [1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1,
+    ///             0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1]
+    ///         .iter().map(|&i| i != 0).collect())
     /// });
     /// assert_eq!(&der, &[3, 5, 3, 206, 213, 116, 24]);
+    /// # }
     /// ```
-    pub fn write_bitstring(mut self, bitstring: &BitString) {
+    pub fn write_bitvec(mut self, bitvec: &BitVec) {
+        use super::tags::TAG_BITSTRING;
         self.write_identifier(TAG_BITSTRING, PC::Primitive);
-        self.write_length(1 + bitstring.bytes().len());
-        self.buf.push(bitstring.unused_bits() as u8);
-        self.buf.extend_from_slice(bitstring.bytes());
+        let len = bitvec.len();
+        let bytes = bitvec.to_bytes();
+        debug_assert!(len <= 8 * bytes.len());
+        debug_assert!(8 * bytes.len() < len + 8);
+        self.write_length(1 + bytes.len());
+        self.buf.push((8 * bytes.len() - len) as u8);
+        self.buf.extend_from_slice(&bytes);
     }
 
     /// Writes `&[u8]` as an ASN.1 OCTETSTRING value.

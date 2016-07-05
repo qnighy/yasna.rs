@@ -6,13 +6,11 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-mod bitstring;
 mod setof;
 mod oid;
 mod charstring;
 mod time;
 
-pub use self::bitstring::BitString;
 pub use self::setof::SetOf;
 pub use self::oid::ObjectIdentifier;
 pub use self::charstring::PrintableString;

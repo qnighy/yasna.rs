@@ -51,6 +51,8 @@
 
 #[cfg(feature = "bigint")]
 extern crate num;
+#[cfg(feature = "bitvec")]
+extern crate bit_vec;
 
 pub mod tags;
 pub mod models;

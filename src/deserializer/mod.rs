@@ -10,11 +10,13 @@ use std::hash::Hash;
 
 #[cfg(feature = "bigint")]
 use num::bigint::{BigInt,BigUint};
+#[cfg(feature = "bitvec")]
+use bit_vec::BitVec;
 
 use super::tags::{TAG_PRINTABLESTRING,TAG_UTCTIME};
 
 use super::{ASN1Error,ASN1Result,ASN1ErrorKind,BERMode,BERReader,parse_ber_general};
-use super::models::{PrintableString,UtcTime,ObjectIdentifier,BitString,SetOf};
+use super::models::{PrintableString,UtcTime,ObjectIdentifier,SetOf};
 
 pub trait FromBER: Sized + Eq + Hash {
     fn from_ber<'a, 'b>(reader: BERReader<'a, 'b>) -> ASN1Result<Self>;
@@ -94,9 +96,10 @@ impl FromBER for bool {
     }
 }
 
-impl FromBER for BitString {
+#[cfg(feature = "bitvec")]
+impl FromBER for BitVec {
     fn from_ber(reader: BERReader) -> ASN1Result<Self> {
-        reader.read_bitstring()
+        reader.read_bitvec()
     }
 }
 
