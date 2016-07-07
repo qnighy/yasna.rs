@@ -14,8 +14,9 @@ use num::bigint::{BigInt,BigUint,Sign};
 use bit_vec::BitVec;
 
 use super::{Tag,TAG_CLASSES};
-use super::tags::{TAG_EOC,TAG_BOOLEAN,TAG_INTEGER};
-use super::tags::{TAG_OCTETSTRING,TAG_NULL,TAG_OID,TAG_SEQUENCE,TAG_SET};
+use super::tags::{TAG_EOC,TAG_BOOLEAN,TAG_INTEGER,TAG_OCTETSTRING};
+use super::tags::{TAG_NULL,TAG_OID,TAG_UTF8STRING,TAG_SEQUENCE,TAG_SET};
+use super::tags::{TAG_NUMERICSTRING,TAG_PRINTABLESTRING,TAG_VISIBLESTRING};
 use super::models::ObjectIdentifier;
 pub use self::error::*;
 
@@ -875,6 +876,31 @@ impl<'a, 'b> BERReader<'a, 'b> {
         })
     }
 
+    /// Reads an ASN.1 UTF8String.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let data = &[
+    ///     12, 29, 103, 110, 97, 119, 32, 207, 129, 206, 191, 206,
+    ///     186, 206, 177, 206, 189, 206, 175, 206, 182, 207,
+    ///     137, 32, 240, 170, 152, 130, 227, 130, 139];
+    /// let asn = yasna::parse_der(data, |reader| {
+    ///     reader.read_utf8string()
+    /// }).unwrap();
+    /// assert_eq!(&asn, "gnaw ροκανίζω 𪘂る");
+    /// ```
+    pub fn read_utf8string(self) -> ASN1Result<String> {
+        self.read_tagged_implicit(TAG_UTF8STRING, |reader| {
+            let bytes = try!(reader.read_bytes());
+            match String::from_utf8(bytes) {
+                Ok(string) => Ok(string),
+                Err(_) => Err(ASN1Error::new(ASN1ErrorKind::Invalid)),
+            }
+        })
+    }
+
     /// Reads an ASN.1 SEQUENCE value.
     ///
     /// This function uses the loan pattern: `callback` is called back with
@@ -1067,6 +1093,83 @@ impl<'a, 'b> BERReader<'a, 'b> {
             return Ok(());
         }));
         return Ok(collection);
+    }
+
+    /// Reads an ASN.1 NumericString.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let data = &[18, 7, 49, 50, 56, 32, 50, 53, 54];
+    /// let asn = yasna::parse_der(data, |reader| {
+    ///     reader.read_numeric_string()
+    /// }).unwrap();
+    /// assert_eq!(&asn, "128 256");
+    /// ```
+    pub fn read_numeric_string(self) -> ASN1Result<String> {
+        self.read_tagged_implicit(TAG_NUMERICSTRING, |reader| {
+            let bytes = try!(reader.read_bytes());
+            for &byte in bytes.iter() {
+                if !(byte == b' ' || (b'0' <= byte && byte <= b'9')) {
+                    return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+                }
+            }
+            return Ok(String::from_utf8(bytes).unwrap());
+        })
+    }
+
+    /// Reads an ASN.1 PrintableString.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let data = &[19, 9, 67, 111, 46, 44, 32, 76, 116, 100, 46];
+    /// let asn = yasna::parse_der(data, |reader| {
+    ///     reader.read_printable_string()
+    /// }).unwrap();
+    /// assert_eq!(&asn, "Co., Ltd.");
+    /// ```
+    pub fn read_printable_string(self) -> ASN1Result<String> {
+        self.read_tagged_implicit(TAG_PRINTABLESTRING, |reader| {
+            let bytes = try!(reader.read_bytes());
+            for &byte in bytes.iter() {
+                if !(
+                    byte == b' ' ||
+                    (b'\'' <= byte && byte <= b':' && byte != b'*') ||
+                    byte == b'=' ||
+                    (b'A' <= byte && byte <= b'Z') ||
+                    (b'a' <= byte && byte <= b'z')) {
+                    return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+                }
+            }
+            return Ok(String::from_utf8(bytes).unwrap());
+        })
+    }
+
+    /// Reads an ASN.1 VisibleString.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let data = &[26, 3, 72, 105, 33];
+    /// let asn = yasna::parse_der(data, |reader| {
+    ///     reader.read_visible_string()
+    /// }).unwrap();
+    /// assert_eq!(&asn, "Hi!");
+    /// ```
+    pub fn read_visible_string(self) -> ASN1Result<String> {
+        self.read_tagged_implicit(TAG_VISIBLESTRING, |reader| {
+            let bytes = try!(reader.read_bytes());
+            for &byte in bytes.iter() {
+                if !(b' ' <= byte && byte <= b'~') {
+                    return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+                }
+            }
+            return Ok(String::from_utf8(bytes).unwrap());
+        })
     }
 
     /// Reads a (explicitly) tagged value.
