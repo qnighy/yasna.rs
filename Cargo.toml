@@ -16,7 +16,7 @@ include = [
 ]
 
 [features]
-default = ["num", "bit-vec"]
+default = []
 
 [dependencies]
 

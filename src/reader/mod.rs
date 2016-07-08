@@ -606,6 +606,15 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// assert_eq!(&asn, &BigInt::parse_bytes(b"1234567890", 10).unwrap());
     /// # }
     /// ```
+    ///
+    /// # Features
+    ///
+    /// This method is enabled by `num` feature.
+    ///
+    /// ```toml
+    /// [dependencies]
+    /// yasna = { version = "*", features = ["num"] }
+    /// ```
     pub fn read_bigint(self) -> ASN1Result<BigInt> {
         self.read_general(TAG_INTEGER, |contents| {
             let buf = match contents {
@@ -645,6 +654,15 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// # Errors
     ///
     /// Except parse errors, it can raise integer overflow errors.
+    ///
+    /// # Features
+    ///
+    /// This method is enabled by `num` feature.
+    ///
+    /// ```toml
+    /// [dependencies]
+    /// yasna = { version = "*", features = ["num"] }
+    /// ```
     pub fn read_biguint(self) -> ASN1Result<BigUint> {
         self.read_general(TAG_INTEGER, |contents| {
             let buf = match contents {
@@ -740,6 +758,15 @@ impl<'a, 'b> BERReader<'a, 'b> {
     ///     vec![1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1,
     ///         0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1]);
     /// # }
+    /// ```
+    ///
+    /// # Features
+    ///
+    /// This method is enabled by `bit-vec` feature.
+    ///
+    /// ```toml
+    /// [dependencies]
+    /// yasna = { version = "*", features = ["bit-vec"] }
     /// ```
     pub fn read_bitvec(self) -> ASN1Result<BitVec> {
         let mut unused_bits = 0;

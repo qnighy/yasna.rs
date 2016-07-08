@@ -327,6 +327,15 @@ impl<'a> DERWriter<'a> {
     /// assert_eq!(der, vec![2, 4, 73, 150, 2, 210]);
     /// # }
     /// ```
+    ///
+    /// # Features
+    ///
+    /// This method is enabled by `num` feature.
+    ///
+    /// ```toml
+    /// [dependencies]
+    /// yasna = { version = "*", features = ["num"] }
+    /// ```
     pub fn write_bigint(mut self, val: &BigInt) {
         use num::bigint::Sign;
         self.write_identifier(TAG_INTEGER, PC::Primitive);
@@ -389,6 +398,15 @@ impl<'a> DERWriter<'a> {
     /// assert_eq!(der, vec![2, 4, 73, 150, 2, 210]);
     /// # }
     /// ```
+    ///
+    /// # Features
+    ///
+    /// This method is enabled by `num` feature.
+    ///
+    /// ```toml
+    /// [dependencies]
+    /// yasna = { version = "*", features = ["num"] }
+    /// ```
     pub fn write_biguint(mut self, val: &BigUint) {
         self.write_identifier(TAG_INTEGER, PC::Primitive);
         let mut bytes = val.to_bytes_le();
@@ -428,6 +446,15 @@ impl<'a> DERWriter<'a> {
     /// });
     /// assert_eq!(&der, &[3, 5, 3, 206, 213, 116, 24]);
     /// # }
+    /// ```
+    ///
+    /// # Features
+    ///
+    /// This method is enabled by `bit-vec` feature.
+    ///
+    /// ```toml
+    /// [dependencies]
+    /// yasna = { version = "*", features = ["bit-vec"] }
     /// ```
     pub fn write_bitvec(mut self, bitvec: &BitVec) {
         use super::tags::TAG_BITSTRING;
