@@ -21,9 +21,9 @@ default = []
 [dependencies]
 
 [dependencies.num]
-version = "0.1.32"
+version = "0.1.29"
 optional = true
 
 [dependencies.bit-vec]
-version = "0.4.3"
+version = "0.4.0"
 optional = true
