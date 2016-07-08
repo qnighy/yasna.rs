@@ -42,6 +42,7 @@ use super::models::ObjectIdentifier;
 /// - Tuples (except `()`) as SEQUENCE decoder.
 /// - `Vec<u8>` as OCTETSTRING decoder.
 /// - `BitVec` as BITSTRING decoder.
+/// - `String` as UTF8String decoder.
 /// - `i64`, `u64`, `i32`, `u32`, `i16`, `u16`, `BigInt`, `BigUint`
 ///   as INTEGER decoder. (`u8` is avoided because of confliction.)
 /// - `bool` as BOOLEAN decoder.
@@ -218,6 +219,12 @@ impl BERDecodable for BitVec {
 impl BERDecodable for Vec<u8> {
     fn decode_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.read_bytes()
+    }
+}
+
+impl BERDecodable for String {
+    fn decode_ber(reader: BERReader) -> ASN1Result<Self> {
+        reader.read_utf8string()
     }
 }
 
