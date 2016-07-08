@@ -6,9 +6,9 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[cfg(feature = "bigint")]
+#[cfg(feature = "num")]
 use num::bigint::{BigUint, BigInt};
-#[cfg(feature = "bitvec")]
+#[cfg(feature = "bit-vec")]
 use bit_vec::BitVec;
 
 use super::Tag;
@@ -309,7 +309,7 @@ impl<'a> DERWriter<'a> {
         self.write_i64(val as i64)
     }
 
-    #[cfg(feature = "bigint")]
+    #[cfg(feature = "num")]
     /// Writes `BigInt` as an ASN.1 INTEGER value.
     ///
     /// # Examples
@@ -371,7 +371,7 @@ impl<'a> DERWriter<'a> {
         };
     }
 
-    #[cfg(feature = "bigint")]
+    #[cfg(feature = "num")]
     /// Writes `BigUint` as an ASN.1 INTEGER value.
     ///
     /// # Examples
@@ -409,7 +409,7 @@ impl<'a> DERWriter<'a> {
         self.buf.extend_from_slice(&bytes);
     }
 
-    #[cfg(feature = "bitvec")]
+    #[cfg(feature = "bit-vec")]
     /// Writes `BitVec` as an ASN.1 BITSTRING value.
     ///
     /// # Examples

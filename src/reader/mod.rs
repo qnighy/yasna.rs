@@ -8,9 +8,9 @@
 
 mod error;
 
-#[cfg(feature = "bigint")]
+#[cfg(feature = "num")]
 use num::bigint::{BigInt,BigUint,Sign};
-#[cfg(feature = "bitvec")]
+#[cfg(feature = "bit-vec")]
 use bit_vec::BitVec;
 
 use super::{Tag,TAG_CLASSES};
@@ -588,7 +588,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
         }
     }
 
-    #[cfg(feature = "bigint")]
+    #[cfg(feature = "num")]
     /// Reads an ASN.1 INTEGER value as `BigInt`.
     ///
     /// # Examples
@@ -639,7 +639,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
         })
     }
 
-    #[cfg(feature = "bigint")]
+    #[cfg(feature = "num")]
     /// Reads an ASN.1 INTEGER value as `BigUint`.
     ///
     /// # Errors
@@ -670,7 +670,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
         })
     }
 
-    #[cfg(feature = "bitvec")]
+    #[cfg(feature = "bit-vec")]
     fn read_bitvec_impl(self, unused_bits: &mut usize, bytes: &mut Vec<u8>)
             -> ASN1Result<()> {
         use super::tags::TAG_BITSTRING;
@@ -720,7 +720,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
         })
     }
 
-    #[cfg(feature = "bitvec")]
+    #[cfg(feature = "bit-vec")]
     /// Reads an ASN.1 BITSTRING value as `BitVec`.
     ///
     /// # Examples

@@ -8,9 +8,9 @@
 
 use std::hash::Hash;
 
-#[cfg(feature = "bigint")]
+#[cfg(feature = "num")]
 use num::bigint::{BigInt,BigUint};
-#[cfg(feature = "bitvec")]
+#[cfg(feature = "bit-vec")]
 use bit_vec::BitVec;
 
 use super::tags::{TAG_PRINTABLESTRING,TAG_UTCTIME};
@@ -67,14 +67,14 @@ impl FromBER for i64 {
     }
 }
 
-#[cfg(feature = "bigint")]
+#[cfg(feature = "num")]
 impl FromBER for BigInt {
     fn from_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.read_bigint()
     }
 }
 
-#[cfg(feature = "bigint")]
+#[cfg(feature = "num")]
 impl FromBER for BigUint {
     fn from_ber(reader: BERReader) -> ASN1Result<Self> {
         match try!(BigInt::from_ber(reader)).to_biguint() {
@@ -96,7 +96,7 @@ impl FromBER for bool {
     }
 }
 
-#[cfg(feature = "bitvec")]
+#[cfg(feature = "bit-vec")]
 impl FromBER for BitVec {
     fn from_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.read_bitvec()

@@ -49,9 +49,9 @@
 //! }
 //! ```
 
-#[cfg(feature = "bigint")]
+#[cfg(feature = "num")]
 extern crate num;
-#[cfg(feature = "bitvec")]
+#[cfg(feature = "bit-vec")]
 extern crate bit_vec;
 
 pub mod tags;
