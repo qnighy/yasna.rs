@@ -8,12 +8,6 @@
 
 //! Provides datatypes which correspond to ASN.1 types.
 
-mod setof;
 mod oid;
-mod charstring;
-mod time;
 
-pub use self::setof::SetOf;
 pub use self::oid::ObjectIdentifier;
-pub use self::charstring::PrintableString;
-pub use self::time::UtcTime;

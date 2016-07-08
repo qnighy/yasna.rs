@@ -65,7 +65,7 @@ pub use writer::{DERWriter,DERWriterSeq,DERWriterSet};
 pub use reader::{parse_ber_general,parse_ber,parse_der,BERMode};
 pub use reader::{BERReader,BERReaderSeq,BERReaderSet};
 pub use reader::{ASN1Error,ASN1ErrorKind,ASN1Result};
-pub use deserializer::FromBER;
+pub use deserializer::{BERDecodable,decode_ber_general,decode_ber,decode_der};
 
 /// An ASN.1 tag class, used in [`Tag`][tag].
 ///
