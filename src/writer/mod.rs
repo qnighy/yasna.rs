@@ -589,6 +589,8 @@ impl<'a> DERWriter<'a> {
     ///
     /// [derwriterseq]: struct.DERWriterSeq.html
     ///
+    /// This is equivalent to `write_sequence_of` in behaviors.
+    ///
     /// # Examples
     ///
     /// ```
@@ -609,6 +611,34 @@ impl<'a> DERWriter<'a> {
                 buf: writer.buf,
             })
         });
+    }
+
+    /// Writes ASN.1 SEQUENCE OF.
+    ///
+    /// This function uses the loan pattern: `callback` is called back with
+    /// a [`DERWriterSeq`][derwriterseq], to which the contents of the
+    /// SEQUENCE OF are written.
+    ///
+    /// [derwriterseq]: struct.DERWriterSeq.html
+    ///
+    /// This is equivalent to `write_sequence` in behaviors.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_sequence_of(|writer| {
+    ///         for &i in &[10, -129] {
+    ///             writer.next().write_i64(i);
+    ///         }
+    ///     })
+    /// });
+    /// assert_eq!(der, vec![48, 7, 2, 1, 10, 2, 2, 255, 127]);
+    /// ```
+    pub fn write_sequence_of<T, F>(self, callback: F) -> T
+        where F: FnOnce(&mut DERWriterSeq) -> T {
+        self.write_sequence(callback)
     }
 
     /// Writes ASN.1 SET.

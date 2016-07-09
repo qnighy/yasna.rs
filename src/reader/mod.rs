@@ -215,6 +215,43 @@ impl<'a> BERReaderImpl<'a> {
         return Ok((tag, pcbit));
     }
 
+    fn lookahead_tag(&self) -> ASN1Result<Tag> {
+        let mut pos = self.pos;
+        let mut read_u8 = || {
+            if pos < self.buf.len() {
+                let ret = self.buf[pos];
+                pos += 1;
+                return Ok(ret);
+            } else {
+                return Err(ASN1Error::new(ASN1ErrorKind::Eof));
+            }
+        };
+        let tagbyte = try!(read_u8());
+        let tag_class = TAG_CLASSES[(tagbyte >> 6) as usize];
+        let mut tag_number = (tagbyte & 31) as u64;
+        if tag_number == 31 {
+            tag_number = 0;
+            loop {
+                let b = try!(read_u8()) as u64;
+                let x =
+                    try!(tag_number.checked_mul(128).ok_or(
+                        ASN1Error::new(ASN1ErrorKind::IntegerOverflow)));
+                tag_number = x + (b & 127);
+                if (b & 128) == 0 {
+                    break;
+                }
+            }
+            if tag_number < 31 {
+                return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+            }
+        }
+        let tag = Tag {
+            tag_class: tag_class,
+            tag_number: tag_number,
+        };
+        return Ok(tag);
+    }
+
     fn read_length(&mut self) -> ASN1Result<Option<usize>> {
         let lbyte = try!(self.read_u8()) as usize;
         if lbyte == 128 {
@@ -966,6 +1003,79 @@ impl<'a, 'b> BERReader<'a, 'b> {
         })
     }
 
+    /// Reads an ASN.1 SEQUENCE OF value.
+    ///
+    /// This function uses the loan pattern: `callback` is called back with
+    /// a [`BERReader`][berreader], from which the contents of the
+    /// SEQUENCE OF is read.
+    ///
+    /// [berreaderseq]: struct.BERReaderSeq.html
+    ///
+    /// This function doesn't return values. Instead, use mutable values to
+    /// maintain read values. `collect_set_of` can be an alternative.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let data = &[48, 7, 2, 1, 10, 2, 2, 255, 127];
+    /// let asn = yasna::parse_der(data, |reader| {
+    ///     let mut numbers = Vec::new();
+    ///     try!(reader.read_sequence_of(|reader| {
+    ///         numbers.push(try!(reader.read_i64()));
+    ///         return Ok(());
+    ///     }));
+    ///     return Ok(numbers);
+    /// }).unwrap();
+    /// assert_eq!(&asn, &[10, -129]);
+    /// ```
+    pub fn read_sequence_of<F>(self, mut callback: F) -> ASN1Result<()>
+            where F: for<'c> FnMut(BERReader<'a, 'c>) -> ASN1Result<()> {
+        self.read_sequence(|reader| {
+            loop {
+                if let None = try!(reader.read_optional(|reader| {
+                    callback(reader)
+                })) {
+                    break;
+                }
+            }
+            return Ok(());
+        })
+    }
+
+    /// Collects an ASN.1 SEQUENCE OF value.
+    ///
+    /// This function uses the loan pattern: `callback` is called back with
+    /// a [`BERReader`][berreader], from which the contents of the
+    /// SEQUENCE OF is read.
+    ///
+    /// If you don't like `Vec`, you can use `read_sequence_of` instead.
+    ///
+    /// [berreader]: struct.BERReader.html
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let data = &[48, 7, 2, 1, 10, 2, 2, 255, 127];
+    /// let asn = yasna::parse_der(data, |reader| {
+    ///     reader.collect_sequence_of(|reader| {
+    ///         reader.read_i64()
+    ///     })
+    /// }).unwrap();
+    /// assert_eq!(&asn, &[10, -129]);
+    /// ```
+    pub fn collect_sequence_of<T, F>(self, mut callback: F)
+            -> ASN1Result<Vec<T>>
+            where F: for<'c> FnMut(BERReader<'a, 'c>) -> ASN1Result<T> {
+        let mut collection = Vec::new();
+        try!(self.read_sequence_of(|reader| {
+            collection.push(try!(callback(reader)));
+            return Ok(());
+        }));
+        return Ok(collection);
+    }
+
     /// Reads an ASN.1 SET value.
     ///
     /// This function uses the loan pattern: `callback` is called back with
@@ -1328,6 +1438,33 @@ impl<'a, 'b> BERReader<'a, 'b> {
         });
     }
 
+    /// Lookaheads the tag in the next value. Used to parse CHOICE values.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// use yasna::tags::*;
+    /// let data = &[48, 5, 2, 1, 10, 5, 0];
+    /// let asn = yasna::parse_der(data, |reader| {
+    ///     reader.collect_sequence_of(|reader| {
+    ///         let tag = try!(reader.lookahead_tag());
+    ///         let choice;
+    ///         if tag == TAG_INTEGER {
+    ///             choice = Some(try!(reader.read_i64()));
+    ///         } else {
+    ///             try!(reader.read_null());
+    ///             choice = None;
+    ///         }
+    ///         return Ok(choice);
+    ///     })
+    /// }).unwrap();
+    /// assert_eq!(&asn, &[Some(10), None]);
+    /// ```
+    pub fn lookahead_tag(&self) -> ASN1Result<Tag> {
+        self.inner.lookahead_tag()
+    }
+
     pub fn read_with_buffer<T, F>(mut self, callback: F)
             -> ASN1Result<(T, &'a [u8])>
             where F: for<'c> FnOnce(BERReader<'a, 'c>) -> ASN1Result<T> {
@@ -1380,6 +1517,27 @@ impl<'a, 'b> BERReaderSeq<'a, 'b> {
         BERReader::new(self.inner)
     }
 
+    /// Tries to read an ASN.1 value. If it fails at the first tag,
+    /// it doesn't consume buffer and returns `None`.
+    ///
+    /// Used to parse OPTIONAL elements.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let data = &[48, 3, 1, 1, 255];
+    /// let asn = yasna::parse_der(data, |reader| {
+    ///     reader.read_sequence(|reader| {
+    ///         let i = try!(reader.read_optional(|reader| {
+    ///             reader.read_i64()
+    ///         }));
+    ///         let b = try!(reader.next().read_bool());
+    ///         return Ok((i, b));
+    ///     })
+    /// }).unwrap();
+    /// assert_eq!(asn, (None, true));
+    /// ```
     pub fn read_optional<T, F>(&mut self, callback: F)
             -> ASN1Result<Option<T>>
             where F: for<'c> FnOnce(BERReader<'a, 'c>) -> ASN1Result<T> {
@@ -1388,6 +1546,29 @@ impl<'a, 'b> BERReaderSeq<'a, 'b> {
         })
     }
 
+    /// Similar to `read_optional`, but uses `default` if it fails.
+    ///
+    /// `T: Eq` is required because it fails in DER mode if the read value
+    /// is equal to `default`.
+    ///
+    /// Used to parse DEFAULT elements.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let data = &[48, 3, 1, 1, 255];
+    /// let asn = yasna::parse_der(data, |reader| {
+    ///     reader.read_sequence(|reader| {
+    ///         let i = try!(reader.read_default(10, |reader| {
+    ///             reader.read_i64()
+    ///         }));
+    ///         let b = try!(reader.next().read_bool());
+    ///         return Ok((i, b));
+    ///     })
+    /// }).unwrap();
+    /// assert_eq!(asn, (10, true));
+    /// ```
     pub fn read_default<T, F>(&mut self, default: T, callback: F)
             -> ASN1Result<T>
             where F: for<'c> FnOnce(BERReader<'a, 'c>) -> ASN1Result<T>,
@@ -1464,6 +1645,88 @@ impl<'a, 'b> BERReaderSet<'a, 'b> {
             return Ok(BERReader::new(self.impl_ref))
         } else {
             return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+        }
+    }
+
+    /// If there is a set element with a tag in `tag_hint`, reads an ASN.1
+    /// value from that element and returns `Some(_)`.
+    /// Otherwise, returns `None`.
+    ///
+    /// Used to parse OPTIONAL elements.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// use yasna::tags::*;
+    /// let data = &[49, 3, 1, 1, 255];
+    /// let asn = yasna::parse_der(data, |reader| {
+    ///     reader.read_set(|reader| {
+    ///         let i = try!(reader.read_optional(&[TAG_INTEGER], |reader| {
+    ///             reader.read_i64()
+    ///         }));
+    ///         let b = try!(try!(reader.next(&[TAG_BOOLEAN])).read_bool());
+    ///         return Ok((i, b));
+    ///     })
+    /// }).unwrap();
+    /// assert_eq!(asn, (None, true));
+    /// ```
+    pub fn read_optional<T, F>(&mut self, tag_hint: &[Tag], callback: F)
+            -> ASN1Result<Option<T>>
+            where F: for<'c> FnOnce(BERReader<'a, 'c>) -> ASN1Result<T> {
+        if let Some(elem_pos) = self.elements.iter().position(|&(tag,_,_)| {
+            tag_hint.contains(&tag)
+        }) {
+            let (_, buf, pos) = self.elements.remove(elem_pos);
+            let mut reader_impl = BERReaderImpl::with_pos(
+                buf, pos, self.impl_ref.mode);
+            let result = try!(callback(BERReader::new(&mut reader_impl)));
+            try!(reader_impl.end_of_buf());
+            return Ok(Some(result));
+        } else {
+            return Ok(None);
+        }
+    }
+
+    /// Similar to `read_optional`, but uses `default` if it fails.
+    ///
+    /// `T: Eq` is required because it fails in DER mode if the read value
+    /// is equal to `default`.
+    ///
+    /// Used to parse DEFAULT elements.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// use yasna::tags::*;
+    /// let data = &[49, 3, 1, 1, 255];
+    /// let asn = yasna::parse_der(data, |reader| {
+    ///     reader.read_set(|reader| {
+    ///         let i = try!(reader.read_default(&[TAG_INTEGER], 10, |reader| {
+    ///             reader.read_i64()
+    ///         }));
+    ///         let b = try!(try!(reader.next(&[TAG_BOOLEAN])).read_bool());
+    ///         return Ok((i, b));
+    ///     })
+    /// }).unwrap();
+    /// assert_eq!(asn, (10, true));
+    /// ```
+    pub fn read_default<T, F>
+            (&mut self, tag_hint: &[Tag], default: T, callback: F)
+            -> ASN1Result<T>
+            where F: for<'c> FnOnce(BERReader<'a, 'c>) -> ASN1Result<T>,
+            T: Eq {
+        let mode = self.impl_ref.mode;
+        match try!(self.read_optional(tag_hint, callback)) {
+            Some(result) => {
+                if mode == BERMode::Der && result == default {
+                    return Err(
+                        ASN1Error::new(ASN1ErrorKind::Invalid));
+                }
+                return Ok(result);
+            },
+            None => Ok(default),
         }
     }
 }
