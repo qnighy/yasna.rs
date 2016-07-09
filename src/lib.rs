@@ -89,6 +89,8 @@
 extern crate num;
 #[cfg(feature = "bit-vec")]
 extern crate bit_vec;
+#[cfg(feature = "chrono")]
+extern crate chrono;
 
 pub mod tags;
 pub mod models;

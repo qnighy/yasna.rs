@@ -9,5 +9,9 @@
 //! Provides datatypes which correspond to ASN.1 types.
 
 mod oid;
+#[cfg(feature = "chrono")]
+mod time;
 
 pub use self::oid::ObjectIdentifier;
+#[cfg(feature = "chrono")]
+pub use self::time::{UTCTime,GeneralizedTime};

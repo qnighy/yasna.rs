@@ -13,6 +13,8 @@ use bit_vec::BitVec;
 
 use super::{DERWriter,construct_der};
 use super::models::ObjectIdentifier;
+#[cfg(feature = "chrono")]
+use super::models::{UTCTime,GeneralizedTime};
 
 /// Types encodable in DER.
 ///
@@ -46,6 +48,7 @@ use super::models::ObjectIdentifier;
 ///   as INTEGER encoder. (`u8` is avoided because of confliction.)
 /// - `bool` as BOOLEAN encoder.
 /// - `ObjectIdentifier` as OBJECTT IDENTIFIER encoder.
+/// - `UTCTime`/`GeneralizedTime` as UTCTime/GeneralizedTime encoder.
 pub trait DEREncodable {
     /// Writes the value as an DER-encoded ASN.1 value.
     ///
@@ -195,6 +198,20 @@ impl DEREncodable for str {
 impl DEREncodable for ObjectIdentifier {
     fn encode_der(&self, writer: DERWriter) {
         writer.write_oid(self)
+    }
+}
+
+#[cfg(feature = "chrono")]
+impl DEREncodable for UTCTime {
+    fn encode_der(&self, writer: DERWriter) {
+        writer.write_utctime(self)
+    }
+}
+
+#[cfg(feature = "chrono")]
+impl DEREncodable for GeneralizedTime{
+    fn encode_der(&self, writer: DERWriter) {
+        writer.write_generalized_time(self)
     }
 }
 

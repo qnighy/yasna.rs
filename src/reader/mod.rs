@@ -18,6 +18,8 @@ use super::tags::{TAG_EOC,TAG_BOOLEAN,TAG_INTEGER,TAG_OCTETSTRING};
 use super::tags::{TAG_NULL,TAG_OID,TAG_UTF8STRING,TAG_SEQUENCE,TAG_SET};
 use super::tags::{TAG_NUMERICSTRING,TAG_PRINTABLESTRING,TAG_VISIBLESTRING};
 use super::models::ObjectIdentifier;
+#[cfg(feature = "chrono")]
+use super::models::{UTCTime,GeneralizedTime};
 pub use self::error::*;
 
 /// Parses DER/BER-encoded data.
@@ -1172,6 +1174,82 @@ impl<'a, 'b> BERReader<'a, 'b> {
                 }
             }
             return Ok(String::from_utf8(bytes).unwrap());
+        })
+    }
+
+    #[cfg(feature = "chrono")]
+    /// Reads an ASN.1 UTCTime.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let data = &[
+    ///     23, 15, 56, 50, 48, 49, 48, 50, 48,
+    ///     55, 48, 48, 45, 48, 53, 48, 48];
+    /// let asn = yasna::parse_ber(data, |reader| {
+    ///     reader.read_utctime()
+    /// }).unwrap();
+    /// assert_eq!(asn.datetime().timestamp(), 378820800);
+    /// ```
+    ///
+    /// # Features
+    ///
+    /// This method is enabled by `chrono` feature.
+    ///
+    /// ```toml
+    /// [dependencies]
+    /// yasna = { version = "*", features = ["chrono"] }
+    /// ```
+    pub fn read_utctime(self) -> ASN1Result<UTCTime> {
+        use super::tags::TAG_UTCTIME;
+        let mode = self.inner.mode;
+        self.read_tagged_implicit(TAG_UTCTIME, |reader| {
+            let bytes = try!(reader.read_bytes());
+            let datetime = try!(UTCTime::parse(&bytes).ok_or_else(
+                || ASN1Error::new(ASN1ErrorKind::Invalid)));
+            if mode == BERMode::Der && &datetime.to_bytes() != &bytes {
+                return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+            }
+            return Ok(datetime);
+        })
+    }
+
+    #[cfg(feature = "chrono")]
+    /// Reads an ASN.1 GeneralizedTime.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let data = &[
+    ///     24, 17, 49, 57, 56, 53, 49, 49, 48, 54,
+    ///     50, 49, 46, 49, 52, 49, 53, 57, 90];
+    /// let asn = yasna::parse_ber(data, |reader| {
+    ///     reader.read_generalized_time()
+    /// }).unwrap();
+    /// assert_eq!(asn.datetime().timestamp(), 500159309);
+    /// ```
+    ///
+    /// # Features
+    ///
+    /// This method is enabled by `chrono` feature.
+    ///
+    /// ```toml
+    /// [dependencies]
+    /// yasna = { version = "*", features = ["chrono"] }
+    /// ```
+    pub fn read_generalized_time(self) -> ASN1Result<GeneralizedTime> {
+        use super::tags::TAG_GENERALIZEDTIME;
+        let mode = self.inner.mode;
+        self.read_tagged_implicit(TAG_GENERALIZEDTIME, |reader| {
+            let bytes = try!(reader.read_bytes());
+            let datetime = try!(GeneralizedTime::parse(&bytes).ok_or_else(
+                || ASN1Error::new(ASN1ErrorKind::Invalid)));
+            if mode == BERMode::Der && &datetime.to_bytes() != &bytes {
+                return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+            }
+            return Ok(datetime);
         })
     }
 

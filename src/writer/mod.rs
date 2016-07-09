@@ -16,6 +16,8 @@ use super::tags::{TAG_BOOLEAN,TAG_INTEGER,TAG_OCTETSTRING};
 use super::tags::{TAG_NULL,TAG_OID,TAG_UTF8STRING,TAG_SEQUENCE,TAG_SET};
 use super::tags::{TAG_NUMERICSTRING,TAG_PRINTABLESTRING,TAG_VISIBLESTRING};
 use super::models::ObjectIdentifier;
+#[cfg(feature = "chrono")]
+use super::models::{UTCTime,GeneralizedTime};
 
 /// Constructs DER-encoded data as `Vec<u8>`.
 ///
@@ -752,6 +754,80 @@ impl<'a> DERWriter<'a> {
         }
         self.write_tagged_implicit(TAG_PRINTABLESTRING, |writer| {
             writer.write_bytes(bytes)
+        });
+    }
+
+    #[cfg(feature = "chrono")]
+    /// Writes an ASN.1 UTCTime.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate chrono;
+    /// # extern crate yasna;
+    /// # fn main() {
+    /// use yasna;
+    /// use yasna::models::UTCTime;
+    /// use chrono::{UTC,TimeZone};
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_utctime(
+    ///         &UTCTime::from_datetime(&UTC.timestamp(378820800, 0)))
+    /// });
+    /// assert_eq!(&der, &[
+    ///     23, 13, 56, 50, 48, 49, 48, 50, 49, 50, 48, 48, 48, 48, 90]);
+    /// # }
+    /// ```
+    ///
+    /// # Features
+    ///
+    /// This method is enabled by `chrono` feature.
+    ///
+    /// ```toml
+    /// [dependencies]
+    /// yasna = { version = "*", features = ["chrono"] }
+    /// ```
+    pub fn write_utctime(self, datetime: &UTCTime) {
+        use super::tags::TAG_UTCTIME;
+        self.write_tagged_implicit(TAG_UTCTIME, |writer| {
+            writer.write_bytes(&datetime.to_bytes())
+        });
+    }
+
+    #[cfg(feature = "chrono")]
+    /// Writes an ASN.1 GeneralizedTime.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate chrono;
+    /// # extern crate yasna;
+    /// # fn main() {
+    /// use yasna;
+    /// use yasna::models::GeneralizedTime;
+    /// use chrono::{UTC,TimeZone};
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_generalized_time(
+    ///         &GeneralizedTime::from_datetime(
+    ///             &UTC.timestamp(500159309, 724_000_000)))
+    /// });
+    /// assert_eq!(&der, &[
+    ///     24, 19, 49, 57, 56, 53, 49, 49, 48, 54, 50,
+    ///     49, 48, 56, 50, 57, 46, 55, 50, 52, 90]);
+    /// # }
+    /// ```
+    ///
+    /// # Features
+    ///
+    /// This method is enabled by `chrono` feature.
+    ///
+    /// ```toml
+    /// [dependencies]
+    /// yasna = { version = "*", features = ["chrono"] }
+    /// ```
+    pub fn write_generalized_time(self, datetime: &GeneralizedTime) {
+        use super::tags::TAG_GENERALIZEDTIME;
+        self.write_tagged_implicit(TAG_GENERALIZEDTIME, |writer| {
+            writer.write_bytes(&datetime.to_bytes())
         });
     }
 
