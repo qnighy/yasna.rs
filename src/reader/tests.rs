@@ -6,8 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[cfg(feature = "num")]
-use num::bigint::{BigUint, BigInt};
+#[cfg(feature = "num-bigint")]
+use num_bigint::{BigUint, BigInt};
 
 use super::super::Tag;
 use super::*;
@@ -529,31 +529,31 @@ fn test_general_read_u8_err(mode: BERMode) {
     }
 }
 
-#[cfg(feature = "num")]
+#[cfg(feature = "num-bigint")]
 #[test]
 fn test_der_read_bigint_ok() {
     test_general_read_bigint_ok(BERMode::Der);
 }
 
-#[cfg(feature = "num")]
+#[cfg(feature = "num-bigint")]
 #[test]
 fn test_der_read_bigint_err() {
     test_general_read_bigint_err(BERMode::Der);
 }
 
-#[cfg(feature = "num")]
+#[cfg(feature = "num-bigint")]
 #[test]
 fn test_ber_read_bigint_ok() {
     test_general_read_bigint_ok(BERMode::Ber);
 }
 
-#[cfg(feature = "num")]
+#[cfg(feature = "num-bigint")]
 #[test]
 fn test_ber_read_bigint_err() {
     test_general_read_bigint_err(BERMode::Ber);
 }
 
-#[cfg(feature = "num")]
+#[cfg(feature = "num-bigint")]
 fn test_general_read_bigint_ok(mode: BERMode) {
     use num_traits::FromPrimitive;
     let tests : &[(i64, &[u8])] = &[
@@ -608,7 +608,7 @@ fn test_general_read_bigint_ok(mode: BERMode) {
     }
 }
 
-#[cfg(feature = "num")]
+#[cfg(feature = "num-bigint")]
 fn test_general_read_bigint_err(mode: BERMode) {
     let tests : &[&[u8]] = &[
         &[], &[2], &[0, 0], &[0, 1, 0], &[1, 1, 0], &[34, 1, 0], &[66, 1, 0],
@@ -623,31 +623,31 @@ fn test_general_read_bigint_err(mode: BERMode) {
     }
 }
 
-#[cfg(feature = "num")]
+#[cfg(feature = "num-bigint")]
 #[test]
 fn test_der_read_biguint_ok() {
     test_general_read_biguint_ok(BERMode::Der);
 }
 
-#[cfg(feature = "num")]
+#[cfg(feature = "num-bigint")]
 #[test]
 fn test_der_read_biguint_err() {
     test_general_read_biguint_err(BERMode::Der);
 }
 
-#[cfg(feature = "num")]
+#[cfg(feature = "num-bigint")]
 #[test]
 fn test_ber_read_biguint_ok() {
     test_general_read_biguint_ok(BERMode::Ber);
 }
 
-#[cfg(feature = "num")]
+#[cfg(feature = "num-bigint")]
 #[test]
 fn test_ber_read_biguint_err() {
     test_general_read_biguint_err(BERMode::Ber);
 }
 
-#[cfg(feature = "num")]
+#[cfg(feature = "num-bigint")]
 fn test_general_read_biguint_ok(mode: BERMode) {
     use num_traits::FromPrimitive;
     let tests : &[(u64, &[u8])] = &[
@@ -688,7 +688,7 @@ fn test_general_read_biguint_ok(mode: BERMode) {
     }
 }
 
-#[cfg(feature = "num")]
+#[cfg(feature = "num-bigint")]
 fn test_general_read_biguint_err(mode: BERMode) {
     let tests : &[&[u8]] = &[
         &[], &[2], &[0, 0], &[0, 1, 0], &[1, 1, 0], &[34, 1, 0], &[66, 1, 0],

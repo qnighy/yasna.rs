@@ -8,8 +8,8 @@
 
 mod error;
 
-#[cfg(feature = "num")]
-use num::bigint::{BigInt,BigUint,Sign};
+#[cfg(feature = "num-bigint")]
+use num_bigint::{BigInt,BigUint,Sign};
 #[cfg(feature = "bit-vec")]
 use bit_vec::BitVec;
 
@@ -627,7 +627,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
         }
     }
 
-    #[cfg(feature = "num")]
+    #[cfg(feature = "num-bigint")]
     /// Reads an ASN.1 INTEGER value as `BigInt`.
     ///
     /// # Examples
@@ -687,7 +687,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
         })
     }
 
-    #[cfg(feature = "num")]
+    #[cfg(feature = "num-bigint")]
     /// Reads an ASN.1 INTEGER value as `BigUint`.
     ///
     /// # Errors

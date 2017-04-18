@@ -6,8 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[cfg(feature = "num")]
-use num::bigint::{BigInt,BigUint};
+#[cfg(feature = "num-bigint")]
+use num_bigint::{BigInt,BigUint};
 #[cfg(feature = "bit-vec")]
 use bit_vec::BitVec;
 
@@ -144,14 +144,14 @@ impl DEREncodable for u16 {
     }
 }
 
-#[cfg(feature = "num")]
+#[cfg(feature = "num-bigint")]
 impl DEREncodable for BigInt {
     fn encode_der(&self, writer: DERWriter) {
         writer.write_bigint(self)
     }
 }
 
-#[cfg(feature = "num")]
+#[cfg(feature = "num-bigint")]
 impl DEREncodable for BigUint {
     fn encode_der(&self, writer: DERWriter) {
         writer.write_biguint(self)

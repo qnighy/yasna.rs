@@ -85,8 +85,11 @@
 //! }
 //! ```
 
-#[cfg(feature = "num")]
-extern crate num;
+#[cfg(feature = "num-bigint")]
+extern crate num_bigint;
+#[cfg(test)]
+extern crate num_traits;
+
 #[cfg(feature = "bit-vec")]
 extern crate bit_vec;
 #[cfg(feature = "chrono")]

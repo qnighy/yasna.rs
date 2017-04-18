@@ -6,8 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[cfg(feature = "num")]
-use num::bigint::{BigInt,BigUint};
+#[cfg(feature = "num-bigint")]
+use num_bigint::{BigInt,BigUint};
 #[cfg(feature = "bit-vec")]
 use bit_vec::BitVec;
 
@@ -192,14 +192,14 @@ impl BERDecodable for u16 {
     }
 }
 
-#[cfg(feature = "num")]
+#[cfg(feature = "num-bigint")]
 impl BERDecodable for BigInt {
     fn decode_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.read_bigint()
     }
 }
 
-#[cfg(feature = "num")]
+#[cfg(feature = "num-bigint")]
 impl BERDecodable for BigUint {
     fn decode_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.read_biguint()

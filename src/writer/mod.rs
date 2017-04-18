@@ -6,8 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[cfg(feature = "num")]
-use num::bigint::{BigUint, BigInt};
+#[cfg(feature = "num-bigint")]
+use num_bigint::{BigUint, BigInt};
 #[cfg(feature = "bit-vec")]
 use bit_vec::BitVec;
 
@@ -311,7 +311,7 @@ impl<'a> DERWriter<'a> {
         self.write_i64(val as i64)
     }
 
-    #[cfg(feature = "num")]
+    #[cfg(feature = "num-bigint")]
     /// Writes `BigInt` as an ASN.1 INTEGER value.
     ///
     /// # Examples
@@ -382,7 +382,7 @@ impl<'a> DERWriter<'a> {
         };
     }
 
-    #[cfg(feature = "num")]
+    #[cfg(feature = "num-bigint")]
     /// Writes `BigUint` as an ASN.1 INTEGER value.
     ///
     /// # Examples

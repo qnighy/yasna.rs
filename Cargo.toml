@@ -20,12 +20,13 @@ default = []
 
 [dependencies]
 
-[dependencies.num]
-version = "0.1.29"
+[dependencies.num-bigint]
+version = "0.1.32"
+default-features = false
 optional = true
 
 [dev-dependencies.num-traits]
-version = "0.2"
+version = "0.1.32"
 default-features = false
 
 [dependencies.bit-vec]
