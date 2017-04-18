@@ -9,7 +9,7 @@
 mod error;
 
 #[cfg(feature = "bigint")]
-use num::bigint::{BigInt,BigUint,Sign};
+use num_bigint::{BigInt,BigUint,Sign};
 #[cfg(feature = "bitvec")]
 use bit_vec::BitVec;
 
@@ -593,11 +593,11 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// # Examples
     ///
     /// ```
-    /// # extern crate num;
+    /// # extern crate num_bigint;
     /// # extern crate yasna;
     /// # fn main() {
     /// use yasna;
-    /// use num::bigint::BigInt;
+    /// use num_bigint::BigInt;
     /// let data = &[2, 4, 73, 150, 2, 210];
     /// let asn = yasna::parse_der(data, |reader| {
     ///     reader.read_bigint()

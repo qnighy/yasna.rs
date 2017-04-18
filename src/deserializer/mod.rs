@@ -9,7 +9,7 @@
 use std::hash::Hash;
 
 #[cfg(feature = "bigint")]
-use num::bigint::{BigInt,BigUint};
+use num_bigint::{BigInt,BigUint};
 #[cfg(feature = "bitvec")]
 use bit_vec::BitVec;
 

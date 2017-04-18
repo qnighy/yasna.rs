@@ -7,7 +7,7 @@
 // except according to those terms.
 
 #[cfg(feature = "bigint")]
-use num::bigint::{BigUint, BigInt};
+use num_bigint::{BigUint, BigInt};
 #[cfg(feature = "bitvec")]
 use bit_vec::BitVec;
 
@@ -314,11 +314,11 @@ impl<'a> DERWriter<'a> {
     /// # Examples
     ///
     /// ```
-    /// # extern crate num;
+    /// # extern crate num_bigint;
     /// # extern crate yasna;
     /// # fn main() {
     /// use yasna;
-    /// use num::bigint::BigInt;
+    /// use num_bigint::BigInt;
     /// let der = yasna::construct_der(|writer| {
     ///     writer.write_bigint(
     ///         &BigInt::parse_bytes(b"1234567890", 10).unwrap())
@@ -327,7 +327,7 @@ impl<'a> DERWriter<'a> {
     /// # }
     /// ```
     pub fn write_bigint(mut self, val: &BigInt) {
-        use num::bigint::Sign;
+        use num_bigint::Sign;
         self.write_identifier(TAG_INTEGER, PC::Primitive);
         let (sign, mut bytes) = val.to_bytes_le();
         match sign {
@@ -376,11 +376,11 @@ impl<'a> DERWriter<'a> {
     /// # Examples
     ///
     /// ```
-    /// # extern crate num;
+    /// # extern crate num_bigint;
     /// # extern crate yasna;
     /// # fn main() {
     /// use yasna;
-    /// use num::bigint::BigUint;
+    /// use num_bigint::BigUint;
     /// let der = yasna::construct_der(|writer| {
     ///     writer.write_biguint(
     ///         &BigUint::parse_bytes(b"1234567890", 10).unwrap())
