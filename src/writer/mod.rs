@@ -1001,6 +1001,25 @@ impl<'a> DERWriter<'a> {
         };
         return callback(writer);
     }
+
+    /// Writes `&[u8]` into the DER output buffer directly. Properly encoded tag
+    /// and length must be included at the start of the passed buffer.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let raw_der = yasna::construct_der(|writer| {
+    ///     writer.write_der(b"\x04\x06Hello!")
+    /// });
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_bytes(b"Hello!")
+    /// });
+    /// assert_eq!(raw_der, der);
+    /// ```
+    pub fn write_der(self, der: &[u8]) {
+        self.buf.extend_from_slice(der);
+    }
 }
 
 /// A writer object that accepts ASN.1 values.
