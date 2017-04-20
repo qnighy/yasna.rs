@@ -671,6 +671,21 @@ impl<'a> DERWriter<'a> {
     /// });
     /// assert_eq!(der, vec![163, 3, 2, 1, 10]);
     /// ```
+    ///
+    /// Note: you can achieve the same using `write_tagged_implicit`:
+    ///
+    /// ```
+    /// use yasna::{self,Tag};
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_tagged_implicit(Tag::context(3), |writer| {
+    ///         writer.write_sequence(|writer| {
+    ///             let writer = writer.next();
+    ///             writer.write_i64(10)
+    ///         })
+    ///     })
+    /// });
+    /// assert_eq!(der, vec![163, 3, 2, 1, 10]);
+    /// ```
     pub fn write_tagged<T, F>(mut self, tag: Tag, callback: F) -> T
         where F: FnOnce(DERWriter) -> T {
         self.write_identifier(tag, PC::Constructed);
