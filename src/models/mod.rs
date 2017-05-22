@@ -11,7 +11,9 @@
 mod oid;
 #[cfg(feature = "chrono")]
 mod time;
+mod der;
 
 pub use self::oid::ObjectIdentifier;
 #[cfg(feature = "chrono")]
 pub use self::time::{UTCTime,GeneralizedTime};
+pub use self::der::TaggedDerValue;

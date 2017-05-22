@@ -1,4 +1,5 @@
 // Copyright 2016 Masaki Hara
+// Copyright 2017 Fortanix, Inc.
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -17,7 +18,7 @@ use super::{Tag,TAG_CLASSES};
 use super::tags::{TAG_EOC,TAG_BOOLEAN,TAG_INTEGER,TAG_OCTETSTRING};
 use super::tags::{TAG_NULL,TAG_OID,TAG_UTF8STRING,TAG_SEQUENCE,TAG_SET};
 use super::tags::{TAG_NUMERICSTRING,TAG_PRINTABLESTRING,TAG_VISIBLESTRING};
-use super::models::ObjectIdentifier;
+use super::models::{ObjectIdentifier,TaggedDerValue};
 #[cfg(feature = "chrono")]
 use super::models::{UTCTime,GeneralizedTime};
 pub use self::error::*;
@@ -327,9 +328,10 @@ impl<'a> BERReaderImpl<'a> {
         return Ok(result);
     }
 
-    fn skip_general(&mut self) -> ASN1Result<Tag> {
+    fn skip_general(&mut self) -> ASN1Result<(Tag, PCBit, usize)> {
         let mut skip_depth = 0;
         let mut skip_tag = None;
+        let mut data_pos = None;
         while skip_depth > 0 || skip_tag == None {
             let old_pos = self.pos;
             let (tag, pcbit) = try!(self.read_identifier());
@@ -339,25 +341,35 @@ impl<'a> BERReaderImpl<'a> {
                     return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
                 }
                 skip_depth -= 1;
+                // EOC is a pair of zero bytes, consume the second.
+                if self.read_u8()? != 0 {
+                    return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+                }
                 continue;
             }
             if skip_depth == 0 {
-                skip_tag = Some(tag);
+                skip_tag = Some((tag, pcbit));
             }
             if let Some(length) = try!(self.read_length()) {
+                if skip_depth == 0 {
+                    data_pos = Some(self.pos);
+                }
                 let limit = self.pos+length;
                 if self.buf.len() < limit {
                     return Err(ASN1Error::new(ASN1ErrorKind::Eof));
                 }
                 self.pos = limit;
             } else {
-                if pcbit != PCBit::Constructed {
+                if skip_depth == 0 {
+                    data_pos = Some(self.pos);
+                }
+                if pcbit != PCBit::Constructed || self.mode == BERMode::Der {
                     return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
                 }
                 skip_depth += 1;
             }
         }
-        return Ok(skip_tag.unwrap());
+        return Ok((skip_tag.unwrap().0, skip_tag.unwrap().1, data_pos.unwrap()));
     }
 
     fn read_with_buffer<'b, T, F>(&'b mut self, callback: F)
@@ -383,6 +395,7 @@ impl<'a> BERReaderImpl<'a> {
                 },
         }
     }
+
 }
 
 /// A reader object for BER/DER-encoded ASN.1 data.
@@ -1115,9 +1128,10 @@ impl<'a, 'b> BERReader<'a, 'b> {
             loop {
                 let old_pos = inner.pos;
                 if let Some(tag) = try!(inner.read_optional(|inner| {
-                    inner.skip_general()
+                    inner.skip_general().map(|t| t.0)
                 })) {
                     let new_pos = inner.pos;
+                    // TODO: this should store the P/C bit as well
                     elements.push((tag, &inner.buf[..new_pos], old_pos));
                 } else {
                     break;
@@ -1475,6 +1489,46 @@ impl<'a, 'b> BERReader<'a, 'b> {
                 implicit_tag: implicit_tag,
             })
         })
+    }
+
+    /// Read an arbitrary (tag, value) pair as a TaggedDerValue.
+    /// The length is not included in the returned payload. If the
+    /// payload has indefinite-length encoding, the EOC bytes are
+    /// included in the returned payload.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// use yasna::models::TaggedDerValue;
+    /// use yasna::tags::TAG_OCTETSTRING;
+    /// let data = b"\x04\x06Hello!";
+    /// let res = yasna::parse_der(data, |reader| reader.read_tagged_der()).unwrap();
+    /// assert_eq!(res, TaggedDerValue::from_tag_and_bytes(TAG_OCTETSTRING, b"Hello!".to_vec()));
+    /// ```
+    pub fn read_tagged_der(self) -> ASN1Result<TaggedDerValue> {
+        let (tag, _pcbit, data_pos) = self.inner.skip_general()?;
+        Ok(TaggedDerValue::from_tag_and_bytes(
+                tag,
+                self.inner.buf[data_pos..self.inner.pos].to_vec()))
+    }
+
+    /// Reads a DER object as raw bytes. Tag and length are included
+    /// in the returned buffer. For indefinite length encoding, EOC bytes
+    /// are included in the returned buffer as well.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let data = b"\x04\x06Hello!";
+    /// let res = yasna::parse_der(data, |reader| reader.read_der()).unwrap();
+    /// assert_eq!(res, data);
+    /// ```
+    pub fn read_der(self) -> ASN1Result<Vec<u8>> {
+        Ok(try!(self.inner.read_with_buffer(|inner| {
+            inner.skip_general()
+        })).1.to_owned())
     }
 }
 

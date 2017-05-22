@@ -12,7 +12,7 @@ use num_bigint::{BigInt,BigUint};
 use bit_vec::BitVec;
 
 use super::{ASN1Result,BERMode,BERReader,parse_ber_general};
-use super::models::ObjectIdentifier;
+use super::models::{ObjectIdentifier,TaggedDerValue};
 #[cfg(feature = "chrono")]
 use super::models::{UTCTime,GeneralizedTime};
 
@@ -463,5 +463,11 @@ impl<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> BERDecodable
             let t11 = try!(T11::decode_ber(reader.next()));
             return Ok((t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11));
         })
+    }
+}
+
+impl BERDecodable for TaggedDerValue  {
+    fn decode_ber(reader: BERReader) -> ASN1Result<Self> {
+        reader.read_tagged_der()
     }
 }
