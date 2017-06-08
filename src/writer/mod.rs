@@ -11,7 +11,7 @@ use num_bigint::{BigUint, BigInt};
 #[cfg(feature = "bit-vec")]
 use bit_vec::BitVec;
 
-use super::Tag;
+use super::{PCBit, Tag};
 use super::tags::{TAG_BOOLEAN,TAG_INTEGER,TAG_OCTETSTRING};
 use super::tags::{TAG_NULL,TAG_OID,TAG_UTF8STRING,TAG_SEQUENCE,TAG_SET};
 use super::tags::{TAG_NUMERICSTRING,TAG_PRINTABLESTRING,TAG_VISIBLESTRING};
@@ -118,7 +118,7 @@ impl<'a> DERWriter<'a> {
         }
     }
     /// Writes BER identifier (tag + primitive/constructed) octets.
-    fn write_identifier(&mut self, tag: Tag, pc: PC) {
+    fn write_identifier(&mut self, tag: Tag, pc: PCBit) {
         let tag = if let Some(tag) = self.implicit_tag { tag } else { tag };
         self.implicit_tag = None;
         let classid = tag.tag_class as u8;
@@ -227,7 +227,7 @@ impl<'a> DERWriter<'a> {
     /// assert_eq!(der, vec![1, 1, 255]);
     /// ```
     pub fn write_bool(mut self, val: bool) {
-        self.write_identifier(TAG_BOOLEAN, PC::Primitive);
+        self.write_identifier(TAG_BOOLEAN, PCBit::Primitive);
         self.write_length(1);
         self.buf.push(if val { 255 } else { 0 });
     }
@@ -249,7 +249,7 @@ impl<'a> DERWriter<'a> {
                 (val >> (shiftnum-1) == 0 || val >> (shiftnum-1) == -1) {
             shiftnum -= 8;
         }
-        self.write_identifier(TAG_INTEGER, PC::Primitive);
+        self.write_identifier(TAG_INTEGER, PCBit::Primitive);
         self.write_length(shiftnum / 8 + 1);
         loop {
             self.buf.push((val >> shiftnum) as u8);
@@ -266,7 +266,7 @@ impl<'a> DERWriter<'a> {
         while shiftnum > 0 && val >> (shiftnum-1) == 0 {
             shiftnum -= 8;
         }
-        self.write_identifier(TAG_INTEGER, PC::Primitive);
+        self.write_identifier(TAG_INTEGER, PCBit::Primitive);
         self.write_length(shiftnum / 8 + 1);
         if shiftnum == 64 {
             self.buf.push(0);
@@ -340,7 +340,7 @@ impl<'a> DERWriter<'a> {
     /// ```
     pub fn write_bigint(mut self, val: &BigInt) {
         use num_bigint::Sign;
-        self.write_identifier(TAG_INTEGER, PC::Primitive);
+        self.write_identifier(TAG_INTEGER, PCBit::Primitive);
         let (sign, mut bytes) = val.to_bytes_le();
         match sign {
             Sign::NoSign => {
@@ -410,7 +410,7 @@ impl<'a> DERWriter<'a> {
     /// yasna = { version = "*", features = ["num"] }
     /// ```
     pub fn write_biguint(mut self, val: &BigUint) {
-        self.write_identifier(TAG_INTEGER, PC::Primitive);
+        self.write_identifier(TAG_INTEGER, PCBit::Primitive);
         let mut bytes = val.to_bytes_le();
         if &bytes == &[0] {
             self.write_length(1);
@@ -460,7 +460,7 @@ impl<'a> DERWriter<'a> {
     /// ```
     pub fn write_bitvec(mut self, bitvec: &BitVec) {
         use super::tags::TAG_BITSTRING;
-        self.write_identifier(TAG_BITSTRING, PC::Primitive);
+        self.write_identifier(TAG_BITSTRING, PCBit::Primitive);
         let len = bitvec.len();
         let bytes = bitvec.to_bytes();
         debug_assert!(len <= 8 * bytes.len());
@@ -482,7 +482,7 @@ impl<'a> DERWriter<'a> {
     /// assert_eq!(der, vec![4, 6, 72, 101, 108, 108, 111, 33]);
     /// ```
     pub fn write_bytes(mut self, bytes: &[u8]) {
-        self.write_identifier(TAG_OCTETSTRING, PC::Primitive);
+        self.write_identifier(TAG_OCTETSTRING, PCBit::Primitive);
         self.write_length(bytes.len());
         self.buf.extend_from_slice(bytes);
     }
@@ -499,7 +499,7 @@ impl<'a> DERWriter<'a> {
     /// assert_eq!(der, vec![12, 6, 72, 101, 108, 108, 111, 33]);
     /// ```
     pub fn write_utf8_string(mut self, string: &str) {
-        self.write_identifier(TAG_UTF8STRING, PC::Primitive);
+        self.write_identifier(TAG_UTF8STRING, PCBit::Primitive);
         self.write_length(string.len());
         self.buf.extend_from_slice(string.as_bytes());
     }
@@ -516,7 +516,7 @@ impl<'a> DERWriter<'a> {
     /// assert_eq!(der, vec![5, 0]);
     /// ```
     pub fn write_null(mut self) {
-        self.write_identifier(TAG_NULL, PC::Primitive);
+        self.write_identifier(TAG_NULL, PCBit::Primitive);
         self.write_length(0);
     }
 
@@ -558,7 +558,7 @@ impl<'a> DERWriter<'a> {
                 subid >>= 7;
             }
         }
-        self.write_identifier(TAG_OID, PC::Primitive);
+        self.write_identifier(TAG_OID, PCBit::Primitive);
         self.write_length(length);
         for i in 1..oid.components().len() {
             let subid = if i == 1 {
@@ -622,7 +622,7 @@ impl<'a> DERWriter<'a> {
     /// ```
     pub fn write_sequence<T, F>(mut self, callback: F) -> T
         where F: FnOnce(&mut DERWriterSeq) -> T {
-        self.write_identifier(TAG_SEQUENCE, PC::Constructed);
+        self.write_identifier(TAG_SEQUENCE, PCBit::Constructed);
         return self.with_length(|writer| {
             callback(&mut DERWriterSeq {
                 buf: writer.buf,
@@ -704,7 +704,7 @@ impl<'a> DERWriter<'a> {
         });
         // let bufs_len = bufs.iter().map(|buf| buf.len()).sum();
         let bufs_len = bufs.iter().map(|buf| buf.len()).fold(0, |x, y| x + y);
-        self.write_identifier(TAG_SET, PC::Constructed);
+        self.write_identifier(TAG_SET, PCBit::Constructed);
         self.write_length(bufs_len);
         for buf in bufs.iter() {
             self.buf.extend_from_slice(buf);
@@ -747,7 +747,7 @@ impl<'a> DERWriter<'a> {
         bufs.sort();
         // let bufs_len = bufs.iter().map(|buf| buf.len()).sum();
         let bufs_len = bufs.iter().map(|buf| buf.len()).fold(0, |x, y| x + y);
-        self.write_identifier(TAG_SET, PC::Constructed);
+        self.write_identifier(TAG_SET, PCBit::Constructed);
         self.write_length(bufs_len);
         for buf in bufs.iter() {
             self.buf.extend_from_slice(buf);
@@ -930,7 +930,7 @@ impl<'a> DERWriter<'a> {
     /// ```
     pub fn write_tagged<T, F>(mut self, tag: Tag, callback: F) -> T
         where F: FnOnce(DERWriter) -> T {
-        self.write_identifier(tag, PC::Constructed);
+        self.write_identifier(tag, PCBit::Constructed);
         return self.with_length(|writer| {
             callback(DERWriter::from_buf(writer.buf))
         });
@@ -977,11 +977,7 @@ impl<'a> DERWriter<'a> {
     /// assert_eq!(der1, der2);
     /// ```
     pub fn write_tagged_der(mut self, der: &TaggedDerValue) {
-        let pc = match der.tag() {
-            TAG_SEQUENCE | TAG_SET => PC::Constructed,
-            _ => PC::Primitive,
-        };
-        self.write_identifier(der.tag(), pc);
+        self.write_identifier(der.tag(), der.pcbit());
         self.write_length(der.value().len());
         self.buf.extend_from_slice(der.value());
     }
@@ -1071,11 +1067,6 @@ impl<'a> DERWriterSet<'a> {
         self.bufs.push(Vec::new());
         return DERWriter::from_buf(self.bufs.last_mut().unwrap());
     }
-}
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
-enum PC {
-    Primitive = 0, Constructed = 1,
 }
 
 #[cfg(test)]

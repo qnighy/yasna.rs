@@ -110,6 +110,12 @@ pub use reader::{ASN1Error,ASN1ErrorKind,ASN1Result};
 pub use deserializer::{BERDecodable,decode_ber_general,decode_ber,decode_der};
 pub use serializer::{DEREncodable,encode_der};
 
+/// A value of the ASN.1 primitive/constructed ("P/C") bit.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub enum PCBit {
+    Primitive = 0, Constructed = 1,
+}
+
 /// An ASN.1 tag class, used in [`Tag`][tag].
 ///
 /// [tag]: struct.Tag.html

@@ -6,8 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use super::super::Tag;
-use super::super::tags::TAG_OCTETSTRING;
+use super::super::{PCBit, Tag};
+use super::super::tags::{TAG_OCTETSTRING, TAG_SEQUENCE, TAG_SET};
 
 /// Container for a tag and arbitrary DER value.
 ///
@@ -18,20 +18,45 @@ use super::super::tags::TAG_OCTETSTRING;
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct TaggedDerValue {
     tag: Tag,
+    pcbit: PCBit,
     value: Vec<u8>,
 }
 
 impl TaggedDerValue {
     pub fn from_octetstring(bytes: Vec<u8>) -> Self {
-        TaggedDerValue { tag: TAG_OCTETSTRING, value: bytes }
+        TaggedDerValue {
+            tag: TAG_OCTETSTRING,
+            pcbit: PCBit::Primitive,
+            value: bytes,
+        }
     }
 
     pub fn from_tag_and_bytes(tag: Tag, bytes: Vec<u8>) -> Self {
-        TaggedDerValue { tag: tag, value: bytes }
+        let pcbit = match tag {
+            TAG_SEQUENCE | TAG_SET => PCBit::Constructed,
+            _ => PCBit::Primitive,
+        };
+        TaggedDerValue {
+            tag: tag,
+            pcbit: pcbit,
+            value: bytes,
+        }
+    }
+
+    pub fn from_tag_pc_and_bytes(tag: Tag, pcbit: PCBit, bytes: Vec<u8>) -> Self {
+        TaggedDerValue {
+            tag: tag,
+            pcbit: pcbit,
+            value: bytes,
+        }
     }
 
     pub fn tag(&self) -> Tag {
         self.tag
+    }
+
+    pub fn pcbit(&self) -> PCBit {
+        self.pcbit
     }
 
     pub fn value(&self) -> &[u8] {

@@ -14,7 +14,7 @@ use num_bigint::{BigInt,BigUint,Sign};
 #[cfg(feature = "bit-vec")]
 use bit_vec::BitVec;
 
-use super::{Tag,TAG_CLASSES};
+use super::{PCBit,Tag,TAG_CLASSES};
 use super::tags::{TAG_EOC,TAG_BOOLEAN,TAG_INTEGER,TAG_OCTETSTRING};
 use super::tags::{TAG_NULL,TAG_OID,TAG_UTF8STRING,TAG_SEQUENCE,TAG_SET};
 use super::tags::{TAG_NUMERICSTRING,TAG_PRINTABLESTRING,TAG_VISIBLESTRING};
@@ -123,11 +123,6 @@ struct BERReaderImpl<'a> {
     pos: usize,
     mode: BERMode,
     depth: usize,
-}
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
-enum PCBit {
-    Primitive = 0, Constructed = 1,
 }
 
 const PC_BITS : [PCBit; 2] = [PCBit::Primitive, PCBit::Constructed];
@@ -1507,9 +1502,10 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// assert_eq!(res, TaggedDerValue::from_tag_and_bytes(TAG_OCTETSTRING, b"Hello!".to_vec()));
     /// ```
     pub fn read_tagged_der(self) -> ASN1Result<TaggedDerValue> {
-        let (tag, _pcbit, data_pos) = self.inner.skip_general()?;
-        Ok(TaggedDerValue::from_tag_and_bytes(
+        let (tag, pcbit, data_pos) = self.inner.skip_general()?;
+        Ok(TaggedDerValue::from_tag_pc_and_bytes(
                 tag,
+                pcbit,
                 self.inner.buf[data_pos..self.inner.pos].to_vec()))
     }
 
