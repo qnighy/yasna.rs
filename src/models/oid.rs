@@ -106,13 +106,12 @@ impl Display for ObjectIdentifier {
         let mut fst = true;
         for &component in &self.components {
             if fst {
-                try!(write!(f, "{{{}", component));
+                try!(write!(f, "{}", component));
             } else {
-                try!(write!(f, " {}", component));
+                try!(write!(f, ".{}", component));
             }
             fst = false;
         }
-        try!(write!(f, "}}"));
         return Ok(());
     }
 }
@@ -127,4 +126,10 @@ impl From<Vec<u64>> for ObjectIdentifier {
     fn from(components: Vec<u64>) -> ObjectIdentifier {
         Self::new(components)
     }
+}
+
+#[test]
+fn test_display_oid() {
+    let pkcs1 = ObjectIdentifier::from_slice(&[1, 2, 840, 113549, 1, 1]);
+    assert_eq!(format!("{}", pkcs1), "1.2.840.113549.1.1");
 }
