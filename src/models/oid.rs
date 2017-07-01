@@ -116,3 +116,15 @@ impl Display for ObjectIdentifier {
         return Ok(());
     }
 }
+
+impl AsRef<[u64]> for ObjectIdentifier {
+    fn as_ref(&self) -> &[u64] {
+        &self.components
+    }
+}
+
+impl From<Vec<u64>> for ObjectIdentifier {
+    fn from(components: Vec<u64>) -> ObjectIdentifier {
+        Self::new(components)
+    }
+}
