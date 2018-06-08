@@ -7,7 +7,7 @@
 // except according to those terms.
 
 use super::super::{PCBit, Tag};
-use super::super::tags::{TAG_OCTETSTRING, TAG_SEQUENCE, TAG_SET};
+use super::super::tags::*;
 
 /// Container for a tag and arbitrary DER value.
 ///
@@ -61,5 +61,32 @@ impl TaggedDerValue {
 
     pub fn value(&self) -> &[u8] {
         &self.value
+    }
+
+    pub fn as_bytes(&self) -> Option<&[u8]> {
+        match (self.tag, self.pcbit) {
+            (TAG_BITSTRING, PCBit::Primitive) => {
+                // First byte of bitstring value is number of unused bits.
+                // We only accept bitstrings that are multiples of bytes.
+                if let Some(&0) = self.value.first() {
+                    Some(&self.value[1..])
+                } else {
+                    None
+                }
+            },
+            (TAG_OCTETSTRING, PCBit::Primitive) => Some(&self.value),
+            _ => None
+        }
+    }
+
+    pub fn as_str(&self) -> Option<&str> {
+        use std::str::from_utf8;
+
+        match (self.tag, self.pcbit) {
+            (TAG_IA5STRING, PCBit::Primitive) => from_utf8(&self.value).ok(),
+            (TAG_PRINTABLESTRING, PCBit::Primitive) => from_utf8(&self.value).ok(),
+            (TAG_UTF8STRING, PCBit::Primitive) => from_utf8(&self.value).ok(),
+            _ => None
+        }
     }
 }
