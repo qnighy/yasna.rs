@@ -12,6 +12,6 @@ mod oid;
 #[cfg(feature = "chrono")]
 mod time;
 
-pub use self::oid::ObjectIdentifier;
+pub use self::oid::{ObjectIdentifier, ParseOidError};
 #[cfg(feature = "chrono")]
 pub use self::time::{UTCTime,GeneralizedTime};

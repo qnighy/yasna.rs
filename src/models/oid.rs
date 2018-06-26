@@ -7,6 +7,8 @@
 // except according to those terms.
 
 use std::fmt::{self,Display};
+use std::error::Error;
+use std::str::FromStr;
 
 /// A type that represents object identifiers.
 ///
@@ -116,6 +118,33 @@ impl Display for ObjectIdentifier {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct ParseOidError(());
+
+impl Error for ParseOidError {
+    fn description(&self) -> &str {
+        "Failed to parse OID"
+    }
+}
+
+impl Display for ParseOidError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        f.write_str(self.description())
+    }
+}
+
+
+impl FromStr for ObjectIdentifier {
+    type Err = ParseOidError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        s.split(".")
+            .map(|s| s.parse().map_err(|_| ParseOidError(()) ))
+            .collect::<Result<_, _>>()
+            .map(ObjectIdentifier::new)
+    }
+}
+
 impl AsRef<[u64]> for ObjectIdentifier {
     fn as_ref(&self) -> &[u64] {
         &self.components
@@ -132,4 +161,12 @@ impl From<Vec<u64>> for ObjectIdentifier {
 fn test_display_oid() {
     let pkcs1 = ObjectIdentifier::from_slice(&[1, 2, 840, 113549, 1, 1]);
     assert_eq!(format!("{}", pkcs1), "1.2.840.113549.1.1");
+}
+
+#[test]
+fn parse_oid() {
+    assert_eq!("1.2.840.113549.1.1".parse::<ObjectIdentifier>().unwrap().components(), &[1, 2, 840, 113549, 1, 1]);
+    "1.2.840.113549.1.1.".parse::<ObjectIdentifier>().unwrap_err();
+    "1.2.840.113549.1.1x".parse::<ObjectIdentifier>().unwrap_err();
+    "".parse::<ObjectIdentifier>().unwrap_err();
 }
