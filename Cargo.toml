@@ -23,8 +23,7 @@ bitvec = ["bit-vec"]
 [dependencies]
 
 [dependencies.num]
-version = "0.1.32"
-features = ["bigint"]
+version = "0.2.0"
 optional = true
 
 [dependencies.bit-vec]
