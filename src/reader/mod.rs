@@ -381,7 +381,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
         }
     }
 
-    fn read_general<T, F>(mut self, tag: Tag, callback: F) -> ASN1Result<T>
+    fn read_general<T, F>(self, tag: Tag, callback: F) -> ASN1Result<T>
             where F: for<'c> FnOnce(Contents<'a, 'c>) -> ASN1Result<T> {
         let tag = self.implicit_tag.unwrap_or(tag);
         self.inner.read_general(tag, callback)
@@ -1120,7 +1120,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
         });
     }
 
-    pub fn read_with_buffer<T, F>(mut self, callback: F)
+    pub fn read_with_buffer<T, F>(self, callback: F)
             -> ASN1Result<(T, &'a [u8])>
             where F: for<'c> FnOnce(BERReader<'a, 'c>) -> ASN1Result<T> {
         let implicit_tag = self.implicit_tag;
