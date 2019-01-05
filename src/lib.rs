@@ -50,7 +50,10 @@
 //! ```
 
 #[cfg(feature = "bigint")]
-extern crate num;
+extern crate num_bigint;
+#[cfg(test)]
+extern crate num_traits;
+
 #[cfg(feature = "bitvec")]
 extern crate bit_vec;
 

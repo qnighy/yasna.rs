@@ -7,7 +7,7 @@
 // except according to those terms.
 
 #[cfg(feature = "bigint")]
-use num::bigint::{BigUint, BigInt};
+use num_bigint::{BigUint, BigInt};
 
 use super::super::Tag;
 use super::*;
@@ -206,7 +206,7 @@ fn test_der_write_u8() {
 #[cfg(feature = "bigint")]
 #[test]
 fn test_der_write_bigint() {
-    use num::FromPrimitive;
+    use num_traits::FromPrimitive;
     let tests : &[(i64, &[u8])] = &[
         (-9223372036854775808, &[2, 8, 128, 0, 0, 0, 0, 0, 0, 0]),
         (-65537, &[2, 3, 254, 255, 255]),
@@ -254,7 +254,7 @@ fn test_der_write_bigint() {
 #[cfg(feature = "bigint")]
 #[test]
 fn test_der_write_biguint() {
-    use num::FromPrimitive;
+    use num_traits::FromPrimitive;
     let tests : &[(u64, &[u8])] = &[
         (0, &[2, 1, 0]),
         (1, &[2, 1, 1]),

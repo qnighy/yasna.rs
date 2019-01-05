@@ -17,15 +17,17 @@ include = [
 
 [features]
 default = ["bigint", "bitvec"]
-bigint = ["num"]
+bigint = ["num-bigint"]
 bitvec = ["bit-vec"]
 
-[dependencies]
-
-[dependencies.num]
+[dependencies.num-bigint]
 version = "0.1.32"
-features = ["bigint"]
+default-features = false
 optional = true
+
+[dev-dependencies.num-traits]
+version = "0.1.32"
+default-features = false
 
 [dependencies.bit-vec]
 version = "0.4.3"
