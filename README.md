@@ -32,7 +32,7 @@ fn main() {
 Currently, these datatypes are supported:
 
 - BOOLEAN, INTEGER, BITSTRING, OCTETSTRING, NULL, OBJECT IDENTIFIER,
-- SEQUENCE, SEQUENCE OF, SET, SET OF, CHOICE,
+- SEQUENCE, SEQUENCE OF, SET, SET OF, CHOICE, UTF8String,
 - Explicitly/Implicitly tagged types,
 - DEFAULT/OPTIONAL in SEQUENCE/SET.
 
@@ -41,7 +41,7 @@ These datatypes are *not* supported:
 - REAL
 - NumericString, PrintableString, TeletexString, VideotexString,
 - VisibleString, IA5String, GraphicString, GeneralString,
-- UTF8String, UniversalString, BMPString,
+- UniversalString, BMPString,
 - UTCTime, GeneralizedTime, TIME, DATE, TIME-OF-DAY, DATE-TIME, DURATION.
 
 ## Deserialization/Parsing
