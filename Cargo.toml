@@ -21,12 +21,11 @@ bigint = ["num-bigint"]
 bitvec = ["bit-vec"]
 
 [dependencies.num-bigint]
-version = "0.1.32"
-default-features = false
+version = "0.2"
 optional = true
 
 [dev-dependencies.num-traits]
-version = "0.1.32"
+version = "0.2"
 default-features = false
 
 [dependencies.bit-vec]
