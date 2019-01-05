@@ -12,9 +12,10 @@ use num_bigint::{BigUint, BigInt};
 use bit_vec::BitVec;
 
 use super::Tag;
-use super::tags::{TAG_BOOLEAN,TAG_INTEGER,TAG_OCTETSTRING,TAG_UTF8STRING};
+use super::tags::{TAG_BOOLEAN,TAG_INTEGER,TAG_OCTETSTRING,TAG_UTF8STRING,
+    TAG_GENERALIZEDTIME};
 use super::tags::{TAG_NULL,TAG_OID,TAG_SEQUENCE,TAG_SET};
-use super::models::ObjectIdentifier;
+use super::models::{ObjectIdentifier, GeneralizedTime, GeneralizedTimeKind};
 
 /// Constructs DER-encoded data as `Vec<u8>`.
 ///
@@ -546,6 +547,54 @@ impl<'a> DERWriter<'a> {
             }
             self.buf.push((subid & 127) as u8);
         }
+    }
+
+    /// Writes an ASN.1 GeneralizedTime
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// use yasna::models::GeneralizedTime;
+    /// let der = yasna::construct_der(|writer| {
+    ///    let time = GeneralizedTime::from_utc_ymd(1969, 7, 16);
+    ///    writer.write_generalized_time(&time);
+    /// });
+    /// assert_eq!(&der, &[24, 11, 49, 57, 54, 57, 48, 55, 49, 54, 48, 48, 90]);
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// It panics if the time can't be encoded validly.
+    pub fn write_generalized_time(mut self, time: &GeneralizedTime) {
+        assert!(time.is_valid(), "The time has to be valid");
+        let ymd = format!("{:02}{:02}{:02}", time.year, time.month, time.day);
+        let mut hmsm = format!("{:02}", time.hour);
+        if let Some(minute) = time.minute {
+            hmsm += &format!("{:02}", minute);
+            if let Some(second) = time.second {
+                hmsm += &format!("{:02}", second);
+                if let Some(milisecond) = time.milisecond {
+                    hmsm += &format!("{:02}", milisecond);
+                }
+            }
+        }
+        let postfix = match time.kind {
+            GeneralizedTimeKind::Local => "".to_string(),
+            GeneralizedTimeKind::LocalWithOffset { is_positive, hour, minute, } => {
+                let sign = if is_positive {
+                    "+"
+                } else {
+                    "-"
+                };
+                format!("{}{:02}{:02}", sign, hour, minute)
+            },
+            GeneralizedTimeKind::Utc => "Z".to_string(),
+        };
+        let string = ymd + &hmsm + &postfix;
+        self.write_identifier(TAG_GENERALIZEDTIME, PC::Primitive);
+        self.write_length(string.len());
+        self.buf.extend_from_slice(string.as_bytes());
     }
 
     /// Writes ASN.1 SEQUENCE.

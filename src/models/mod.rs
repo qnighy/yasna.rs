@@ -16,4 +16,4 @@ mod time;
 pub use self::setof::SetOf;
 pub use self::oid::ObjectIdentifier;
 pub use self::charstring::PrintableString;
-pub use self::time::UtcTime;
+pub use self::time::{UtcTime, GeneralizedTime, GeneralizedTimeKind};
