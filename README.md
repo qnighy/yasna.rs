@@ -32,17 +32,18 @@ fn main() {
 Currently, these datatypes are supported:
 
 - BOOLEAN, INTEGER, BITSTRING, OCTETSTRING, NULL, OBJECT IDENTIFIER,
-- SEQUENCE, SEQUENCE OF, SET, SET OF, CHOICE, UTF8String,
+- SEQUENCE, SEQUENCE OF, SET, SET OF, CHOICE,
+- UTF8String, NumericString, PrintableString, VisibleString,
+- UTCTime, GeneralizedTime,
 - Explicitly/Implicitly tagged types,
 - DEFAULT/OPTIONAL in SEQUENCE/SET.
 
 These datatypes are *not* supported:
 
 - REAL
-- NumericString, PrintableString, TeletexString, VideotexString,
-- VisibleString, IA5String, GraphicString, GeneralString,
+- TeletexString, VideotexString, IA5String, GraphicString, GeneralString,
 - UniversalString, BMPString,
-- UTCTime, GeneralizedTime, TIME, DATE, TIME-OF-DAY, DATE-TIME, DURATION.
+- TIME, DATE, TIME-OF-DAY, DATE-TIME, DURATION.
 
 ## Deserialization/Parsing
 
@@ -66,21 +67,18 @@ fn main() {
 Currently, these datatypes are supported:
 
 - BOOLEAN, INTEGER, BITSTRING, OCTETSTRING, NULL, OBJECT IDENTIFIER,
-- SEQUENCE, SET, SET OF,
+- SEQUENCE, SEQUENCE OF, SET, SET OF, CHOICE,
+- UTF8String, NumericString, PrintableString, VisibleString,
+- UTCTime, GeneralizedTime,
 - Explicitly/Implicitly tagged types,
 - DEFAULT/OPTIONAL in SEQUENCE.
-
-You can parse these datatypes now, but with a little pain.
-
-- SEQUENCE OF, CHOICE
 
 These datatypes are *not* supported:
 
 - REAL
-- NumericString, PrintableString, TeletexString, VideotexString,
-- VisibleString, IA5String, GraphicString, GeneralString,
-- UTF8String, UniversalString, BMPString,
-- UTCTime, GeneralizedTime, TIME, DATE, TIME-OF-DAY, DATE-TIME, DURATION.
+- TeletexString, VideotexString, IA5String, GraphicString, GeneralString,
+- UniversalString, BMPString,
+- TIME, DATE, TIME-OF-DAY, DATE-TIME, DURATION.
 - DEFAULT/OPTIONAL in SET.
 
 ## Other encodings
