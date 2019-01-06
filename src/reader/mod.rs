@@ -1465,7 +1465,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
         self.inner.lookahead_tag()
     }
 
-    pub fn read_with_buffer<T, F>(mut self, callback: F)
+    pub fn read_with_buffer<T, F>(self, callback: F)
             -> ASN1Result<(T, &'a [u8])>
             where F: for<'c> FnOnce(BERReader<'a, 'c>) -> ASN1Result<T> {
         let implicit_tag = self.implicit_tag;
