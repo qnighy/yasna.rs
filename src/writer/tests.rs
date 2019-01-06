@@ -6,7 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[cfg(feature = "bigint")]
+#[cfg(feature = "num-bigint")]
 use num_bigint::{BigUint, BigInt};
 
 use super::super::Tag;
@@ -203,7 +203,7 @@ fn test_der_write_u8() {
     }
 }
 
-#[cfg(feature = "bigint")]
+#[cfg(feature = "num-bigint")]
 #[test]
 fn test_der_write_bigint() {
     use num_traits::FromPrimitive;
@@ -251,7 +251,7 @@ fn test_der_write_bigint() {
     }
 }
 
-#[cfg(feature = "bigint")]
+#[cfg(feature = "num-bigint")]
 #[test]
 fn test_der_write_biguint() {
     use num_traits::FromPrimitive;

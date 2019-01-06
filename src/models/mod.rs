@@ -8,12 +8,10 @@
 
 //! Provides datatypes which correspond to ASN.1 types.
 
-mod setof;
 mod oid;
-mod charstring;
+#[cfg(feature = "chrono")]
 mod time;
 
-pub use self::setof::SetOf;
 pub use self::oid::ObjectIdentifier;
-pub use self::charstring::PrintableString;
-pub use self::time::UtcTime;
+#[cfg(feature = "chrono")]
+pub use self::time::{UTCTime,GeneralizedTime};
