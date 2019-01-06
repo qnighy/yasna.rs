@@ -10,8 +10,8 @@ sudo: false
 script:
   - cargo build --verbose
   - cargo test --verbose --no-default-features
-  - cargo test --verbose --no-default-features --features="num bit-vec chrono"
-  - cargo doc --features="num bit-vec chrono"
+  - cargo test --verbose --no-default-features --features="num-bigint bit-vec chrono"
+  - cargo doc --features="num-bigint bit-vec chrono"
 after_success: |
   [ $TRAVIS_BRANCH = master ] &&
   [ $TRAVIS_PULL_REQUEST = false ] &&
