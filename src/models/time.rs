@@ -6,7 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use chrono::{DateTime,UTC,FixedOffset,NaiveDate,NaiveTime,NaiveDateTime};
+use chrono::{DateTime,FixedOffset,NaiveDate,NaiveTime,NaiveDateTime};
+use chrono::offset::Utc;
 use chrono::{TimeZone,Datelike,Timelike,LocalResult};
 
 /// Date and time between 1950-01-01T00:00:00Z and 2049-12-31T23:59:59Z.
@@ -47,7 +48,7 @@ use chrono::{TimeZone,Datelike,Timelike,LocalResult};
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct UTCTime {
-    datetime: DateTime<UTC>,
+    datetime: DateTime<Utc>,
 }
 
 impl UTCTime {
@@ -133,7 +134,7 @@ impl UTCTime {
             FixedOffset::west((offset_hour * 60 + offset_minute) * 60)
         };
         let datetime = offset.from_local_datetime(&datetime).unwrap();
-        let datetime = datetime.with_timezone(&UTC);
+        let datetime = datetime.with_timezone(&Utc);
         // While the given local datatime is in [1950, 2050) by definition,
         // the UTC datetime can be out of bounds. We check this.
         if !(1950 <= datetime.year() && datetime.year() < 2050) {
@@ -154,7 +155,7 @@ impl UTCTime {
     /// - It is in a leap second.
     /// - It has a non-zero nanosecond value.
     pub fn from_datetime<Tz:TimeZone>(datetime: &DateTime<Tz>) -> Self {
-        let datetime = datetime.with_timezone(&UTC);
+        let datetime = datetime.with_timezone(&Utc);
         assert!(1950 <= datetime.year() && datetime.year() < 2050,
             "Can't express a year {:?} in UTCTime", datetime.year());
         assert!(datetime.nanosecond() < 1_000_000_000,
@@ -177,7 +178,7 @@ impl UTCTime {
     /// - It has a non-zero nanosecond value.
     pub fn from_datetime_opt<Tz:TimeZone>
             (datetime: &DateTime<Tz>) -> Option<Self> {
-        let datetime = datetime.with_timezone(&UTC);
+        let datetime = datetime.with_timezone(&Utc);
         if !(1950 <= datetime.year() && datetime.year() < 2050) {
             return None;
         }
@@ -190,7 +191,7 @@ impl UTCTime {
     }
 
     /// Returns the datetime it represents.
-    pub fn datetime(&self) -> &DateTime<UTC> {
+    pub fn datetime(&self) -> &DateTime<Utc> {
         &self.datetime
     }
 
@@ -263,7 +264,7 @@ impl UTCTime {
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct GeneralizedTime {
-    datetime: DateTime<UTC>,
+    datetime: DateTime<Utc>,
     sub_nano: Vec<u8>,
 }
 
@@ -353,13 +354,13 @@ impl GeneralizedTime {
         let time = if let Some(time) = NaiveTime::from_hms_nano_opt(
             hour, minute, second, nanosecond) { time } else { return None; };
         let naive_datetime = NaiveDateTime::new(date, time);
-        let datetime : DateTime<UTC>;
+        let datetime : DateTime<Utc>;
         if i == buf.len() {
             // Local datetime with no timezone information.
             if let Some(default_tz) = default_tz {
                 if let LocalResult::Single(dt) =
                         default_tz.from_local_datetime(&naive_datetime) {
-                    datetime = dt.with_timezone(&UTC);
+                    datetime = dt.with_timezone(&Utc);
                 } else {
                     return None;
                 }
@@ -368,7 +369,7 @@ impl GeneralizedTime {
             }
         } else if i < buf.len() && buf[i] == b'Z' {
             // UTC time.
-            datetime = DateTime::from_utc(naive_datetime, UTC);
+            datetime = DateTime::from_utc(naive_datetime, Utc);
             i += 1;
         } else if i < buf.len() && (buf[i] == b'+' || buf[i] == b'-') {
             // Local datetime with offset information.
@@ -400,7 +401,7 @@ impl GeneralizedTime {
             };
             datetime =
                 offset.from_local_datetime(&naive_datetime).unwrap()
-                .with_timezone(&UTC);
+                .with_timezone(&Utc);
         } else {
             return None;
         }
@@ -433,7 +434,7 @@ impl GeneralizedTime {
     /// It returns `None` if the given string does not specify a correct
     /// datetime.
     pub fn parse(buf: &[u8]) -> Option<Self> {
-        Self::parse_general::<UTC>(buf, None)
+        Self::parse_general::<Utc>(buf, None)
     }
 
     /// Parses ASN.1 string representation of GeneralizedTime, with the
@@ -464,7 +465,7 @@ impl GeneralizedTime {
     ///
     /// - The year is not between 0 and 9999.
     pub fn from_datetime<Tz:TimeZone>(datetime: &DateTime<Tz>) -> Self {
-        let datetime = datetime.with_timezone(&UTC);
+        let datetime = datetime.with_timezone(&Utc);
         assert!(0 <= datetime.year() && datetime.year() < 10000,
             "Can't express a year {:?} in GeneralizedTime", datetime.year());
         return GeneralizedTime {
@@ -483,7 +484,7 @@ impl GeneralizedTime {
     /// - The year is not between 0 and 9999.
     pub fn from_datetime_opt<Tz:TimeZone>(datetime: &DateTime<Tz>)
             -> Option<Self> {
-        let datetime = datetime.with_timezone(&UTC);
+        let datetime = datetime.with_timezone(&Utc);
         if !(0 <= datetime.year() && datetime.year() < 10000) {
             return None;
         }
@@ -505,7 +506,7 @@ impl GeneralizedTime {
     /// It also panics if `sub_nano` contains a non-digit character.
     pub fn from_datetime_and_sub_nano<Tz:TimeZone>
             (datetime: &DateTime<Tz>, sub_nano: &[u8]) -> Self {
-        let datetime = datetime.with_timezone(&UTC);
+        let datetime = datetime.with_timezone(&Utc);
         assert!(0 <= datetime.year() && datetime.year() < 10000,
             "Can't express a year {:?} in GeneralizedTime", datetime.year());
         assert!(sub_nano.iter().all(|&b| b'0' <= b && b <= b'9'),
@@ -533,7 +534,7 @@ impl GeneralizedTime {
     /// It also returns `None` if `sub_nano` contains a non-digit character.
     pub fn from_datetime_and_sub_nano_opt<Tz:TimeZone>
             (datetime: &DateTime<Tz>, sub_nano: &[u8]) -> Option<Self> {
-        let datetime = datetime.with_timezone(&UTC);
+        let datetime = datetime.with_timezone(&Utc);
         if !(0 <= datetime.year() && datetime.year() < 10000) {
             return None;
         }
@@ -551,7 +552,7 @@ impl GeneralizedTime {
     }
 
     /// Returns the datetime it represents, discarding sub-nanoseconds digits.
-    pub fn datetime(&self) -> &DateTime<UTC> {
+    pub fn datetime(&self) -> &DateTime<Utc> {
         &self.datetime
     }
 

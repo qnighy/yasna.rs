@@ -815,10 +815,10 @@ impl<'a> DERWriter<'a> {
     /// # fn main() {
     /// use yasna;
     /// use yasna::models::UTCTime;
-    /// use chrono::{UTC,TimeZone};
+    /// use chrono::{Utc,TimeZone};
     /// let der = yasna::construct_der(|writer| {
     ///     writer.write_utctime(
-    ///         &UTCTime::from_datetime(&UTC.timestamp(378820800, 0)))
+    ///         &UTCTime::from_datetime(&Utc.timestamp(378820800, 0)))
     /// });
     /// assert_eq!(&der, &[
     ///     23, 13, 56, 50, 48, 49, 48, 50, 49, 50, 48, 48, 48, 48, 90]);
@@ -851,11 +851,11 @@ impl<'a> DERWriter<'a> {
     /// # fn main() {
     /// use yasna;
     /// use yasna::models::GeneralizedTime;
-    /// use chrono::{UTC,TimeZone};
+    /// use chrono::{Utc,TimeZone};
     /// let der = yasna::construct_der(|writer| {
     ///     writer.write_generalized_time(
     ///         &GeneralizedTime::from_datetime(
-    ///             &UTC.timestamp(500159309, 724_000_000)))
+    ///             &Utc.timestamp(500159309, 724_000_000)))
     /// });
     /// assert_eq!(&der, &[
     ///     24, 19, 49, 57, 56, 53, 49, 49, 48, 54, 50,
