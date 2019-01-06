@@ -6,15 +6,18 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-#[cfg(feature = "bigint")]
-use num_bigint::{BigUint, BigInt};
-#[cfg(feature = "bitvec")]
+#[cfg(feature = "num")]
+use num::bigint::{BigUint, BigInt};
+#[cfg(feature = "bit-vec")]
 use bit_vec::BitVec;
 
 use super::Tag;
-use super::tags::{TAG_BOOLEAN,TAG_INTEGER,TAG_OCTETSTRING,TAG_UTF8STRING};
-use super::tags::{TAG_NULL,TAG_OID,TAG_SEQUENCE,TAG_SET};
+use super::tags::{TAG_BOOLEAN,TAG_INTEGER,TAG_OCTETSTRING};
+use super::tags::{TAG_NULL,TAG_OID,TAG_UTF8STRING,TAG_SEQUENCE,TAG_SET};
+use super::tags::{TAG_NUMERICSTRING,TAG_PRINTABLESTRING,TAG_VISIBLESTRING};
 use super::models::ObjectIdentifier;
+#[cfg(feature = "chrono")]
+use super::models::{UTCTime,GeneralizedTime};
 
 /// Constructs DER-encoded data as `Vec<u8>`.
 ///
@@ -308,7 +311,7 @@ impl<'a> DERWriter<'a> {
         self.write_i64(val as i64)
     }
 
-    #[cfg(feature = "bigint")]
+    #[cfg(feature = "num")]
     /// Writes `BigInt` as an ASN.1 INTEGER value.
     ///
     /// # Examples
@@ -325,6 +328,15 @@ impl<'a> DERWriter<'a> {
     /// });
     /// assert_eq!(der, vec![2, 4, 73, 150, 2, 210]);
     /// # }
+    /// ```
+    ///
+    /// # Features
+    ///
+    /// This method is enabled by `num` feature.
+    ///
+    /// ```toml
+    /// [dependencies]
+    /// yasna = { version = "*", features = ["num"] }
     /// ```
     pub fn write_bigint(mut self, val: &BigInt) {
         use num_bigint::Sign;
@@ -370,7 +382,7 @@ impl<'a> DERWriter<'a> {
         };
     }
 
-    #[cfg(feature = "bigint")]
+    #[cfg(feature = "num")]
     /// Writes `BigUint` as an ASN.1 INTEGER value.
     ///
     /// # Examples
@@ -387,6 +399,15 @@ impl<'a> DERWriter<'a> {
     /// });
     /// assert_eq!(der, vec![2, 4, 73, 150, 2, 210]);
     /// # }
+    /// ```
+    ///
+    /// # Features
+    ///
+    /// This method is enabled by `num` feature.
+    ///
+    /// ```toml
+    /// [dependencies]
+    /// yasna = { version = "*", features = ["num"] }
     /// ```
     pub fn write_biguint(mut self, val: &BigUint) {
         self.write_identifier(TAG_INTEGER, PC::Primitive);
@@ -408,7 +429,7 @@ impl<'a> DERWriter<'a> {
         self.buf.extend_from_slice(&bytes);
     }
 
-    #[cfg(feature = "bitvec")]
+    #[cfg(feature = "bit-vec")]
     /// Writes `BitVec` as an ASN.1 BITSTRING value.
     ///
     /// # Examples
@@ -427,6 +448,15 @@ impl<'a> DERWriter<'a> {
     /// });
     /// assert_eq!(&der, &[3, 5, 3, 206, 213, 116, 24]);
     /// # }
+    /// ```
+    ///
+    /// # Features
+    ///
+    /// This method is enabled by `bit-vec` feature.
+    ///
+    /// ```toml
+    /// [dependencies]
+    /// yasna = { version = "*", features = ["bit-vec"] }
     /// ```
     pub fn write_bitvec(mut self, bitvec: &BitVec) {
         use super::tags::TAG_BITSTRING;
@@ -548,6 +578,26 @@ impl<'a> DERWriter<'a> {
         }
     }
 
+    /// Writes an ASN.1 UTF8String.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_utf8string("gnaw ροκανίζω 𪘂る")
+    /// });
+    /// assert_eq!(&der, &[
+    ///     12, 29, 103, 110, 97, 119, 32, 207, 129, 206, 191, 206,
+    ///     186, 206, 177, 206, 189, 206, 175, 206, 182, 207,
+    ///     137, 32, 240, 170, 152, 130, 227, 130, 139]);
+    /// ```
+    pub fn write_utf8string(self, string: &str) {
+        self.write_tagged_implicit(TAG_UTF8STRING, |writer| {
+            writer.write_bytes(string.as_bytes())
+        })
+    }
+
     /// Writes ASN.1 SEQUENCE.
     ///
     /// This function uses the loan pattern: `callback` is called back with
@@ -555,6 +605,8 @@ impl<'a> DERWriter<'a> {
     /// SEQUENCE is written.
     ///
     /// [derwriterseq]: struct.DERWriterSeq.html
+    ///
+    /// This is equivalent to `write_sequence_of` in behaviors.
     ///
     /// # Examples
     ///
@@ -576,6 +628,34 @@ impl<'a> DERWriter<'a> {
                 buf: writer.buf,
             })
         });
+    }
+
+    /// Writes ASN.1 SEQUENCE OF.
+    ///
+    /// This function uses the loan pattern: `callback` is called back with
+    /// a [`DERWriterSeq`][derwriterseq], to which the contents of the
+    /// SEQUENCE OF are written.
+    ///
+    /// [derwriterseq]: struct.DERWriterSeq.html
+    ///
+    /// This is equivalent to `write_sequence` in behaviors.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_sequence_of(|writer| {
+    ///         for &i in &[10, -129] {
+    ///             writer.next().write_i64(i);
+    ///         }
+    ///     })
+    /// });
+    /// assert_eq!(der, vec![48, 7, 2, 1, 10, 2, 2, 255, 127]);
+    /// ```
+    pub fn write_sequence_of<T, F>(self, callback: F) -> T
+        where F: FnOnce(&mut DERWriterSeq) -> T {
+        self.write_sequence(callback)
     }
 
     /// Writes ASN.1 SET.
@@ -673,6 +753,151 @@ impl<'a> DERWriter<'a> {
             self.buf.extend_from_slice(buf);
         }
         return result;
+    }
+
+    /// Writes an ASN.1 NumericString.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_numeric_string("128 256")
+    /// });
+    /// assert_eq!(&der, &[18, 7, 49, 50, 56, 32, 50, 53, 54]);
+    /// ```
+    pub fn write_numeric_string(self, string: &str) {
+        let bytes = string.as_bytes();
+        for &byte in bytes {
+            assert!(byte == b' ' || (b'0' <= byte && byte <= b'9'),
+                "Invalid NumericString: {:?} appeared", byte);
+        }
+        self.write_tagged_implicit(TAG_NUMERICSTRING, |writer| {
+            writer.write_bytes(bytes)
+        });
+    }
+
+    /// Writes an ASN.1 PrintableString.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_printable_string("Co., Ltd.")
+    /// });
+    /// assert_eq!(&der, &[19, 9, 67, 111, 46, 44, 32, 76, 116, 100, 46]);
+    /// ```
+    pub fn write_printable_string(self, string: &str) {
+        let bytes = string.as_bytes();
+        for &byte in bytes {
+            assert!(
+                byte == b' ' ||
+                (b'\'' <= byte && byte <= b':' && byte != b'*') ||
+                byte == b'=' ||
+                (b'A' <= byte && byte <= b'Z') ||
+                (b'a' <= byte && byte <= b'z'),
+                "Invalid PrintableString: {:?} appeared", byte);
+        }
+        self.write_tagged_implicit(TAG_PRINTABLESTRING, |writer| {
+            writer.write_bytes(bytes)
+        });
+    }
+
+    #[cfg(feature = "chrono")]
+    /// Writes an ASN.1 UTCTime.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate chrono;
+    /// # extern crate yasna;
+    /// # fn main() {
+    /// use yasna;
+    /// use yasna::models::UTCTime;
+    /// use chrono::{UTC,TimeZone};
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_utctime(
+    ///         &UTCTime::from_datetime(&UTC.timestamp(378820800, 0)))
+    /// });
+    /// assert_eq!(&der, &[
+    ///     23, 13, 56, 50, 48, 49, 48, 50, 49, 50, 48, 48, 48, 48, 90]);
+    /// # }
+    /// ```
+    ///
+    /// # Features
+    ///
+    /// This method is enabled by `chrono` feature.
+    ///
+    /// ```toml
+    /// [dependencies]
+    /// yasna = { version = "*", features = ["chrono"] }
+    /// ```
+    pub fn write_utctime(self, datetime: &UTCTime) {
+        use super::tags::TAG_UTCTIME;
+        self.write_tagged_implicit(TAG_UTCTIME, |writer| {
+            writer.write_bytes(&datetime.to_bytes())
+        });
+    }
+
+    #[cfg(feature = "chrono")]
+    /// Writes an ASN.1 GeneralizedTime.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate chrono;
+    /// # extern crate yasna;
+    /// # fn main() {
+    /// use yasna;
+    /// use yasna::models::GeneralizedTime;
+    /// use chrono::{UTC,TimeZone};
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_generalized_time(
+    ///         &GeneralizedTime::from_datetime(
+    ///             &UTC.timestamp(500159309, 724_000_000)))
+    /// });
+    /// assert_eq!(&der, &[
+    ///     24, 19, 49, 57, 56, 53, 49, 49, 48, 54, 50,
+    ///     49, 48, 56, 50, 57, 46, 55, 50, 52, 90]);
+    /// # }
+    /// ```
+    ///
+    /// # Features
+    ///
+    /// This method is enabled by `chrono` feature.
+    ///
+    /// ```toml
+    /// [dependencies]
+    /// yasna = { version = "*", features = ["chrono"] }
+    /// ```
+    pub fn write_generalized_time(self, datetime: &GeneralizedTime) {
+        use super::tags::TAG_GENERALIZEDTIME;
+        self.write_tagged_implicit(TAG_GENERALIZEDTIME, |writer| {
+            writer.write_bytes(&datetime.to_bytes())
+        });
+    }
+
+    /// Writes an ASN.1 VisibleString.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_visible_string("Hi!")
+    /// });
+    /// assert_eq!(&der, &[26, 3, 72, 105, 33]);
+    /// ```
+    pub fn write_visible_string(self, string: &str) {
+        let bytes = string.as_bytes();
+        for &byte in bytes {
+            assert!(b' ' <= byte && byte <= b'~',
+                "Invalid VisibleString: {:?} appeared", byte);
+        }
+        self.write_tagged_implicit(TAG_VISIBLESTRING, |writer| {
+            writer.write_bytes(bytes)
+        });
     }
 
     /// Writes a (explicitly) tagged value.

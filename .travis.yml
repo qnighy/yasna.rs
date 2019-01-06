@@ -9,9 +9,9 @@ matrix:
 sudo: false
 script:
   - cargo build --verbose
-  - cargo test --verbose
   - cargo test --verbose --no-default-features
-  - cargo doc
+  - cargo test --verbose --no-default-features --features="num bit-vec chrono"
+  - cargo doc --features="num bit-vec chrono"
 after_success: |
   [ $TRAVIS_BRANCH = master ] &&
   [ $TRAVIS_PULL_REQUEST = false ] &&

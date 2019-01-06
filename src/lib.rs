@@ -8,7 +8,43 @@
 
 //! A library for reading and writing ASN.1 data.
 //!
-//! # Example
+//! # Examples
+//!
+//! ## Encoding/decoding simple data
+//!
+//! A type implementing [`DEREncodable`][derencodable] can be easily encoded:
+//!
+//! [derencodable]: trait.DEREncodable.html
+//!
+//! ```
+//! extern crate yasna;
+//!
+//! fn main() {
+//!     let der = yasna::encode_der(&(10, true));
+//!     println!("(10, true) = {:?}", der);
+//! }
+//! ```
+//!
+//! Similarly, a type implementing [`BERDecodable`][berdecodable] can be
+//! easily decoded:
+//!
+//! [berdecodable]: trait.BERDecodable.html
+//!
+//! ```
+//! extern crate yasna;
+//!
+//! fn main() {
+//!     let asn: (i64, bool) = yasna::decode_der(
+//!         &[48, 6, 2, 1, 10, 1, 1, 255]).unwrap();
+//!     println!("{:?} = [48, 6, 2, 1, 10, 1, 1, 255]", asn);
+//! }
+//! ```
+//!
+//! ## Encoding/decoding by hand
+//!
+//! Default `DEREncodable`/`BERDecodable` implementations can't handle
+//! all ASN.1 type. In many cases you have to write your reader/writer
+//! by hand.
 //!
 //! To serialize ASN.1 data, you can use [`construct_der`][construct_der].
 //!
@@ -49,26 +85,27 @@
 //! }
 //! ```
 
-#[cfg(feature = "bigint")]
-extern crate num_bigint;
-#[cfg(test)]
-extern crate num_traits;
-
-#[cfg(feature = "bitvec")]
+#[cfg(feature = "num")]
+extern crate num;
+#[cfg(feature = "bit-vec")]
 extern crate bit_vec;
+#[cfg(feature = "chrono")]
+extern crate chrono;
 
 pub mod tags;
 pub mod models;
 mod writer;
 mod reader;
 mod deserializer;
+mod serializer;
 
 pub use writer::{construct_der,construct_der_seq};
 pub use writer::{DERWriter,DERWriterSeq,DERWriterSet};
 pub use reader::{parse_ber_general,parse_ber,parse_der,BERMode};
 pub use reader::{BERReader,BERReaderSeq,BERReaderSet};
 pub use reader::{ASN1Error,ASN1ErrorKind,ASN1Result};
-pub use deserializer::FromBER;
+pub use deserializer::{BERDecodable,decode_ber_general,decode_ber,decode_der};
+pub use serializer::{DEREncodable,encode_der};
 
 /// An ASN.1 tag class, used in [`Tag`][tag].
 ///
