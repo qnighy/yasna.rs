@@ -89,6 +89,10 @@ This library is currently specialized for BER (Basic Encoding Rules) and DER (Di
 
 This library is currently specialized for on-memory serialization/deserialization. There are no plans for streaming ones.
 
+## Compatibility
+
+The minimum supported Rust version (MSRV) of `yasna.rs` is Rust 1.16.0.
+
 ## License
 
 This library is distributed under MIT/Apache-2.0 dual license.
