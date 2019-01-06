@@ -1,3 +1,16 @@
+# 0.2.0
+
+- Support for more datatypes (R/W):
+  - UTF8String, NumericString, PrintableString, VisibleString,
+  - UTCTime, GeneralizedTime,
+- Completed support for these datatypes:
+  - SEQUENCE OF, DEFAULT, OPTIONAL,
+- Addition of traits BERDecodable and DEREncodable
+- Reduction of dependencies
+- Updates of dependencies (num to 0.2, bit-vec to 0.5)
+- Features were renamed and turned off by default
+- Addition of [@est31](http://github.com/est31) as maintainer
+
 # 0.1.3
 
 - Both readers and writers implement common core datatypes, including:
