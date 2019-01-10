@@ -108,6 +108,7 @@ pub fn construct_der_seq<F>(callback: F) -> Vec<u8>
 pub struct DERWriter<'a> {
     buf: &'a mut Vec<u8>,
     implicit_tag: Option<Tag>,
+    override_pc: Option<PC>,
 }
 
 impl<'a> DERWriter<'a> {
@@ -115,12 +116,15 @@ impl<'a> DERWriter<'a> {
         return DERWriter {
             buf: buf,
             implicit_tag: None,
+            override_pc: None,
         }
     }
     /// Writes BER identifier (tag + primitive/constructed) octets.
     fn write_identifier(&mut self, tag: Tag, pc: PC) {
         let tag = if let Some(tag) = self.implicit_tag { tag } else { tag };
+        let pc = if let Some(pc) = self.override_pc { pc } else { pc };
         self.implicit_tag = None;
+        self.override_pc = None;
         let classid = tag.tag_class as u8;
         let pcid = pc as u8;
         if tag.tag_number < 31 {
@@ -954,9 +958,67 @@ impl<'a> DERWriter<'a> {
         where F: FnOnce(DERWriter) -> T {
         let tag = if let Some(tag) = self.implicit_tag { tag } else { tag };
         self.implicit_tag = None;
-        let mut writer = DERWriter::from_buf(self.buf);
-        writer.implicit_tag = Some(tag);
+        let writer = DERWriter {
+            buf: self.buf,
+            implicit_tag: Some(tag),
+            override_pc: self.override_pc,
+        };
         return callback(writer);
+    }
+
+    /// Overrides the primitive/constructed bit on the next value
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna::{self,Tag};
+    /// use yasna::tags::TAG_SEQUENCE;
+    /// let actually_a_seq = yasna::construct_der(|writer| {
+    ///     writer.write_override_pc(true, |writer| {
+    ///         writer.write_tagged_implicit(TAG_SEQUENCE, |writer| {
+    ///             writer.write_bytes(&[])
+    ///         })
+    ///     })
+    /// });
+    /// let real_seq = yasna::construct_der(|writer| {
+    ///     writer.write_sequence(|_|())
+    /// });
+    /// assert_eq!(actually_a_seq, real_seq);
+    /// ```
+    pub fn write_override_pc<T, F>
+        (mut self, constructed: bool, callback: F) -> T
+        where F: FnOnce(DERWriter) -> T {
+        let pc = match (self.override_pc, constructed) {
+            (Some(pc),_) => pc,
+            (None,true) => PC::Constructed,
+            (None,false) => PC::Primitive,
+        };
+        self.override_pc = None;
+        let writer = DERWriter {
+            buf: self.buf,
+            implicit_tag: self.implicit_tag,
+            override_pc: Some(pc),
+        };
+        return callback(writer);
+    }
+
+    /// Writes `&[u8]` into the DER output buffer directly. Properly encoded tag
+    /// and length must be included at the start of the passed buffer.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let raw_der = yasna::construct_der(|writer| {
+    ///     writer.write_der(b"\x04\x06Hello!")
+    /// });
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_bytes(b"Hello!")
+    /// });
+    /// assert_eq!(raw_der, der);
+    /// ```
+    pub fn write_der(self, der: &[u8]) {
+        self.buf.extend_from_slice(der);
     }
 }
 
