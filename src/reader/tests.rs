@@ -1,4 +1,5 @@
 // Copyright 2016 Masaki Hara
+// Copyright 2017 Fortanix, Inc.
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -10,6 +11,7 @@
 use num_bigint::{BigUint, BigInt};
 
 use super::super::Tag;
+use super::super::tags::TAG_SEQUENCE;
 use super::*;
 
 #[test]
@@ -895,14 +897,58 @@ fn test_der_read_sequence_err() {
 }
 
 #[test]
-fn test_ber_read_sequence_ok() {
-    let tests : &[((i64, bool), &[u8])] = &[
-        ((10, true), &[48, 6, 2, 1, 10, 1, 1, 255]),
-        ((266, true), &[48, 7, 2, 2, 1, 10, 1, 1, 255]),
-        ((10, true), &[48, 128, 2, 1, 10, 1, 1, 255, 0, 0]),
-        ((266, true), &[48, 128, 2, 2, 1, 10, 1, 1, 255, 0, 0]),
+fn test_der_read_tagged_der_err() {
+    let tests : &[&[u8]] = &[
+        &[], &[48], &[0, 0], &[0, 1, 0],
+        &[48, 6, 2, 1, 10, 1, 1, 255, 0],
+        &[48, 6, 2, 2, 1, 10, 1, 1, 255],
+        &[48, 7, 2, 1, 10, 1, 1, 255],
+        &[48, 128, 2, 1, 10, 1, 1, 255, 0, 0, 0],
+
+        // Otherwise valid indefinite-length encodings
+        &[48, 128, 48, 6, 2, 1, 10, 1, 1, 255, 0, 0],
+        &[48, 128, 48, 128, 2, 1, 10, 1, 1, 255, 0, 0, 0, 0],
+        &[48, 128, 2, 1, 10, 1, 1, 255, 0, 0],
+        &[48, 128, 2, 2, 1, 10, 1, 1, 255, 0, 0],
     ];
-    for &(evalue, data) in tests {
+    for &data in tests {
+        parse_der(data, |reader| {
+            reader.read_tagged_der()
+        }).unwrap_err();
+    }
+}
+
+#[test]
+fn test_ber_read_sequence_ok() {
+    let tests : &[((i64, bool),
+                  TaggedDerValue,
+                  &[u8])] = &[
+        // Definite-length encoding
+        ((10, true),
+            TaggedDerValue::from_tag_and_bytes(
+                TAG_SEQUENCE,
+                [2, 1, 10, 1, 1, 255].to_vec()),
+            &[48, 6, 2, 1, 10, 1, 1, 255]),
+        // Definite-length encoding
+        ((266, true),
+            TaggedDerValue::from_tag_and_bytes(
+                TAG_SEQUENCE,
+                [2, 2, 1, 10, 1, 1, 255].to_vec()),
+            &[48, 7, 2, 2, 1, 10, 1, 1, 255]),
+        // Indefinite-length encoding
+        ((10, true),
+            TaggedDerValue::from_tag_and_bytes(
+                TAG_SEQUENCE,
+                [2, 1, 10, 1, 1, 255, 0, 0].to_vec()),
+            &[48, 128, 2, 1, 10, 1, 1, 255, 0, 0]),
+        // Indefinite-length encoding
+        ((266, true),
+            TaggedDerValue::from_tag_and_bytes(
+                TAG_SEQUENCE,
+                [2, 2, 1, 10, 1, 1, 255, 0, 0].to_vec()),
+            &[48, 128, 2, 2, 1, 10, 1, 1, 255, 0, 0]),
+    ];
+    for &(evalue, ref ervalue, data) in tests {
         let value = parse_ber(data, |reader| {
             reader.read_sequence(|reader| {
                 let i = try!(reader.next().read_i64());
@@ -911,6 +957,10 @@ fn test_ber_read_sequence_ok() {
             })
         }).unwrap();
         assert_eq!(value, evalue);
+        let rvalue = parse_ber(data, |reader| {
+            reader.read_tagged_der()
+        }).unwrap();
+        assert_eq!(&rvalue, ervalue);
     }
 
     let tests : &[((), &[u8])] = &[
