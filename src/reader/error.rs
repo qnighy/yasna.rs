@@ -10,7 +10,7 @@ use std::error::Error;
 use std::fmt::{self,Display};
 use std::io;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct ASN1Error {
     kind: ASN1ErrorKind,
 }
@@ -26,6 +26,10 @@ impl ASN1Error {
         ASN1Error {
             kind: kind,
         }
+    }
+
+    pub fn kind(&self) -> ASN1ErrorKind {
+        self.kind
     }
 }
 

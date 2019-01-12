@@ -16,7 +16,7 @@ use bit_vec::BitVec;
 
 use super::{PCBit,Tag,TAG_CLASSES};
 use super::tags::{TAG_EOC,TAG_BOOLEAN,TAG_INTEGER,TAG_OCTETSTRING};
-use super::tags::{TAG_NULL,TAG_OID,TAG_UTF8STRING,TAG_SEQUENCE,TAG_SET};
+use super::tags::{TAG_NULL,TAG_OID,TAG_UTF8STRING,TAG_SEQUENCE,TAG_SET,TAG_ENUM};
 use super::tags::{TAG_NUMERICSTRING,TAG_PRINTABLESTRING,TAG_VISIBLESTRING};
 use super::models::{ObjectIdentifier,TaggedDerValue};
 #[cfg(feature = "chrono")]
@@ -472,24 +472,8 @@ impl<'a, 'b> BERReader<'a, 'b> {
         })
     }
 
-    /// Reads an ASN.1 INTEGER value as `i64`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use yasna;
-    /// let data = &[2, 4, 73, 150, 2, 210];
-    /// let asn = yasna::parse_der(data, |reader| {
-    ///     reader.read_i64()
-    /// }).unwrap();
-    /// assert_eq!(asn, 1234567890);
-    /// ```
-    ///
-    /// # Errors
-    ///
-    /// Except parse errors, it can raise integer overflow errors.
-    pub fn read_i64(self) -> ASN1Result<i64> {
-        self.read_general(TAG_INTEGER, |contents| {
+    fn read_integer(self, tag: Tag) -> ASN1Result<i64> {
+        self.read_general(tag, |contents| {
             let buf = match contents {
                 Contents::Primitive(buf) => buf,
                 Contents::Constructed(_) => {
@@ -514,6 +498,46 @@ impl<'a, 'b> BERReader<'a, 'b> {
             }
             return Ok(x);
         })
+    }
+
+    /// Reads an ASN.1 ENUMERATED value as `i64`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let data = &[10, 1, 13];
+    /// let asn = yasna::parse_der(data, |reader| {
+    ///     reader.read_enum()
+    /// }).unwrap();
+    /// assert_eq!(asn, 13);
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Except parse errors, it can raise integer overflow errors.
+    pub fn read_enum(self) -> ASN1Result<i64> {
+        self.read_integer(TAG_ENUM)
+    }
+
+    /// Reads an ASN.1 INTEGER value as `i64`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let data = &[2, 4, 73, 150, 2, 210];
+    /// let asn = yasna::parse_der(data, |reader| {
+    ///     reader.read_i64()
+    /// }).unwrap();
+    /// assert_eq!(asn, 1234567890);
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// Except parse errors, it can raise integer overflow errors.
+    pub fn read_i64(self) -> ASN1Result<i64> {
+        self.read_integer(TAG_INTEGER)
     }
 
     /// Reads an ASN.1 INTEGER value as `u64`.
