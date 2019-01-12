@@ -13,7 +13,7 @@ use bit_vec::BitVec;
 
 use super::{PCBit, Tag};
 use super::tags::{TAG_BOOLEAN,TAG_INTEGER,TAG_OCTETSTRING};
-use super::tags::{TAG_NULL,TAG_OID,TAG_UTF8STRING,TAG_SEQUENCE,TAG_SET};
+use super::tags::{TAG_NULL,TAG_OID,TAG_UTF8STRING,TAG_SEQUENCE,TAG_SET,TAG_ENUM};
 use super::tags::{TAG_NUMERICSTRING,TAG_PRINTABLESTRING,TAG_VISIBLESTRING};
 use super::models::{ObjectIdentifier,TaggedDerValue};
 #[cfg(feature = "chrono")]
@@ -232,6 +232,38 @@ impl<'a> DERWriter<'a> {
         self.buf.push(if val { 255 } else { 0 });
     }
 
+    fn write_integer(mut self, tag: Tag, val: i64) {
+        let mut shiftnum = 56;
+        while shiftnum > 0 &&
+                (val >> (shiftnum-1) == 0 || val >> (shiftnum-1) == -1) {
+            shiftnum -= 8;
+        }
+        self.write_identifier(tag, PCBit::Primitive);
+        self.write_length(shiftnum / 8 + 1);
+        loop {
+            self.buf.push((val >> shiftnum) as u8);
+            if shiftnum == 0 {
+                break;
+            }
+            shiftnum -= 8;
+        }
+    }
+
+    /// Writes `i64` as an ASN.1 ENUMERATED value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_enum(2)
+    /// });
+    /// assert_eq!(der, vec![10, 1, 2]);
+    /// ```
+    pub fn write_enum(self, val: i64) {
+        self.write_integer(TAG_ENUM, val);
+    }
+
     /// Writes `i64` as an ASN.1 INTEGER value.
     ///
     /// # Examples
@@ -243,21 +275,8 @@ impl<'a> DERWriter<'a> {
     /// });
     /// assert_eq!(der, vec![2, 4, 73, 150, 2, 210]);
     /// ```
-    pub fn write_i64(mut self, val: i64) {
-        let mut shiftnum = 56;
-        while shiftnum > 0 &&
-                (val >> (shiftnum-1) == 0 || val >> (shiftnum-1) == -1) {
-            shiftnum -= 8;
-        }
-        self.write_identifier(TAG_INTEGER, PCBit::Primitive);
-        self.write_length(shiftnum / 8 + 1);
-        loop {
-            self.buf.push((val >> shiftnum) as u8);
-            if shiftnum == 0 {
-                break;
-            }
-            shiftnum -= 8;
-        }
+    pub fn write_i64(self, val: i64) {
+        self.write_integer(TAG_INTEGER, val);
     }
 
     /// Writes `u64` as an ASN.1 INTEGER value.
