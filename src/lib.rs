@@ -85,6 +85,7 @@
 //! }
 //! ```
 
+#![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
 #[cfg(feature = "num-bigint")]
