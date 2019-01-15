@@ -1,3 +1,9 @@
+# 0.2.1
+
+- Ability to read/write raw DER
+- Addition of `#![deny(missing_docs)]` to the library root
+- Ability to read/write ENUMERATED
+
 # 0.2.0
 
 - Support for more datatypes (R/W):
