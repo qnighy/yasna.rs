@@ -8,6 +8,8 @@
 
 //! Provides datatypes which correspond to ASN.1 types.
 
+#![forbid(missing_docs)]
+
 mod oid;
 #[cfg(feature = "chrono")]
 mod time;

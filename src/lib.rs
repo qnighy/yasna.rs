@@ -85,6 +85,8 @@
 //! }
 //! ```
 
+#![deny(missing_docs)]
+
 #[cfg(feature = "num-bigint")]
 extern crate num_bigint;
 #[cfg(test)]
@@ -113,7 +115,10 @@ pub use serializer::{DEREncodable,encode_der};
 /// A value of the ASN.1 primitive/constructed ("P/C") bit.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum PCBit {
-    Primitive = 0, Constructed = 1,
+    /// The bit's value is "Primitive"
+    Primitive = 0,
+    /// The bit's value is "Constructed"
+    Constructed = 1,
 }
 
 /// An ASN.1 tag class, used in [`Tag`][tag].
@@ -128,7 +133,14 @@ pub enum PCBit {
 /// - PRIVATE
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum TagClass {
-    Universal = 0, Application = 1, ContextSpecific = 2, Private = 3,
+    /// The UNIVERSAL tag class
+    Universal = 0,
+    /// The APPLICATION tag class
+    Application = 1,
+    /// The CONTEXT-SPECIFIC tag class
+    ContextSpecific = 2,
+    /// The PRIVATE tag class
+    Private = 3,
 }
 
 const TAG_CLASSES : [TagClass; 4] = [
@@ -151,7 +163,9 @@ const TAG_CLASSES : [TagClass; 4] = [
 ///   In this library. Tag numbers are assumed to be in `u64`.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Tag {
+    /// The tag class
     pub tag_class: TagClass,
+    /// The tag number
     pub tag_number: u64,
 }
 

@@ -23,6 +23,7 @@ pub struct TaggedDerValue {
 }
 
 impl TaggedDerValue {
+    /// Constructs a new `TaggedDerValue` as an octet string
     pub fn from_octetstring(bytes: Vec<u8>) -> Self {
         TaggedDerValue {
             tag: TAG_OCTETSTRING,
@@ -31,6 +32,7 @@ impl TaggedDerValue {
         }
     }
 
+    /// Constructs a new `TaggedDerValue` from its tag and content
     pub fn from_tag_and_bytes(tag: Tag, bytes: Vec<u8>) -> Self {
         let pcbit = match tag {
             TAG_SEQUENCE | TAG_SET => PCBit::Constructed,
@@ -43,6 +45,8 @@ impl TaggedDerValue {
         }
     }
 
+    /// Constructs a new `TaggedDerValue` from its tag,
+    /// primitive/constructed bit, and content
     pub fn from_tag_pc_and_bytes(tag: Tag, pcbit: PCBit, bytes: Vec<u8>) -> Self {
         TaggedDerValue {
             tag: tag,
@@ -51,18 +55,30 @@ impl TaggedDerValue {
         }
     }
 
+    /// Returns the tag
     pub fn tag(&self) -> Tag {
         self.tag
     }
 
+    /// Returns the primitive/constructed bit
     pub fn pcbit(&self) -> PCBit {
         self.pcbit
     }
 
+    /// Returns the value
     pub fn value(&self) -> &[u8] {
         &self.value
     }
 
+    /// If the value is something that contains raw bytes,
+    /// returns its content.
+    ///
+    /// # Examples
+    /// ```
+    /// use yasna::models::TaggedDerValue;
+    /// let value = TaggedDerValue::from_octetstring(vec![1, 2, 3, 4, 5, 6]);
+    /// assert!(value.as_bytes() == Some(&[1, 2, 3, 4, 5, 6]));
+    /// ```
     pub fn as_bytes(&self) -> Option<&[u8]> {
         match (self.tag, self.pcbit) {
             (TAG_BITSTRING, PCBit::Primitive) => {
@@ -79,6 +95,7 @@ impl TaggedDerValue {
         }
     }
 
+    /// If the value is something string-like, returns it as string.
     pub fn as_str(&self) -> Option<&str> {
         use std::str::from_utf8;
 

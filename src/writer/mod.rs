@@ -6,6 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+#![forbid(missing_docs)]
+
 #[cfg(feature = "num-bigint")]
 use num_bigint::{BigUint, BigInt};
 #[cfg(feature = "bit-vec")]
