@@ -119,6 +119,7 @@ impl Display for ObjectIdentifier {
 }
 
 #[derive(Debug, Clone)]
+/// An error indicating failure to parse an Object identifier
 pub struct ParseOidError(());
 
 impl Error for ParseOidError {
