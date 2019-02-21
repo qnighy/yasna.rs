@@ -25,6 +25,8 @@ use super::models::{ObjectIdentifier,TaggedDerValue};
 use super::models::{UTCTime,GeneralizedTime};
 pub use self::error::*;
 
+use std::ascii::AsciiExt;
+
 /// Parses DER/BER-encoded data.
 ///
 /// [`parse_ber`][parse_ber] and [`parse_der`][parse_der] are shorthands
