@@ -1,4 +1,5 @@
 // Copyright 2016 Masaki Hara
+// Copyright 2019 Fortanix, Inc.
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -15,11 +16,13 @@ use bit_vec::BitVec;
 
 use super::{PCBit, Tag};
 use super::tags::{TAG_BOOLEAN,TAG_INTEGER,TAG_OCTETSTRING};
-use super::tags::{TAG_NULL,TAG_OID,TAG_UTF8STRING,TAG_SEQUENCE,TAG_SET,TAG_ENUM};
+use super::tags::{TAG_NULL,TAG_OID,TAG_UTF8STRING,TAG_SEQUENCE,TAG_SET,TAG_ENUM,TAG_IA5STRING,TAG_BMPSTRING};
 use super::tags::{TAG_NUMERICSTRING,TAG_PRINTABLESTRING,TAG_VISIBLESTRING};
 use super::models::{ObjectIdentifier,TaggedDerValue};
 #[cfg(feature = "chrono")]
 use super::models::{UTCTime,GeneralizedTime};
+
+use std::ascii::AsciiExt;
 
 /// Constructs DER-encoded data as `Vec<u8>`.
 ///
@@ -523,6 +526,49 @@ impl<'a> DERWriter<'a> {
         self.write_identifier(TAG_UTF8STRING, PCBit::Primitive);
         self.write_length(string.len());
         self.buf.extend_from_slice(string.as_bytes());
+    }
+
+    /// Writes `&str` as an ASN.1 IA5String value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_ia5_string("Hello!")
+    /// });
+    /// assert_eq!(der, vec![22, 6, 72, 101, 108, 108, 111, 33]);
+    /// ```
+    pub fn write_ia5_string(mut self, string: &str) {
+        assert!(string.is_ascii(), "IA5 string must be ASCII");
+        self.write_identifier(TAG_IA5STRING, PCBit::Primitive);
+        self.write_length(string.len());
+        self.buf.extend_from_slice(string.as_bytes());
+    }
+
+    /// Writes `&str` as an ASN.1 BMPString value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let der = yasna::construct_der(|writer| {
+    ///     writer.write_bmp_string("❤πü2?")
+    /// });
+    /// assert_eq!(der, vec![30, 10, 39, 100, 3, 192, 0, 252, 0, 50, 0, 63]);
+    /// ```
+    pub fn write_bmp_string(mut self, string: &str) {
+        let utf16 : Vec<u16> = string.encode_utf16().collect();
+
+        let mut bytes = Vec::with_capacity(utf16.len() * 2);
+        for c in utf16 {
+            bytes.push((c / 256) as u8);
+            bytes.push((c % 256) as u8);
+        }
+
+        self.write_identifier(TAG_BMPSTRING, PCBit::Primitive);
+        self.write_length(bytes.len());
+        self.buf.extend_from_slice(&bytes);
     }
 
     /// Writes the ASN.1 NULL value.

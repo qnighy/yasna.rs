@@ -1,5 +1,5 @@
 // Copyright 2016 Masaki Hara
-// Copyright 2017 Fortanix, Inc.
+// Copyright 2017,2019 Fortanix, Inc.
 //
 // Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
 // http://www.apache.org/licenses/LICENSE-2.0> or the MIT license
@@ -19,11 +19,13 @@ use bit_vec::BitVec;
 use super::{PCBit,Tag,TAG_CLASSES};
 use super::tags::{TAG_EOC,TAG_BOOLEAN,TAG_INTEGER,TAG_OCTETSTRING};
 use super::tags::{TAG_NULL,TAG_OID,TAG_UTF8STRING,TAG_SEQUENCE,TAG_SET,TAG_ENUM};
-use super::tags::{TAG_NUMERICSTRING,TAG_PRINTABLESTRING,TAG_VISIBLESTRING};
+use super::tags::{TAG_NUMERICSTRING,TAG_PRINTABLESTRING,TAG_VISIBLESTRING,TAG_IA5STRING,TAG_BMPSTRING};
 use super::models::{ObjectIdentifier,TaggedDerValue};
 #[cfg(feature = "chrono")]
 use super::models::{UTCTime,GeneralizedTime};
 pub use self::error::*;
+
+use std::ascii::AsciiExt;
 
 /// Parses DER/BER-encoded data.
 ///
@@ -1319,6 +1321,63 @@ impl<'a, 'b> BERReader<'a, 'b> {
                 }
             }
             return Ok(String::from_utf8(bytes).unwrap());
+        })
+    }
+
+    /// Reads an ASN.1 IA5String.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let data = &[22, 9, 0x41, 0x53, 0x43, 0x49, 0x49, 0x20, 0x70, 0x6C, 0x7A];
+    /// let asn = yasna::parse_der(data, |reader| {
+    ///     reader.read_ia5_string()
+    /// }).unwrap();
+    /// assert_eq!(&asn, "ASCII plz");
+    /// ```
+    pub fn read_ia5_string(self) -> ASN1Result<String> {
+        self.read_tagged_implicit(TAG_IA5STRING, |reader| {
+            let bytes = reader.read_bytes()?;
+
+            match String::from_utf8(bytes) {
+                Ok(string) => {
+                    for c in string.chars() {
+                        if !c.is_ascii() {
+                            println!("{} is not ascii...", c);
+                            return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+                        }
+                    }
+                    Ok(string)
+                }
+                Err(_) => Err(ASN1Error::new(ASN1ErrorKind::Invalid))
+            }
+        })
+    }
+
+    /// Reads an ASN.1 BMPString.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use yasna;
+    /// let data = &[30, 14, 0x00, 0xA3, 0x03, 0xC0, 0x00, 0x20, 0x00, 0x71, 0x00, 0x75, 0x00, 0x75, 0x00, 0x78];
+    /// let asn = yasna::parse_der(data, |reader| {
+    ///     reader.read_bmp_string()
+    /// }).unwrap();
+    /// assert_eq!(&asn, "£π quux");
+    /// ```
+    pub fn read_bmp_string(self) -> ASN1Result<String> {
+        self.read_tagged_implicit(TAG_BMPSTRING, |reader| {
+            let bytes = reader.read_bytes()?;
+
+            if bytes.len() % 2 != 0 {
+                return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
+            }
+
+            let utf16 : Vec<u16> = bytes.chunks(2).map(|c| (c[0] as u16) * 256 + c[1] as u16).collect();
+
+            Ok(String::from_utf16_lossy(&utf16))
         })
     }
 
