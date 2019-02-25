@@ -33,7 +33,7 @@ Currently, these datatypes are supported:
 
 - BOOLEAN, INTEGER, BITSTRING, OCTETSTRING, NULL, OBJECT IDENTIFIER,
 - SEQUENCE, SEQUENCE OF, SET, SET OF, CHOICE,
-- UTF8String, NumericString, PrintableString, VisibleString,
+- UTF8String, NumericString, PrintableString, VisibleString, IA5String, BMPString,
 - UTCTime, GeneralizedTime,
 - Explicitly/Implicitly tagged types,
 - DEFAULT/OPTIONAL in SEQUENCE/SET.
@@ -41,8 +41,7 @@ Currently, these datatypes are supported:
 These datatypes are *not* supported:
 
 - REAL
-- TeletexString, VideotexString, IA5String, GraphicString, GeneralString,
-- UniversalString, BMPString,
+- TeletexString, VideotexString, GraphicString, GeneralString, UniversalString,
 - TIME, DATE, TIME-OF-DAY, DATE-TIME, DURATION.
 
 ## Deserialization/Parsing
@@ -68,7 +67,7 @@ Currently, these datatypes are supported:
 
 - BOOLEAN, INTEGER, BITSTRING, OCTETSTRING, NULL, OBJECT IDENTIFIER,
 - SEQUENCE, SEQUENCE OF, SET, SET OF, CHOICE,
-- UTF8String, NumericString, PrintableString, VisibleString,
+- UTF8String, NumericString, PrintableString, VisibleString, IA5String, BMPString,
 - UTCTime, GeneralizedTime,
 - Explicitly/Implicitly tagged types,
 - DEFAULT/OPTIONAL in SEQUENCE.
@@ -76,8 +75,7 @@ Currently, these datatypes are supported:
 These datatypes are *not* supported:
 
 - REAL
-- TeletexString, VideotexString, IA5String, GraphicString, GeneralString,
-- UniversalString, BMPString,
+- TeletexString, VideotexString, GraphicString, GeneralString, UniversalString,
 - TIME, DATE, TIME-OF-DAY, DATE-TIME, DURATION.
 - DEFAULT/OPTIONAL in SET.
 
