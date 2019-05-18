@@ -29,7 +29,7 @@ version = "0.2"
 default-features = false
 
 [dependencies.bit-vec]
-version = "0.5"
+version = "0.6"
 optional = true
 
 [dependencies.chrono]
