@@ -5,7 +5,7 @@ rust:
   - nightly
   # Minimum supported Rust version.
   # Please also change README.md if you change this.
-  - 1.16.0
+  - 1.17.0
 matrix:
   allow_failures:
     - rust: nightly
