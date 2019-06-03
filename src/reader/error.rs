@@ -24,7 +24,7 @@ pub type ASN1Result<T> = Result<T, ASN1Error>;
 impl ASN1Error {
     pub fn new(kind: ASN1ErrorKind) -> Self {
         ASN1Error {
-            kind: kind,
+            kind,
         }
     }
 

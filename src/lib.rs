@@ -175,21 +175,21 @@ impl Tag {
     pub fn application(tag_number: u64) -> Tag {
         return Tag {
             tag_class: TagClass::Application,
-            tag_number: tag_number,
+            tag_number,
         }
     }
     /// Constructs a context specific tag, namely \[n\].
     pub fn context(tag_number: u64) -> Tag {
         return Tag {
             tag_class: TagClass::ContextSpecific,
-            tag_number: tag_number,
+            tag_number,
         }
     }
     /// Constructs a PRIVATE tag, namely \[PRIVATE n\].
     pub fn private(tag_number: u64) -> Tag {
         return Tag {
             tag_class: TagClass::Private,
-            tag_number: tag_number,
+            tag_number,
         }
     }
 }

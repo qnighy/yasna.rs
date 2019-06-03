@@ -39,8 +39,8 @@ impl TaggedDerValue {
             _ => PCBit::Primitive,
         };
         TaggedDerValue {
-            tag: tag,
-            pcbit: pcbit,
+            tag,
+            pcbit,
             value: bytes,
         }
     }
@@ -49,8 +49,8 @@ impl TaggedDerValue {
     /// primitive/constructed bit, and content
     pub fn from_tag_pc_and_bytes(tag: Tag, pcbit: PCBit, bytes: Vec<u8>) -> Self {
         TaggedDerValue {
-            tag: tag,
-            pcbit: pcbit,
+            tag,
+            pcbit,
             value: bytes,
         }
     }

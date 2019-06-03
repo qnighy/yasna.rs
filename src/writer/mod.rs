@@ -118,7 +118,7 @@ pub struct DERWriter<'a> {
 impl<'a> DERWriter<'a> {
     fn from_buf(buf: &'a mut Vec<u8>) -> Self {
         return DERWriter {
-            buf: buf,
+            buf,
             implicit_tag: None,
         }
     }

@@ -40,7 +40,7 @@ impl ObjectIdentifier {
     /// ```
     pub fn new(components: Vec<u64>) -> Self {
         return ObjectIdentifier {
-            components: components,
+            components,
         };
     }
 
