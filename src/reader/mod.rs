@@ -142,18 +142,18 @@ const BER_READER_STACK_DEPTH : usize = 100;
 impl<'a> BERReaderImpl<'a> {
     fn new(buf: &'a [u8], mode: BERMode) -> Self {
         return BERReaderImpl {
-            buf: buf,
+            buf,
             pos: 0,
-            mode: mode,
+            mode,
             depth: 0,
         };
     }
 
     fn with_pos(buf: &'a [u8], pos: usize, mode: BERMode) -> Self {
         return BERReaderImpl {
-            buf: buf,
-            pos: pos,
-            mode: mode,
+            buf,
+            pos,
+            mode,
             depth: 0,
         };
     }
@@ -209,8 +209,8 @@ impl<'a> BERReaderImpl<'a> {
             }
         }
         let tag = Tag {
-            tag_class: tag_class,
-            tag_number: tag_number,
+            tag_class,
+            tag_number,
         };
         return Ok((tag, pcbit));
     }
@@ -246,8 +246,8 @@ impl<'a> BERReaderImpl<'a> {
             }
         }
         let tag = Tag {
-            tag_class: tag_class,
-            tag_number: tag_number,
+            tag_class,
+            tag_number,
         };
         return Ok(tag);
     }
@@ -428,7 +428,7 @@ pub struct BERReader<'a, 'b> where 'a: 'b {
 impl<'a, 'b> BERReader<'a, 'b> {
     fn new(inner: &'b mut BERReaderImpl<'a>) -> Self {
         BERReader {
-            inner: inner,
+            inner,
             implicit_tag: None,
         }
     }
@@ -1035,7 +1035,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
                 },
                 Contents::Constructed(inner) => inner,
             };
-            return callback(&mut BERReaderSeq { inner: inner, });
+            return callback(&mut BERReaderSeq { inner, });
         })
     }
 
@@ -1565,8 +1565,8 @@ impl<'a, 'b> BERReader<'a, 'b> {
         let implicit_tag = self.implicit_tag;
         self.inner.read_with_buffer(|inner| {
             callback(BERReader {
-                inner: inner,
-                implicit_tag: implicit_tag,
+                inner,
+                implicit_tag,
             })
         })
     }
@@ -1725,7 +1725,7 @@ impl<'a, 'b> BERReaderSeq<'a, 'b> {
             where F: for<'c> FnOnce(
                 &mut BERReaderSeq<'a, 'c>) -> ASN1Result<T> {
         self.inner.read_with_buffer(|inner| {
-            callback(&mut BERReaderSeq { inner: inner, })
+            callback(&mut BERReaderSeq { inner, })
         })
     }
 }
