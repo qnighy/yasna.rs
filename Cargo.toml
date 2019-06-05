@@ -18,6 +18,9 @@ include = [
 [features]
 default = []
 
+[package.metadata.docs.rs]
+features = ["num-bigint", "bit-vec", "chrono"]
+
 [dependencies]
 
 [dependencies.num-bigint]
