@@ -1,3 +1,8 @@
+# 0.3.0
+- Increase MSRV to 1.17.0
+- Update to bit-vec 0.6.1
+- Support for reading/writing IA5String, BMPString
+
 # 0.2.1
 
 - Ability to read/write raw DER
