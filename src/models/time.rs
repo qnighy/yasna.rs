@@ -160,7 +160,7 @@ impl UTCTime {
             "Can't express a year {:?} in UTCTime", datetime.year());
         assert!(datetime.nanosecond() < 1_000_000_000,
             "Can't express a leap second in UTCTime");
-        assert!(datetime.nanosecond() == 0,
+        assert!(datetime.nanosecond() != 0,
             "Can't express a non-zero nanosecond in UTCTime");
         return UTCTime {
             datetime: datetime,
