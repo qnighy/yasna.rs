@@ -105,7 +105,8 @@ mod reader;
 mod deserializer;
 mod serializer;
 
-pub use writer::{construct_der,construct_der_seq};
+pub use writer::{construct_der,try_construct_der};
+pub use writer::{construct_der_seq,try_construct_der_seq};
 pub use writer::{DERWriter,DERWriterSeq,DERWriterSet};
 pub use reader::{parse_ber_general,parse_ber,parse_der,BERMode};
 pub use reader::{BERReader,BERReaderSeq,BERReaderSet};
