@@ -567,16 +567,46 @@ impl<'a> DERWriter<'a> {
     /// [dependencies]
     /// yasna = { version = "*", features = ["bit-vec"] }
     /// ```
-    pub fn write_bitvec(mut self, bitvec: &BitVec) {
-        use super::tags::TAG_BITSTRING;
-        self.write_identifier(TAG_BITSTRING, PCBit::Primitive);
+    pub fn write_bitvec(self, bitvec: &BitVec) {
         let len = bitvec.len();
         let bytes = bitvec.to_bytes();
+        self.write_bitvec_bytes(&bytes, len);
+    }
+
+    /// Writes `&[u8]` and `usize` as an ASN.1 BITSTRING value.
+    ///
+    /// This function is similar to `write_bitvec`, but is available
+    /// even if the `bit-vec` feature is disabled.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate yasna;
+    /// # fn main() {
+    /// use yasna;
+    /// let der_1 = yasna::construct_der(|writer| {
+    ///     writer.write_bitvec_bytes(&[117, 13, 64], 18)
+    /// });
+    /// let der_2 = yasna::construct_der(|writer| {
+    ///     writer.write_bitvec_bytes(&[117, 13, 65], 18)
+    /// });
+    /// assert_eq!(&der_1, &[3, 4, 6, 117, 13, 64]);
+    /// assert_eq!(&der_2, &[3, 4, 6, 117, 13, 64]);
+    /// # }
+    /// ```
+    pub fn write_bitvec_bytes(mut self, bytes: &[u8], len: usize) {
+        use super::tags::TAG_BITSTRING;
+        self.write_identifier(TAG_BITSTRING, PCBit::Primitive);
         debug_assert!(len <= 8 * bytes.len());
         debug_assert!(8 * bytes.len() < len + 8);
         self.write_length(1 + bytes.len());
-        self.buf.push((8 * bytes.len() - len) as u8);
-        self.buf.extend_from_slice(&bytes);
+        let len_diff = 8 * bytes.len() - len;
+        self.buf.push(len_diff as u8);
+        if bytes.len() > 0 {
+            self.buf.extend_from_slice(&bytes[0 .. bytes.len() - 1]);
+            let mask = !(255u16 >> (8 - len_diff)) as u8;
+            self.buf.push(bytes[bytes.len() - 1] & mask);
+        }
     }
 
     /// Writes `&[u8]` as an ASN.1 OCTETSTRING value.
