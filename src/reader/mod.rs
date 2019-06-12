@@ -763,7 +763,6 @@ impl<'a, 'b> BERReader<'a, 'b> {
         })
     }
 
-    #[cfg(feature = "bit-vec")]
     fn read_bitvec_impl(self, unused_bits: &mut usize, bytes: &mut Vec<u8>)
             -> ASN1Result<()> {
         use super::tags::TAG_BITSTRING;
@@ -844,13 +843,42 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// yasna = { version = "*", features = ["bit-vec"] }
     /// ```
     pub fn read_bitvec(self) -> ASN1Result<BitVec> {
+        let (bytes, len) = try!(self.read_bitvec_bytes());
+        let mut ret = BitVec::from_bytes(&bytes);
+        ret.truncate(len);
+        return Ok(ret);
+    }
+
+    /// Reads an ASN.1 BITSTRING value as `(Vec<u8>, usize)`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # extern crate yasna;
+    /// # fn main() {
+    /// use yasna;
+    /// let data = &[3, 4, 6, 117, 13, 64];
+    /// let asn = yasna::parse_der(data, |reader| {
+    ///     reader.read_bitvec_bytes()
+    /// }).unwrap();
+    /// assert_eq!(asn, (vec![117, 13, 64], 18));
+    /// # }
+    /// ```
+    ///
+    /// # Features
+    ///
+    /// This method is enabled by `bit-vec` feature.
+    ///
+    /// ```toml
+    /// [dependencies]
+    /// yasna = { version = "*", features = ["bit-vec"] }
+    /// ```
+    pub fn read_bitvec_bytes(self) -> ASN1Result<(Vec<u8>, usize)> {
         let mut unused_bits = 0;
         let mut bytes = Vec::new();
         try!(self.read_bitvec_impl(&mut unused_bits, &mut bytes));
         let len = bytes.len() * 8 - unused_bits;
-        let mut ret = BitVec::from_bytes(&bytes);
-        ret.truncate(len);
-        return Ok(ret);
+        return Ok((bytes, len));
     }
 
     fn read_bytes_impl(self, vec: &mut Vec<u8>) -> ASN1Result<()> {
