@@ -55,6 +55,52 @@ pub fn construct_der<F>(callback: F) -> Vec<u8>
     return buf;
 }
 
+/// Tries to construct DER-encoded data as `Vec<u8>`.
+///
+/// Same as [`construct_der`][construct_der], only that it allows
+/// returning an error from the passed closure.
+///
+/// [construct_der]: fn.construct_der.html
+///
+/// This function uses the loan pattern: `callback` is called back with
+/// a [`DERWriterSeq`][derwriterseq], to which the ASN.1 values are written.
+///
+/// [derwriterseq]: struct.DERWriterSeq.html
+///
+/// # Examples
+///
+/// ```
+/// use yasna;
+/// let res_ok = yasna::try_construct_der::<_, ()>(|writer| {
+///     writer.write_sequence(|writer| {
+///         writer.next().write_i64(10);
+///         writer.next().write_bool(true);
+///     });
+///     Ok(())
+/// });
+/// let res_err = yasna::try_construct_der::<_, &str>(|writer| {
+///     writer.write_sequence(|writer| {
+///         writer.next().write_i64(10);
+///         writer.next().write_bool(true);
+///         return Err("some error here");
+///     })?;
+///     Ok(())
+/// });
+/// assert_eq!(res_ok, Ok(vec![48, 6, 2, 1, 10, 1, 1, 255]));
+/// assert_eq!(res_err, Err("some error here"));
+/// ```
+pub fn try_construct_der<F, E>(callback: F) -> Result<Vec<u8>, E>
+        where F: FnOnce(DERWriter) -> Result<(), E> {
+    let mut buf = Vec::new();
+    {
+        let mut writer = DERWriterSeq {
+            buf: &mut buf,
+        };
+        callback(writer.next())?;
+    }
+    return Ok(buf);
+}
+
 /// Constructs DER-encoded sequence of data as `Vec<u8>`.
 ///
 /// This is similar to [`construct_der`][construct_der], but this function
@@ -87,6 +133,45 @@ pub fn construct_der_seq<F>(callback: F) -> Vec<u8>
         callback(&mut writer);
     }
     return buf;
+}
+
+/// Tries to construct a DER-encoded sequence of data as `Vec<u8>`.
+///
+/// Same as [`construct_der_seq`][construct_der_seq], only that it allows
+/// returning an error from the passed closure.
+///
+/// [construct_der_seq]: fn.construct_der_seq.html
+///
+/// This function uses the loan pattern: `callback` is called back with
+/// a [`DERWriterSeq`][derwriterseq], to which the ASN.1 values are written.
+///
+/// [derwriterseq]: struct.DERWriterSeq.html
+///
+/// # Examples
+///
+/// ```
+/// use yasna;
+/// let res_ok = yasna::try_construct_der_seq::<_, ()>(|writer| {
+///     writer.next().write_i64(10);
+///     writer.next().write_bool(true);
+///     Ok(())
+/// });
+/// let res_err = yasna::try_construct_der_seq::<_, &str>(|writer| {
+///     return Err("some error here");
+/// });
+/// assert_eq!(res_ok, Ok(vec![2, 1, 10, 1, 1, 255]));
+/// assert_eq!(res_err, Err("some error here"));
+/// ```
+pub fn try_construct_der_seq<F, E>(callback: F) -> Result<Vec<u8> , E>
+        where F: FnOnce(&mut DERWriterSeq) -> Result<(), E> {
+    let mut buf = Vec::new();
+    {
+        let mut writer = DERWriterSeq {
+            buf: &mut buf,
+        };
+        callback(&mut writer)?;
+    }
+    return Ok(buf);
 }
 
 /// A writer object that accepts an ASN.1 value.
