@@ -1,3 +1,7 @@
+# 0.3.1
+- Support for reading/writing BITSTRING without needing the bit-vec crate
+- Addition of try_{construct_der,construct_der_seq}
+
 # 0.3.0
 - Increase MSRV to 1.17.0
 - Update to bit-vec 0.6.1
