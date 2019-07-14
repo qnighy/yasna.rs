@@ -445,7 +445,7 @@ impl<'a> DERWriter<'a> {
     ///
     /// ```toml
     /// [dependencies]
-    /// yasna = { version = "*", features = ["num"] }
+    /// yasna = { version = "*", features = ["num-bigint"] }
     /// ```
     pub fn write_bigint(mut self, val: &BigInt) {
         use num_bigint::Sign;
@@ -516,7 +516,7 @@ impl<'a> DERWriter<'a> {
     ///
     /// ```toml
     /// [dependencies]
-    /// yasna = { version = "*", features = ["num"] }
+    /// yasna = { version = "*", features = ["num-bigint"] }
     /// ```
     pub fn write_biguint(mut self, val: &BigUint) {
         self.write_identifier(TAG_INTEGER, PCBit::Primitive);
