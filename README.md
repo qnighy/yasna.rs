@@ -1,6 +1,6 @@
 # yasna.rs: ASN.1 library for Rust
 
-[![Build Status](https://travis-ci.org/qnighy/yasna.rs.svg?branch=master)](https://travis-ci.org/qnighy/yasna.rs)
+[![Build Status](https://travis-ci.com/qnighy/yasna.rs.svg?branch=master)](https://travis-ci.com/qnighy/yasna.rs)
 [![](http://meritbadge.herokuapp.com/yasna)](https://crates.io/crates/yasna)
 
 This is a Rust library for reading and writing ASN.1 data.
