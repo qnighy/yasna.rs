@@ -1,0 +1,38 @@
+name: test
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        rust:
+        - stable
+        - beta
+        - nightly
+        # Minimum supported Rust version.
+        # Please also change README.md if you change this.
+        - 1.17.0
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ matrix.rust }}
+        override: true
+    - name: Test
+      run: |
+        cargo build --verbose
+        cargo test --verbose --no-default-features
+        cargo test --verbose --no-default-features --features="num-bigint bit-vec chrono"
+        cargo doc --features="num-bigint bit-vec chrono"
+      continue-on-error: ${{ matrix.rust == 'nightly' }}
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./target/doc
+      if: github.ref == 'refs/heads/master'
