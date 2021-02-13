@@ -1073,7 +1073,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// a [`BERReader`][berreader], from which the contents of the
     /// SEQUENCE OF is read.
     ///
-    /// [berreaderseq]: struct.BERReaderSeq.html
+    /// [berreader]: struct.BERReader.html
     ///
     /// This function doesn't return values. Instead, use mutable values to
     /// maintain read values. `collect_set_of` can be an alternative.
