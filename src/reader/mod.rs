@@ -279,10 +279,15 @@ impl<'a> BERReaderImpl<'a> {
         let old_buf = self.buf;
         match length_spec {
             Some(length) => {
-                let limit = self.pos+length;
+                let limit = match self.pos.checked_add(length) {
+                    Some(l) => l,
+                    None => return Err(ASN1Error::new(ASN1ErrorKind::IntegerOverflow)),
+                };
+
                 if old_buf.len() < limit {
                     return Err(ASN1Error::new(ASN1ErrorKind::Eof));
                 }
+
                 self.buf = &old_buf[..limit];
             },
             None => {
