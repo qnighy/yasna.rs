@@ -105,14 +105,14 @@ mod reader;
 mod deserializer;
 mod serializer;
 
-pub use writer::{construct_der,try_construct_der};
-pub use writer::{construct_der_seq,try_construct_der_seq};
-pub use writer::{DERWriter,DERWriterSeq,DERWriterSet};
-pub use reader::{parse_ber_general,parse_ber,parse_der,BERMode};
-pub use reader::{BERReader,BERReaderSeq,BERReaderSet};
-pub use reader::{ASN1Error,ASN1ErrorKind,ASN1Result};
-pub use deserializer::{BERDecodable,decode_ber_general,decode_ber,decode_der};
-pub use serializer::{DEREncodable,encode_der};
+pub use crate::writer::{construct_der,try_construct_der};
+pub use crate::writer::{construct_der_seq,try_construct_der_seq};
+pub use crate::writer::{DERWriter,DERWriterSeq,DERWriterSet};
+pub use crate::reader::{parse_ber_general,parse_ber,parse_der,BERMode};
+pub use crate::reader::{BERReader,BERReaderSeq,BERReaderSet};
+pub use crate::reader::{ASN1Error,ASN1ErrorKind,ASN1Result};
+pub use crate::deserializer::{BERDecodable,decode_ber_general,decode_ber,decode_der};
+pub use crate::serializer::{DEREncodable,encode_der};
 
 /// A value of the ASN.1 primitive/constructed ("P/C") bit.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
