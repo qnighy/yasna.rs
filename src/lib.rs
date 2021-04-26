@@ -17,8 +17,6 @@
 //! [derencodable]: trait.DEREncodable.html
 //!
 //! ```
-//! extern crate yasna;
-//!
 //! fn main() {
 //!     let der = yasna::encode_der(&(10, true));
 //!     println!("(10, true) = {:?}", der);
@@ -31,8 +29,6 @@
 //! [berdecodable]: trait.BERDecodable.html
 //!
 //! ```
-//! extern crate yasna;
-//!
 //! fn main() {
 //!     let asn: (i64, bool) = yasna::decode_der(
 //!         &[48, 6, 2, 1, 10, 1, 1, 255]).unwrap();
@@ -51,8 +47,6 @@
 //! [construct_der]: fn.construct_der.html
 //!
 //! ```
-//! extern crate yasna;
-//!
 //! fn main() {
 //!     let der = yasna::construct_der(|writer| {
 //!         writer.write_sequence(|writer| {
@@ -71,8 +65,6 @@
 //! [parse_der]: fn.parse_der.html
 //!
 //! ```
-//! extern crate yasna;
-//!
 //! fn main() {
 //!     let asn = yasna::parse_der(&[48, 6, 2, 1, 10, 1, 1, 255], |reader| {
 //!         reader.read_sequence(|reader| {
@@ -87,16 +79,6 @@
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
-
-#[cfg(feature = "num-bigint")]
-extern crate num_bigint;
-#[cfg(test)]
-extern crate num_traits;
-
-#[cfg(feature = "bit-vec")]
-extern crate bit_vec;
-#[cfg(feature = "chrono")]
-extern crate chrono;
 
 pub mod tags;
 pub mod models;

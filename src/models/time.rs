@@ -31,8 +31,6 @@ use chrono::{TimeZone,Datelike,Timelike,LocalResult};
 /// # Examples
 ///
 /// ```
-/// # extern crate chrono;
-/// # extern crate yasna;
 /// # fn main() {
 /// use yasna::models::UTCTime;
 /// use chrono::{Datelike,Timelike};
@@ -246,8 +244,6 @@ impl UTCTime {
 /// # Examples
 ///
 /// ```
-/// # extern crate chrono;
-/// # extern crate yasna;
 /// # fn main() {
 /// use yasna::models::GeneralizedTime;
 /// use chrono::{Datelike,Timelike};

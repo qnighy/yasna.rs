@@ -15,8 +15,6 @@ Since this library is at an early stage, the APIs are subject to change. However
 Serialization in DER (Distinguished Encoding Rules) is supported. It can also be used for serialization in BER (Basic Encoding Rules).
 
 ```rust
-extern crate yasna;
-
 fn main() {
     let der = yasna::construct_der(|writer| {
         writer.write_sequence(|writer| {
@@ -49,8 +47,6 @@ These datatypes are *not* supported:
 Deserialization in BER (Basic Encoding Rules) or DER (Distinguished Encoding Rules) is supported.
 
 ```rust
-extern crate yasna;
-
 fn main() {
     let asn = yasna::parse_der(&[48, 6, 2, 1, 10, 1, 1, 255], |reader| {
         reader.read_sequence(|reader| {

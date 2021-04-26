@@ -424,8 +424,6 @@ impl<'a> DERWriter<'a> {
     /// # Examples
     ///
     /// ```
-    /// # extern crate num_bigint;
-    /// # extern crate yasna;
     /// # fn main() {
     /// use yasna;
     /// use num_bigint::BigInt;
@@ -495,8 +493,6 @@ impl<'a> DERWriter<'a> {
     /// # Examples
     ///
     /// ```
-    /// # extern crate num_bigint;
-    /// # extern crate yasna;
     /// # fn main() {
     /// use yasna;
     /// use num_bigint::BigUint;
@@ -542,8 +538,6 @@ impl<'a> DERWriter<'a> {
     /// # Examples
     ///
     /// ```
-    /// # extern crate bit_vec;
-    /// # extern crate yasna;
     /// # fn main() {
     /// use yasna;
     /// use bit_vec::BitVec;
@@ -579,7 +573,6 @@ impl<'a> DERWriter<'a> {
     /// # Examples
     ///
     /// ```
-    /// # extern crate yasna;
     /// # fn main() {
     /// use yasna;
     /// let der_1 = yasna::construct_der(|writer| {
@@ -990,8 +983,6 @@ impl<'a> DERWriter<'a> {
     /// # Examples
     ///
     /// ```
-    /// # extern crate chrono;
-    /// # extern crate yasna;
     /// # fn main() {
     /// use yasna;
     /// use yasna::models::UTCTime;
@@ -1026,8 +1017,6 @@ impl<'a> DERWriter<'a> {
     /// # Examples
     ///
     /// ```
-    /// # extern crate chrono;
-    /// # extern crate yasna;
     /// # fn main() {
     /// use yasna;
     /// use yasna::models::GeneralizedTime;

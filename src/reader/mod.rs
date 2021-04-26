@@ -667,8 +667,6 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// # Examples
     ///
     /// ```
-    /// # extern crate num_bigint;
-    /// # extern crate yasna;
     /// # fn main() {
     /// use yasna;
     /// use num_bigint::BigInt;
@@ -816,8 +814,6 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// # Examples
     ///
     /// ```
-    /// # extern crate bit_vec;
-    /// # extern crate yasna;
     /// # fn main() {
     /// use yasna;
     /// use bit_vec::BitVec;
@@ -852,7 +848,6 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// # Examples
     ///
     /// ```
-    /// # extern crate yasna;
     /// # fn main() {
     /// use yasna;
     /// let data = &[3, 4, 6, 117, 13, 64];
