@@ -108,9 +108,9 @@ impl Display for ObjectIdentifier {
         let mut fst = true;
         for &component in &self.components {
             if fst {
-                try!(write!(f, "{}", component));
+                write!(f, "{}", component)?;
             } else {
-                try!(write!(f, ".{}", component));
+                write!(f, ".{}", component)?;
             }
             fst = false;
         }

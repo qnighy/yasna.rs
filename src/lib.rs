@@ -76,8 +76,8 @@
 //! fn main() {
 //!     let asn = yasna::parse_der(&[48, 6, 2, 1, 10, 1, 1, 255], |reader| {
 //!         reader.read_sequence(|reader| {
-//!             let i = try!(reader.next().read_i64());
-//!             let b = try!(reader.next().read_bool());
+//!             let i = reader.next().read_i64()?;
+//!             let b = reader.next().read_bool()?;
 //!             return Ok((i, b));
 //!         })
 //!     }).unwrap();

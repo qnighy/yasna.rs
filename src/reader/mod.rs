@@ -40,9 +40,9 @@ pub fn parse_ber_general<'a, T, F>(buf: &'a [u8], mode: BERMode, callback: F)
     let mut reader_impl = BERReaderImpl::new(buf, mode);
     let result;
     {
-        result = try!(callback(BERReader::new(&mut reader_impl)));
+        result = callback(BERReader::new(&mut reader_impl))?;
     }
-    try!(reader_impl.end_of_buf());
+    reader_impl.end_of_buf()?;
     return Ok(result);
 }
 
@@ -64,8 +64,8 @@ pub fn parse_ber_general<'a, T, F>(buf: &'a [u8], mode: BERMode, callback: F)
 /// let data = &[48, 128, 2, 1, 10, 1, 1, 255, 0, 0];
 /// let asn = yasna::parse_ber(data, |reader| {
 ///     reader.read_sequence(|reader| {
-///         let i = try!(reader.next().read_i64());
-///         let b = try!(reader.next().read_bool());
+///         let i = reader.next().read_i64()?;
+///         let b = reader.next().read_bool()?;
 ///         return Ok((i, b));
 ///     })
 /// }).unwrap();
@@ -96,8 +96,8 @@ pub fn parse_ber<'a, T, F>(buf: &'a [u8], callback: F)
 /// let data = &[48, 6, 2, 1, 10, 1, 1, 255];
 /// let asn = yasna::parse_der(data, |reader| {
 ///     reader.read_sequence(|reader| {
-///         let i = try!(reader.next().read_i64());
-///         let b = try!(reader.next().read_bool());
+///         let i = reader.next().read_i64()?;
+///         let b = reader.next().read_bool()?;
 ///         return Ok((i, b));
 ///     })
 /// }).unwrap();
@@ -176,11 +176,11 @@ impl<'a> BERReaderImpl<'a> {
     }
 
     fn end_of_contents(&mut self) -> ASN1Result<()> {
-        let (tag, pcbit) = try!(self.read_identifier());
+        let (tag, pcbit) = self.read_identifier()?;
         if tag != TAG_EOC || pcbit != PCBit::Primitive {
             return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
         }
-        let b = try!(self.read_u8());
+        let b = self.read_u8()?;
         if b != 0 {
             return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
         }
@@ -188,17 +188,17 @@ impl<'a> BERReaderImpl<'a> {
     }
 
     fn read_identifier(&mut self) -> ASN1Result<(Tag, PCBit)> {
-        let tagbyte = try!(self.read_u8());
+        let tagbyte = self.read_u8()?;
         let tag_class = TAG_CLASSES[(tagbyte >> 6) as usize];
         let pcbit = PC_BITS[((tagbyte >> 5) & 1) as usize];
         let mut tag_number = (tagbyte & 31) as u64;
         if tag_number == 31 {
             tag_number = 0;
             loop {
-                let b = try!(self.read_u8()) as u64;
+                let b = self.read_u8()? as u64;
                 let x =
-                    try!(tag_number.checked_mul(128).ok_or(
-                        ASN1Error::new(ASN1ErrorKind::IntegerOverflow)));
+                    tag_number.checked_mul(128).ok_or(
+                        ASN1Error::new(ASN1ErrorKind::IntegerOverflow))?;
                 tag_number = x + (b & 127);
                 if (b & 128) == 0 {
                     break;
@@ -226,16 +226,16 @@ impl<'a> BERReaderImpl<'a> {
                 return Err(ASN1Error::new(ASN1ErrorKind::Eof));
             }
         };
-        let tagbyte = try!(read_u8());
+        let tagbyte = read_u8()?;
         let tag_class = TAG_CLASSES[(tagbyte >> 6) as usize];
         let mut tag_number = (tagbyte & 31) as u64;
         if tag_number == 31 {
             tag_number = 0;
             loop {
-                let b = try!(read_u8()) as u64;
+                let b = read_u8()? as u64;
                 let x =
-                    try!(tag_number.checked_mul(128).ok_or(
-                        ASN1Error::new(ASN1ErrorKind::IntegerOverflow)));
+                    tag_number.checked_mul(128).ok_or(
+                        ASN1Error::new(ASN1ErrorKind::IntegerOverflow))?;
                 tag_number = x + (b & 127);
                 if (b & 128) == 0 {
                     break;
@@ -253,7 +253,7 @@ impl<'a> BERReaderImpl<'a> {
     }
 
     fn read_length(&mut self) -> ASN1Result<Option<usize>> {
-        let lbyte = try!(self.read_u8()) as usize;
+        let lbyte = self.read_u8()? as usize;
         if lbyte == 128 {
             return Ok(None);
         }
@@ -265,9 +265,9 @@ impl<'a> BERReaderImpl<'a> {
         }
         let mut length : usize = 0;
         for _ in 0..(lbyte & 127) {
-            let x = try!(length.checked_mul(256).ok_or(
-                ASN1Error::new(ASN1ErrorKind::Eof)));
-            length = x + (try!(self.read_u8()) as usize);
+            let x = length.checked_mul(256).ok_or(
+                ASN1Error::new(ASN1ErrorKind::Eof))?;
+            length = x + (self.read_u8()? as usize);
         }
         if self.mode == BERMode::Der && length < 128 {
             return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
@@ -281,12 +281,12 @@ impl<'a> BERReaderImpl<'a> {
             return Err(ASN1Error::new(ASN1ErrorKind::StackOverflow));
         }
         let old_pos = self.pos;
-        let (tag2, pcbit) = try!(self.read_identifier());
+        let (tag2, pcbit) = self.read_identifier()?;
         if tag2 != tag {
             self.pos = old_pos;
             return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
         }
-        let length_spec = try!(self.read_length());
+        let length_spec = self.read_length()?;
         let old_buf = self.buf;
         match length_spec {
             Some(length) => {
@@ -306,21 +306,21 @@ impl<'a> BERReaderImpl<'a> {
             },
         };
         self.depth += 1;
-        let result = try!(callback(match pcbit {
+        let result = callback(match pcbit {
             PCBit::Primitive => {
                 let buf = &self.buf[self.pos..];
                 self.pos = self.buf.len();
                 Contents::Primitive(&buf)
             },
             PCBit::Constructed => Contents::Constructed(self),
-        }));
+        })?;
         self.depth -= 1;
         match length_spec {
             Some(_) => {
-                try!(self.end_of_buf());
+                self.end_of_buf()?;
             },
             None => {
-                try!(self.end_of_contents());
+                self.end_of_contents()?;
             },
         };
         self.buf = old_buf;
@@ -333,7 +333,7 @@ impl<'a> BERReaderImpl<'a> {
         let mut data_pos = None;
         while skip_depth > 0 || skip_tag == None {
             let old_pos = self.pos;
-            let (tag, pcbit) = try!(self.read_identifier());
+            let (tag, pcbit) = self.read_identifier()?;
             if tag == TAG_EOC {
                 if skip_depth == 0 {
                     self.pos = old_pos;
@@ -349,7 +349,7 @@ impl<'a> BERReaderImpl<'a> {
             if skip_depth == 0 {
                 skip_tag = Some((tag, pcbit));
             }
-            if let Some(length) = try!(self.read_length()) {
+            if let Some(length) = self.read_length()? {
                 if skip_depth == 0 {
                     data_pos = Some(self.pos);
                 }
@@ -375,7 +375,7 @@ impl<'a> BERReaderImpl<'a> {
             -> ASN1Result<(T, &'a [u8])>
             where F: FnOnce(&mut Self) -> ASN1Result<T> {
         let old_pos = self.pos;
-        let result = try!(callback(self));
+        let result = callback(self)?;
         let new_pos = self.pos;
         let buf = &self.buf[old_pos..new_pos];
         return Ok((result, buf));
@@ -585,7 +585,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
     ///
     /// Except parse errors, it can raise integer overflow errors.
     pub fn read_i32(self) -> ASN1Result<i32> {
-        let val = try!(self.read_i64());
+        let val = self.read_i64()?;
         if -(1 << 31) <= val && val < (1 << 31) {
             return Ok(val as i32);
         } else {
@@ -599,7 +599,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
     ///
     /// Except parse errors, it can raise integer overflow errors.
     pub fn read_u32(self) -> ASN1Result<u32> {
-        let val = try!(self.read_u64());
+        let val = self.read_u64()?;
         if val < (1 << 32) {
             return Ok(val as u32);
         } else {
@@ -613,7 +613,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
     ///
     /// Except parse errors, it can raise integer overflow errors.
     pub fn read_i16(self) -> ASN1Result<i16> {
-        let val = try!(self.read_i64());
+        let val = self.read_i64()?;
         if -(1 << 15) <= val && val < (1 << 15) {
             return Ok(val as i16);
         } else {
@@ -627,7 +627,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
     ///
     /// Except parse errors, it can raise integer overflow errors.
     pub fn read_u16(self) -> ASN1Result<u16> {
-        let val = try!(self.read_u64());
+        let val = self.read_u64()?;
         if val < (1 << 16) {
             return Ok(val as u16);
         } else {
@@ -641,7 +641,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
     ///
     /// Except parse errors, it can raise integer overflow errors.
     pub fn read_i8(self) -> ASN1Result<i8> {
-        let val = try!(self.read_i64());
+        let val = self.read_i64()?;
         if -(1 << 7) <= val && val < (1 << 7) {
             return Ok(val as i8);
         } else {
@@ -655,7 +655,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
     ///
     /// Except parse errors, it can raise integer overflow errors.
     pub fn read_u8(self) -> ASN1Result<u8> {
-        let val = try!(self.read_u64());
+        let val = self.read_u64()?;
         if val < (1 << 8) {
             return Ok(val as u8);
         } else {
@@ -797,10 +797,10 @@ impl<'a, 'b> BERReader<'a, 'b> {
                         return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
                     }
                     loop {
-                        let result = try!(inner.read_optional(|inner| {
+                        let result = inner.read_optional(|inner| {
                             BERReader::new(inner)
                                 .read_bitvec_impl(unused_bits, bytes)
-                        }));
+                        })?;
                         match result {
                             Some(()) => {},
                             None => { break; },
@@ -843,7 +843,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// yasna = { version = "*", features = ["bit-vec"] }
     /// ```
     pub fn read_bitvec(self) -> ASN1Result<BitVec> {
-        let (bytes, len) = try!(self.read_bitvec_bytes());
+        let (bytes, len) = self.read_bitvec_bytes()?;
         let mut ret = BitVec::from_bytes(&bytes);
         ret.truncate(len);
         return Ok(ret);
@@ -876,7 +876,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
     pub fn read_bitvec_bytes(self) -> ASN1Result<(Vec<u8>, usize)> {
         let mut unused_bits = 0;
         let mut bytes = Vec::new();
-        try!(self.read_bitvec_impl(&mut unused_bits, &mut bytes));
+        self.read_bitvec_impl(&mut unused_bits, &mut bytes)?;
         let len = bytes.len() * 8 - unused_bits;
         return Ok((bytes, len));
     }
@@ -893,9 +893,9 @@ impl<'a, 'b> BERReader<'a, 'b> {
                         return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
                     }
                     loop {
-                        let result = try!(inner.read_optional(|inner| {
+                        let result = inner.read_optional(|inner| {
                             BERReader::new(inner).read_bytes_impl(vec)
-                        }));
+                        })?;
                         match result {
                             Some(()) => {},
                             None => { break; },
@@ -921,7 +921,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// ```
     pub fn read_bytes(self) -> ASN1Result<Vec<u8>> {
         let mut ret = Vec::new();
-        try!(self.read_bytes_impl(&mut ret));
+        self.read_bytes_impl(&mut ret)?;
         return Ok(ret);
     }
 
@@ -981,9 +981,9 @@ impl<'a, 'b> BERReader<'a, 'b> {
                 if b == 128 {
                     return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
                 }
-                subid = try!(subid.checked_mul(128)
+                subid = subid.checked_mul(128)
                     .ok_or(ASN1Error::new(
-                        ASN1ErrorKind::IntegerOverflow))) + ((b & 127) as u64);
+                        ASN1ErrorKind::IntegerOverflow))? + ((b & 127) as u64);
                 if (b & 128) == 0 {
                     if components.len() == 0 {
                         let id0 = if subid < 40 {
@@ -1023,7 +1023,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// ```
     pub fn read_utf8string(self) -> ASN1Result<String> {
         self.read_tagged_implicit(TAG_UTF8STRING, |reader| {
-            let bytes = try!(reader.read_bytes());
+            let bytes = reader.read_bytes()?;
             match String::from_utf8(bytes) {
                 Ok(string) => Ok(string),
                 Err(_) => Err(ASN1Error::new(ASN1ErrorKind::Invalid)),
@@ -1046,8 +1046,8 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// let data = &[48, 6, 2, 1, 10, 1, 1, 255];
     /// let asn = yasna::parse_der(data, |reader| {
     ///     reader.read_sequence(|reader| {
-    ///         let i = try!(reader.next().read_i64());
-    ///         let b = try!(reader.next().read_bool());
+    ///         let i = reader.next().read_i64()?;
+    ///         let b = reader.next().read_bool()?;
     ///         return Ok((i, b));
     ///     })
     /// }).unwrap();
@@ -1085,10 +1085,10 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// let data = &[48, 7, 2, 1, 10, 2, 2, 255, 127];
     /// let asn = yasna::parse_der(data, |reader| {
     ///     let mut numbers = Vec::new();
-    ///     try!(reader.read_sequence_of(|reader| {
-    ///         numbers.push(try!(reader.read_i64()));
+    ///     reader.read_sequence_of(|reader| {
+    ///         numbers.push(reader.read_i64()?);
     ///         return Ok(());
-    ///     }));
+    ///     })?;
     ///     return Ok(numbers);
     /// }).unwrap();
     /// assert_eq!(&asn, &[10, -129]);
@@ -1097,9 +1097,9 @@ impl<'a, 'b> BERReader<'a, 'b> {
             where F: for<'c> FnMut(BERReader<'a, 'c>) -> ASN1Result<()> {
         self.read_sequence(|reader| {
             loop {
-                if let None = try!(reader.read_optional(|reader| {
+                if let None = reader.read_optional(|reader| {
                     callback(reader)
-                })) {
+                })? {
                     break;
                 }
             }
@@ -1133,10 +1133,10 @@ impl<'a, 'b> BERReader<'a, 'b> {
             -> ASN1Result<Vec<T>>
             where F: for<'c> FnMut(BERReader<'a, 'c>) -> ASN1Result<T> {
         let mut collection = Vec::new();
-        try!(self.read_sequence_of(|reader| {
-            collection.push(try!(callback(reader)));
+        self.read_sequence_of(|reader| {
+            collection.push(callback(reader)?);
             return Ok(());
-        }));
+        })?;
         return Ok(collection);
     }
 
@@ -1158,8 +1158,8 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// let data = &[49, 6, 1, 1, 255, 2, 1, 10];
     /// let asn = yasna::parse_der(data, |reader| {
     ///     reader.read_set(|reader| {
-    ///         let i = try!(try!(reader.next(&[TAG_INTEGER])).read_i64());
-    ///         let b = try!(try!(reader.next(&[TAG_BOOLEAN])).read_bool());
+    ///         let i = reader.next(&[TAG_INTEGER])?.read_i64()?;
+    ///         let b = reader.next(&[TAG_BOOLEAN])?.read_bool()?;
     ///         return Ok((i, b));
     ///     })
     /// }).unwrap();
@@ -1178,9 +1178,9 @@ impl<'a, 'b> BERReader<'a, 'b> {
             let mut elements = Vec::new();
             loop {
                 let old_pos = inner.pos;
-                if let Some(tag) = try!(inner.read_optional(|inner| {
+                if let Some(tag) = inner.read_optional(|inner| {
                     inner.skip_general().map(|t| t.0)
-                })) {
+                })? {
                     let new_pos = inner.pos;
                     // TODO: this should store the P/C bit as well
                     elements.push((tag, &inner.buf[..new_pos], old_pos));
@@ -1196,10 +1196,10 @@ impl<'a, 'b> BERReader<'a, 'b> {
                 }
             }
             let mut new_impl = BERReaderImpl::new(&[], inner.mode);
-            let result = try!(callback(&mut BERReaderSet {
+            let result = callback(&mut BERReaderSet {
                 impl_ref: &mut new_impl,
                 elements: &mut elements,
-            }));
+            })?;
             if elements.len() > 0 {
                 return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
             }
@@ -1230,10 +1230,10 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// let data = &[49, 7, 2, 1, 10, 2, 2, 255, 127];
     /// let asn = yasna::parse_der(data, |reader| {
     ///     let mut numbers = Vec::new();
-    ///     try!(reader.read_set_of(|reader| {
-    ///         numbers.push(try!(reader.read_i64()));
+    ///     reader.read_set_of(|reader| {
+    ///         numbers.push(reader.read_i64()?);
     ///         return Ok(());
-    ///     }));
+    ///     })?;
     ///     return Ok(numbers);
     /// }).unwrap();
     /// assert_eq!(asn, vec![10, -129]);
@@ -1248,11 +1248,11 @@ impl<'a, 'b> BERReader<'a, 'b> {
                 Contents::Constructed(inner) => inner,
             };
             let mut last_buf = None;
-            while let Some((_, buf)) = try!(inner.read_optional(|inner| {
+            while let Some((_, buf)) = inner.read_optional(|inner| {
                     inner.read_with_buffer(|inner| {
                         callback(BERReader::new(inner))
                     })
-            })) {
+            })? {
                 if let Some(last_buf) = last_buf {
                     if inner.mode == BERMode::Der && buf < last_buf {
                         return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
@@ -1292,10 +1292,10 @@ impl<'a, 'b> BERReader<'a, 'b> {
     pub fn collect_set_of<T, F>(self, mut callback: F) -> ASN1Result<Vec<T>>
             where F: for<'c> FnMut(BERReader<'a, 'c>) -> ASN1Result<T> {
         let mut collection = Vec::new();
-        try!(self.read_set_of(|reader| {
-            collection.push(try!(callback(reader)));
+        self.read_set_of(|reader| {
+            collection.push(callback(reader)?);
             return Ok(());
-        }));
+        })?;
         return Ok(collection);
     }
 
@@ -1313,7 +1313,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// ```
     pub fn read_numeric_string(self) -> ASN1Result<String> {
         self.read_tagged_implicit(TAG_NUMERICSTRING, |reader| {
-            let bytes = try!(reader.read_bytes());
+            let bytes = reader.read_bytes()?;
             for &byte in bytes.iter() {
                 if !(byte == b' ' || (b'0' <= byte && byte <= b'9')) {
                     return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
@@ -1337,7 +1337,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// ```
     pub fn read_printable_string(self) -> ASN1Result<String> {
         self.read_tagged_implicit(TAG_PRINTABLESTRING, |reader| {
-            let bytes = try!(reader.read_bytes());
+            let bytes = reader.read_bytes()?;
             for &byte in bytes.iter() {
                 if !(
                     byte == b' ' ||
@@ -1437,9 +1437,9 @@ impl<'a, 'b> BERReader<'a, 'b> {
         use super::tags::TAG_UTCTIME;
         let mode = self.inner.mode;
         self.read_tagged_implicit(TAG_UTCTIME, |reader| {
-            let bytes = try!(reader.read_bytes());
-            let datetime = try!(UTCTime::parse(&bytes).ok_or_else(
-                || ASN1Error::new(ASN1ErrorKind::Invalid)));
+            let bytes = reader.read_bytes()?;
+            let datetime = UTCTime::parse(&bytes).ok_or_else(
+                || ASN1Error::new(ASN1ErrorKind::Invalid))?;
             if mode == BERMode::Der && &datetime.to_bytes() != &bytes {
                 return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
             }
@@ -1475,9 +1475,9 @@ impl<'a, 'b> BERReader<'a, 'b> {
         use super::tags::TAG_GENERALIZEDTIME;
         let mode = self.inner.mode;
         self.read_tagged_implicit(TAG_GENERALIZEDTIME, |reader| {
-            let bytes = try!(reader.read_bytes());
-            let datetime = try!(GeneralizedTime::parse(&bytes).ok_or_else(
-                || ASN1Error::new(ASN1ErrorKind::Invalid)));
+            let bytes = reader.read_bytes()?;
+            let datetime = GeneralizedTime::parse(&bytes).ok_or_else(
+                || ASN1Error::new(ASN1ErrorKind::Invalid))?;
             if mode == BERMode::Der && &datetime.to_bytes() != &bytes {
                 return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
             }
@@ -1499,7 +1499,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// ```
     pub fn read_visible_string(self) -> ASN1Result<String> {
         self.read_tagged_implicit(TAG_VISIBLESTRING, |reader| {
-            let bytes = try!(reader.read_bytes());
+            let bytes = reader.read_bytes()?;
             for &byte in bytes.iter() {
                 if !(b' ' <= byte && byte <= b'~') {
                     return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
@@ -1570,12 +1570,12 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// let data = &[48, 5, 2, 1, 10, 5, 0];
     /// let asn = yasna::parse_der(data, |reader| {
     ///     reader.collect_sequence_of(|reader| {
-    ///         let tag = try!(reader.lookahead_tag());
+    ///         let tag = reader.lookahead_tag()?;
     ///         let choice;
     ///         if tag == TAG_INTEGER {
-    ///             choice = Some(try!(reader.read_i64()));
+    ///             choice = Some(reader.read_i64()?);
     ///         } else {
-    ///             try!(reader.read_null());
+    ///             reader.read_null()?;
     ///             choice = None;
     ///         }
     ///         return Ok(choice);
@@ -1635,9 +1635,9 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// assert_eq!(res, data);
     /// ```
     pub fn read_der(self) -> ASN1Result<Vec<u8>> {
-        Ok(try!(self.inner.read_with_buffer(|inner| {
+        Ok(self.inner.read_with_buffer(|inner| {
             inner.skip_general()
-        })).1.to_owned())
+        })?.1.to_owned())
     }
 }
 
@@ -1655,8 +1655,8 @@ impl<'a, 'b> BERReader<'a, 'b> {
 /// let data = &[48, 6, 2, 1, 10, 1, 1, 255];
 /// let asn = yasna::parse_der(data, |reader| {
 ///     reader.read_sequence(|reader| {
-///         let i = try!(reader.next().read_i64());
-///         let b = try!(reader.next().read_bool());
+///         let i = reader.next().read_i64()?;
+///         let b = reader.next().read_bool()?;
 ///         return Ok((i, b));
 ///     })
 /// }).unwrap();
@@ -1692,10 +1692,10 @@ impl<'a, 'b> BERReaderSeq<'a, 'b> {
     /// let data = &[48, 3, 1, 1, 255];
     /// let asn = yasna::parse_der(data, |reader| {
     ///     reader.read_sequence(|reader| {
-    ///         let i = try!(reader.read_optional(|reader| {
+    ///         let i = reader.read_optional(|reader| {
     ///             reader.read_i64()
-    ///         }));
-    ///         let b = try!(reader.next().read_bool());
+    ///         })?;
+    ///         let b = reader.next().read_bool()?;
     ///         return Ok((i, b));
     ///     })
     /// }).unwrap();
@@ -1723,10 +1723,10 @@ impl<'a, 'b> BERReaderSeq<'a, 'b> {
     /// let data = &[48, 3, 1, 1, 255];
     /// let asn = yasna::parse_der(data, |reader| {
     ///     reader.read_sequence(|reader| {
-    ///         let i = try!(reader.read_default(10, |reader| {
+    ///         let i = reader.read_default(10, |reader| {
     ///             reader.read_i64()
-    ///         }));
-    ///         let b = try!(reader.next().read_bool());
+    ///         })?;
+    ///         let b = reader.next().read_bool()?;
     ///         return Ok((i, b));
     ///     })
     /// }).unwrap();
@@ -1736,7 +1736,7 @@ impl<'a, 'b> BERReaderSeq<'a, 'b> {
             -> ASN1Result<T>
             where F: for<'c> FnOnce(BERReader<'a, 'c>) -> ASN1Result<T>,
             T: Eq {
-        match try!(self.read_optional(callback)) {
+        match self.read_optional(callback)? {
             Some(result) => {
                 if self.inner.mode == BERMode::Der && result == default {
                     return Err(
@@ -1773,8 +1773,8 @@ impl<'a, 'b> BERReaderSeq<'a, 'b> {
 /// let data = &[49, 6, 1, 1, 255, 2, 1, 10];
 /// let asn = yasna::parse_der(data, |reader| {
 ///     reader.read_set(|reader| {
-///         let i = try!(try!(reader.next(&[TAG_INTEGER])).read_i64());
-///         let b = try!(try!(reader.next(&[TAG_BOOLEAN])).read_bool());
+///         let i = reader.next(&[TAG_INTEGER])?.read_i64()?;
+///         let b = reader.next(&[TAG_BOOLEAN])?.read_bool()?;
 ///         return Ok((i, b));
 ///     })
 /// }).unwrap();
@@ -1825,10 +1825,10 @@ impl<'a, 'b> BERReaderSet<'a, 'b> {
     /// let data = &[49, 3, 1, 1, 255];
     /// let asn = yasna::parse_der(data, |reader| {
     ///     reader.read_set(|reader| {
-    ///         let i = try!(reader.read_optional(&[TAG_INTEGER], |reader| {
+    ///         let i = reader.read_optional(&[TAG_INTEGER], |reader| {
     ///             reader.read_i64()
-    ///         }));
-    ///         let b = try!(try!(reader.next(&[TAG_BOOLEAN])).read_bool());
+    ///         })?;
+    ///         let b = reader.next(&[TAG_BOOLEAN])?.read_bool()?;
     ///         return Ok((i, b));
     ///     })
     /// }).unwrap();
@@ -1843,8 +1843,8 @@ impl<'a, 'b> BERReaderSet<'a, 'b> {
             let (_, buf, pos) = self.elements.remove(elem_pos);
             let mut reader_impl = BERReaderImpl::with_pos(
                 buf, pos, self.impl_ref.mode);
-            let result = try!(callback(BERReader::new(&mut reader_impl)));
-            try!(reader_impl.end_of_buf());
+            let result = callback(BERReader::new(&mut reader_impl))?;
+            reader_impl.end_of_buf()?;
             return Ok(Some(result));
         } else {
             return Ok(None);
@@ -1866,10 +1866,10 @@ impl<'a, 'b> BERReaderSet<'a, 'b> {
     /// let data = &[49, 3, 1, 1, 255];
     /// let asn = yasna::parse_der(data, |reader| {
     ///     reader.read_set(|reader| {
-    ///         let i = try!(reader.read_default(&[TAG_INTEGER], 10, |reader| {
+    ///         let i = reader.read_default(&[TAG_INTEGER], 10, |reader| {
     ///             reader.read_i64()
-    ///         }));
-    ///         let b = try!(try!(reader.next(&[TAG_BOOLEAN])).read_bool());
+    ///         })?;
+    ///         let b = reader.next(&[TAG_BOOLEAN])?.read_bool()?;
     ///         return Ok((i, b));
     ///     })
     /// }).unwrap();
@@ -1881,7 +1881,7 @@ impl<'a, 'b> BERReaderSet<'a, 'b> {
             where F: for<'c> FnOnce(BERReader<'a, 'c>) -> ASN1Result<T>,
             T: Eq {
         let mode = self.impl_ref.mode;
-        match try!(self.read_optional(tag_hint, callback)) {
+        match self.read_optional(tag_hint, callback)? {
             Some(result) => {
                 if mode == BERMode::Der && result == default {
                     return Err(
