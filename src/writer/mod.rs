@@ -22,8 +22,6 @@ use super::models::{ObjectIdentifier,TaggedDerValue};
 #[cfg(feature = "chrono")]
 use super::models::{UTCTime,GeneralizedTime};
 
-use std::ascii::AsciiExt;
-
 /// Constructs DER-encoded data as `Vec<u8>`.
 ///
 /// This function uses the loan pattern: `callback` is called back with
