@@ -9,7 +9,7 @@ homepage = "https://github.com/qnighy/yasna.rs"
 repository = "https://github.com/qnighy/yasna.rs"
 readme = "README.md"
 keywords = ["parser", "serialization"]
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
 edition = "2015"
 include = [
   "src/**/*.rs",
