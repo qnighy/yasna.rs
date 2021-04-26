@@ -122,15 +122,11 @@ impl Display for ObjectIdentifier {
 /// An error indicating failure to parse an Object identifier
 pub struct ParseOidError(());
 
-impl Error for ParseOidError {
-    fn description(&self) -> &str {
-        "Failed to parse OID"
-    }
-}
+impl Error for ParseOidError {}
 
 impl Display for ParseOidError {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        f.write_str(self.description())
+        f.write_str("Failed to parse OID")
     }
 }
 
