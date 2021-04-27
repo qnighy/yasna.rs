@@ -17,8 +17,6 @@
 //! [derencodable]: trait.DEREncodable.html
 //!
 //! ```
-//! extern crate yasna;
-//!
 //! fn main() {
 //!     let der = yasna::encode_der(&(10, true));
 //!     println!("(10, true) = {:?}", der);
@@ -31,8 +29,6 @@
 //! [berdecodable]: trait.BERDecodable.html
 //!
 //! ```
-//! extern crate yasna;
-//!
 //! fn main() {
 //!     let asn: (i64, bool) = yasna::decode_der(
 //!         &[48, 6, 2, 1, 10, 1, 1, 255]).unwrap();
@@ -51,8 +47,6 @@
 //! [construct_der]: fn.construct_der.html
 //!
 //! ```
-//! extern crate yasna;
-//!
 //! fn main() {
 //!     let der = yasna::construct_der(|writer| {
 //!         writer.write_sequence(|writer| {
@@ -71,13 +65,11 @@
 //! [parse_der]: fn.parse_der.html
 //!
 //! ```
-//! extern crate yasna;
-//!
 //! fn main() {
 //!     let asn = yasna::parse_der(&[48, 6, 2, 1, 10, 1, 1, 255], |reader| {
 //!         reader.read_sequence(|reader| {
-//!             let i = try!(reader.next().read_i64());
-//!             let b = try!(reader.next().read_bool());
+//!             let i = reader.next().read_i64()?;
+//!             let b = reader.next().read_bool()?;
 //!             return Ok((i, b));
 //!         })
 //!     }).unwrap();
@@ -88,16 +80,6 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 
-#[cfg(feature = "num-bigint")]
-extern crate num_bigint;
-#[cfg(test)]
-extern crate num_traits;
-
-#[cfg(feature = "bit-vec")]
-extern crate bit_vec;
-#[cfg(feature = "chrono")]
-extern crate chrono;
-
 pub mod tags;
 pub mod models;
 mod writer;
@@ -105,14 +87,14 @@ mod reader;
 mod deserializer;
 mod serializer;
 
-pub use writer::{construct_der,try_construct_der};
-pub use writer::{construct_der_seq,try_construct_der_seq};
-pub use writer::{DERWriter,DERWriterSeq,DERWriterSet};
-pub use reader::{parse_ber_general,parse_ber,parse_der,BERMode};
-pub use reader::{BERReader,BERReaderSeq,BERReaderSet};
-pub use reader::{ASN1Error,ASN1ErrorKind,ASN1Result};
-pub use deserializer::{BERDecodable,decode_ber_general,decode_ber,decode_der};
-pub use serializer::{DEREncodable,encode_der};
+pub use crate::writer::{construct_der,try_construct_der};
+pub use crate::writer::{construct_der_seq,try_construct_der_seq};
+pub use crate::writer::{DERWriter,DERWriterSeq,DERWriterSet};
+pub use crate::reader::{parse_ber_general,parse_ber,parse_der,BERMode};
+pub use crate::reader::{BERReader,BERReaderSeq,BERReaderSet};
+pub use crate::reader::{ASN1Error,ASN1ErrorKind,ASN1Result};
+pub use crate::deserializer::{BERDecodable,decode_ber_general,decode_ber,decode_der};
+pub use crate::serializer::{DEREncodable,encode_der};
 
 /// A value of the ASN.1 primitive/constructed ("P/C") bit.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]

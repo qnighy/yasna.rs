@@ -14,8 +14,10 @@ jobs:
         - nightly
         # Minimum supported Rust version.
         # Please also change README.md if you change this.
-        - 1.17.0
+        - 1.31.0
 
+    env:
+      RUSTFLAGS: -D warnings
     steps:
     - uses: actions/checkout@v2
     - name: Install toolchain

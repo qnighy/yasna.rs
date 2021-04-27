@@ -842,8 +842,8 @@ fn test_der_read_sequence_ok() {
     for &(evalue, data) in tests {
         let value = parse_der(data, |reader| {
             reader.read_sequence(|reader| {
-                let i = try!(reader.next().read_i64());
-                let b = try!(reader.next().read_bool());
+                let i = reader.next().read_i64()?;
+                let b = reader.next().read_bool()?;
                 return Ok((i, b));
             })
         }).unwrap();
@@ -888,8 +888,8 @@ fn test_der_read_sequence_err() {
     for &data in tests {
         parse_der(data, |reader| {
             reader.read_sequence(|reader| {
-                let i = try!(reader.next().read_i64());
-                let b = try!(reader.next().read_bool());
+                let i = reader.next().read_i64()?;
+                let b = reader.next().read_bool()?;
                 return Ok((i, b));
             })
         }).unwrap_err();
@@ -951,8 +951,8 @@ fn test_ber_read_sequence_ok() {
     for &(evalue, ref ervalue, data) in tests {
         let value = parse_ber(data, |reader| {
             reader.read_sequence(|reader| {
-                let i = try!(reader.next().read_i64());
-                let b = try!(reader.next().read_bool());
+                let i = reader.next().read_i64()?;
+                let b = reader.next().read_bool()?;
                 return Ok((i, b));
             })
         }).unwrap();
@@ -998,8 +998,8 @@ fn test_ber_read_sequence_err() {
     for &data in tests {
         parse_ber(data, |reader| {
             reader.read_sequence(|reader| {
-                let i = try!(reader.next().read_i64());
-                let b = try!(reader.next().read_bool());
+                let i = reader.next().read_i64()?;
+                let b = reader.next().read_bool()?;
                 return Ok((i, b));
             })
         }).unwrap_err();
@@ -1016,22 +1016,22 @@ fn test_der_read_set_ok() {
     for &(ref evalue, data) in tests {
         let value = parse_der(data, |reader| {
             reader.read_set(|reader| {
-                let a = try!(try!(reader.next(&[Tag::context(28)]))
+                let a = reader.next(&[Tag::context(28)])?
                     .read_tagged_implicit(Tag::context(28), |reader| {
                     reader.read_i64()
-                }));
-                let b = try!(try!(reader.next(&[Tag::context(345678)]))
+                })?;
+                let b = reader.next(&[Tag::context(345678)])?
                     .read_tagged(Tag::context(345678), |reader| {
                     reader.read_bytes()
-                }));
-                let c = try!(try!(reader.next(&[Tag::context(27)]))
+                })?;
+                let c = reader.next(&[Tag::context(27)])?
                     .read_tagged(Tag::context(27), |reader| {
                     reader.read_i64()
-                }));
-                let d = try!(try!(reader.next(&[Tag::context(345677)]))
+                })?;
+                let d = reader.next(&[Tag::context(345677)])?
                     .read_tagged(Tag::context(345677), |reader| {
                     reader.read_bytes()
-                }));
+                })?;
                 return Ok((a, b, c, d));
             })
         }).unwrap();
@@ -1075,22 +1075,22 @@ fn test_der_read_set_err() {
     for &data in tests {
         parse_der(data, |reader| {
             reader.read_set(|reader| {
-                let a = try!(try!(reader.next(&[Tag::context(28)]))
+                let a = reader.next(&[Tag::context(28)])?
                     .read_tagged_implicit(Tag::context(28), |reader| {
                     reader.read_i64()
-                }));
-                let b = try!(try!(reader.next(&[Tag::context(345678)]))
+                })?;
+                let b = reader.next(&[Tag::context(345678)])?
                     .read_tagged(Tag::context(345678), |reader| {
                     reader.read_bytes()
-                }));
-                let c = try!(try!(reader.next(&[Tag::context(27)]))
+                })?;
+                let c = reader.next(&[Tag::context(27)])?
                     .read_tagged(Tag::context(27), |reader| {
                     reader.read_i64()
-                }));
-                let d = try!(try!(reader.next(&[Tag::context(345677)]))
+                })?;
+                let d = reader.next(&[Tag::context(345677)])?
                     .read_tagged(Tag::context(345677), |reader| {
                     reader.read_bytes()
-                }));
+                })?;
                 return Ok((a, b, c, d));
             })
         }).unwrap_err();
@@ -1120,22 +1120,22 @@ fn test_ber_read_set_ok() {
     for &(ref evalue, data) in tests {
         let value = parse_ber(data, |reader| {
             reader.read_set(|reader| {
-                let a = try!(try!(reader.next(&[Tag::context(28)]))
+                let a = reader.next(&[Tag::context(28)])?
                     .read_tagged_implicit(Tag::context(28), |reader| {
                     reader.read_i64()
-                }));
-                let b = try!(try!(reader.next(&[Tag::context(345678)]))
+                })?;
+                let b = reader.next(&[Tag::context(345678)])?
                     .read_tagged(Tag::context(345678), |reader| {
                     reader.read_bytes()
-                }));
-                let c = try!(try!(reader.next(&[Tag::context(27)]))
+                })?;
+                let c = reader.next(&[Tag::context(27)])?
                     .read_tagged(Tag::context(27), |reader| {
                     reader.read_i64()
-                }));
-                let d = try!(try!(reader.next(&[Tag::context(345677)]))
+                })?;
+                let d = reader.next(&[Tag::context(345677)])?
                     .read_tagged(Tag::context(345677), |reader| {
                     reader.read_bytes()
-                }));
+                })?;
                 return Ok((a, b, c, d));
             })
         }).unwrap();
@@ -1170,22 +1170,22 @@ fn test_ber_read_set_err() {
     for &data in tests {
         parse_ber(data, |reader| {
             reader.read_set(|reader| {
-                let a = try!(try!(reader.next(&[Tag::context(28)]))
+                let a = reader.next(&[Tag::context(28)])?
                     .read_tagged_implicit(Tag::context(28), |reader| {
                     reader.read_i64()
-                }));
-                let b = try!(try!(reader.next(&[Tag::context(345678)]))
+                })?;
+                let b = reader.next(&[Tag::context(345678)])?
                     .read_tagged(Tag::context(345678), |reader| {
                     reader.read_bytes()
-                }));
-                let c = try!(try!(reader.next(&[Tag::context(27)]))
+                })?;
+                let c = reader.next(&[Tag::context(27)])?
                     .read_tagged(Tag::context(27), |reader| {
                     reader.read_i64()
-                }));
-                let d = try!(try!(reader.next(&[Tag::context(345677)]))
+                })?;
+                let d = reader.next(&[Tag::context(345677)])?
                     .read_tagged(Tag::context(345677), |reader| {
                     reader.read_bytes()
-                }));
+                })?;
                 return Ok((a, b, c, d));
             })
         }).unwrap_err();
@@ -1236,22 +1236,22 @@ fn test_der_read_set_of_err() {
     for &data in tests {
         parse_der(data, |reader| {
             reader.read_set(|reader| {
-                let a = try!(try!(reader.next(&[Tag::context(28)]))
+                let a = reader.next(&[Tag::context(28)])?
                     .read_tagged_implicit(Tag::context(28), |reader| {
                     reader.read_i64()
-                }));
-                let b = try!(try!(reader.next(&[Tag::context(345678)]))
+                })?;
+                let b = reader.next(&[Tag::context(345678)])?
                     .read_tagged(Tag::context(345678), |reader| {
                     reader.read_bytes()
-                }));
-                let c = try!(try!(reader.next(&[Tag::context(27)]))
+                })?;
+                let c = reader.next(&[Tag::context(27)])?
                     .read_tagged(Tag::context(27), |reader| {
                     reader.read_i64()
-                }));
-                let d = try!(try!(reader.next(&[Tag::context(345677)]))
+                })?;
+                let d = reader.next(&[Tag::context(345677)])?
                     .read_tagged(Tag::context(345677), |reader| {
                     reader.read_bytes()
-                }));
+                })?;
                 return Ok((a, b, c, d));
             })
         }).unwrap_err();
@@ -1308,22 +1308,22 @@ fn test_ber_read_set_of_err() {
     for &data in tests {
         parse_ber(data, |reader| {
             reader.read_set(|reader| {
-                let a = try!(try!(reader.next(&[Tag::context(28)]))
+                let a = reader.next(&[Tag::context(28)])?
                     .read_tagged_implicit(Tag::context(28), |reader| {
                     reader.read_i64()
-                }));
-                let b = try!(try!(reader.next(&[Tag::context(345678)]))
+                })?;
+                let b = reader.next(&[Tag::context(345678)])?
                     .read_tagged(Tag::context(345678), |reader| {
                     reader.read_bytes()
-                }));
-                let c = try!(try!(reader.next(&[Tag::context(27)]))
+                })?;
+                let c = reader.next(&[Tag::context(27)])?
                     .read_tagged(Tag::context(27), |reader| {
                     reader.read_i64()
-                }));
-                let d = try!(try!(reader.next(&[Tag::context(345677)]))
+                })?;
+                let d = reader.next(&[Tag::context(345677)])?
                     .read_tagged(Tag::context(345677), |reader| {
                     reader.read_bytes()
-                }));
+                })?;
                 return Ok((a, b, c, d));
             })
         }).unwrap_err();
@@ -1353,8 +1353,8 @@ fn test_der_read_tagged_ok() {
         let value = parse_der(data, |reader| {
             reader.read_tagged(Tag::context(3), |reader| {
                 reader.read_sequence(|reader| {
-                    let i = try!(reader.next().read_i64());
-                    let b = try!(reader.next().read_bool());
+                    let i = reader.next().read_i64()?;
+                    let b = reader.next().read_bool()?;
                     return Ok((i, b));
                 })
             })
@@ -1375,8 +1375,8 @@ fn test_der_read_tagged_err() {
         parse_der(data, |reader| {
             reader.read_tagged(Tag::context(3), |reader| {
                 reader.read_sequence(|reader| {
-                    let i = try!(reader.next().read_i64());
-                    let b = try!(reader.next().read_bool());
+                    let i = reader.next().read_i64()?;
+                    let b = reader.next().read_bool()?;
                     return Ok((i, b));
                 })
             })
@@ -1436,8 +1436,8 @@ fn test_ber_read_tagged_ok() {
         let value = parse_ber(data, |reader| {
             reader.read_tagged(Tag::context(3), |reader| {
                 reader.read_sequence(|reader| {
-                    let i = try!(reader.next().read_i64());
-                    let b = try!(reader.next().read_bool());
+                    let i = reader.next().read_i64()?;
+                    let b = reader.next().read_bool()?;
                     return Ok((i, b));
                 })
             })
@@ -1457,8 +1457,8 @@ fn test_ber_read_tagged_err() {
         parse_ber(data, |reader| {
             reader.read_tagged(Tag::context(3), |reader| {
                 reader.read_sequence(|reader| {
-                    let i = try!(reader.next().read_i64());
-                    let b = try!(reader.next().read_bool());
+                    let i = reader.next().read_i64()?;
+                    let b = reader.next().read_bool()?;
                     return Ok((i, b));
                 })
             })
@@ -1513,8 +1513,8 @@ fn test_der_read_tagged_implicit_ok() {
         let value = parse_der(data, |reader| {
             reader.read_tagged_implicit(Tag::context(3), |reader| {
                 reader.read_sequence(|reader| {
-                    let i = try!(reader.next().read_i64());
-                    let b = try!(reader.next().read_bool());
+                    let i = reader.next().read_i64()?;
+                    let b = reader.next().read_bool()?;
                     return Ok((i, b));
                 })
             })
@@ -1536,8 +1536,8 @@ fn test_der_read_tagged_implicit_err() {
         parse_der(data, |reader| {
             reader.read_tagged(Tag::context(3), |reader| {
                 reader.read_sequence(|reader| {
-                    let i = try!(reader.next().read_i64());
-                    let b = try!(reader.next().read_bool());
+                    let i = reader.next().read_i64()?;
+                    let b = reader.next().read_bool()?;
                     return Ok((i, b));
                 })
             })
@@ -1596,8 +1596,8 @@ fn test_ber_read_tagged_implicit_ok() {
         let value = parse_ber(data, |reader| {
             reader.read_tagged_implicit(Tag::context(3), |reader| {
                 reader.read_sequence(|reader| {
-                    let i = try!(reader.next().read_i64());
-                    let b = try!(reader.next().read_bool());
+                    let i = reader.next().read_i64()?;
+                    let b = reader.next().read_bool()?;
                     return Ok((i, b));
                 })
             })
@@ -1619,8 +1619,8 @@ fn test_ber_read_tagged_implicit_err() {
         parse_ber(data, |reader| {
             reader.read_tagged(Tag::context(3), |reader| {
                 reader.read_sequence(|reader| {
-                    let i = try!(reader.next().read_i64());
-                    let b = try!(reader.next().read_bool());
+                    let i = reader.next().read_i64()?;
+                    let b = reader.next().read_bool()?;
                     return Ok((i, b));
                 })
             })

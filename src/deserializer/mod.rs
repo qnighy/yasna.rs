@@ -67,8 +67,8 @@ pub trait BERDecodable: Sized {
     /// impl BERDecodable for Entry {
     ///     fn decode_ber(reader: BERReader) -> ASN1Result<Self> {
     ///         reader.read_sequence(|reader| {
-    ///             let name = try!(reader.next().read_visible_string());
-    ///             let age = try!(reader.next().read_i64());
+    ///             let name = reader.next().read_visible_string()?;
+    ///             let age = reader.next().read_i64()?;
     ///             return Ok(Entry {
     ///                 name: name,
     ///                 age: age,
@@ -141,9 +141,9 @@ impl<T> BERDecodable for Vec<T> where T: BERDecodable {
         reader.read_sequence(|reader| {
             let mut ret = Vec::new();
             loop {
-                let result = try!(reader.read_optional(|reader| {
+                let result = reader.read_optional(|reader| {
                     T::decode_ber(reader)
-                }));
+                })?;
                 match result {
                     Some(result) => {
                         ret.push(result);
@@ -263,7 +263,7 @@ impl<T0> BERDecodable for (T0,)
         where T0: BERDecodable {
     fn decode_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.read_sequence(|reader| {
-            let t0 = try!(T0::decode_ber(reader.next()));
+            let t0 = T0::decode_ber(reader.next())?;
             return Ok((t0,));
         })
     }
@@ -273,8 +273,8 @@ impl<T0, T1> BERDecodable for (T0, T1)
         where T0: BERDecodable, T1: BERDecodable {
     fn decode_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.read_sequence(|reader| {
-            let t0 = try!(T0::decode_ber(reader.next()));
-            let t1 = try!(T1::decode_ber(reader.next()));
+            let t0 = T0::decode_ber(reader.next())?;
+            let t1 = T1::decode_ber(reader.next())?;
             return Ok((t0, t1));
         })
     }
@@ -284,9 +284,9 @@ impl<T0, T1, T2> BERDecodable for (T0, T1, T2)
         where T0: BERDecodable, T1: BERDecodable, T2: BERDecodable {
     fn decode_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.read_sequence(|reader| {
-            let t0 = try!(T0::decode_ber(reader.next()));
-            let t1 = try!(T1::decode_ber(reader.next()));
-            let t2 = try!(T2::decode_ber(reader.next()));
+            let t0 = T0::decode_ber(reader.next())?;
+            let t1 = T1::decode_ber(reader.next())?;
+            let t2 = T2::decode_ber(reader.next())?;
             return Ok((t0, t1, t2));
         })
     }
@@ -297,10 +297,10 @@ impl<T0, T1, T2, T3> BERDecodable for (T0, T1, T2, T3)
             T3: BERDecodable {
     fn decode_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.read_sequence(|reader| {
-            let t0 = try!(T0::decode_ber(reader.next()));
-            let t1 = try!(T1::decode_ber(reader.next()));
-            let t2 = try!(T2::decode_ber(reader.next()));
-            let t3 = try!(T3::decode_ber(reader.next()));
+            let t0 = T0::decode_ber(reader.next())?;
+            let t1 = T1::decode_ber(reader.next())?;
+            let t2 = T2::decode_ber(reader.next())?;
+            let t3 = T3::decode_ber(reader.next())?;
             return Ok((t0, t1, t2, t3));
         })
     }
@@ -311,11 +311,11 @@ impl<T0, T1, T2, T3, T4> BERDecodable for (T0, T1, T2, T3, T4)
             T3: BERDecodable, T4: BERDecodable {
     fn decode_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.read_sequence(|reader| {
-            let t0 = try!(T0::decode_ber(reader.next()));
-            let t1 = try!(T1::decode_ber(reader.next()));
-            let t2 = try!(T2::decode_ber(reader.next()));
-            let t3 = try!(T3::decode_ber(reader.next()));
-            let t4 = try!(T4::decode_ber(reader.next()));
+            let t0 = T0::decode_ber(reader.next())?;
+            let t1 = T1::decode_ber(reader.next())?;
+            let t2 = T2::decode_ber(reader.next())?;
+            let t3 = T3::decode_ber(reader.next())?;
+            let t4 = T4::decode_ber(reader.next())?;
             return Ok((t0, t1, t2, t3, t4));
         })
     }
@@ -326,12 +326,12 @@ impl<T0, T1, T2, T3, T4, T5> BERDecodable for (T0, T1, T2, T3, T4, T5)
             T3: BERDecodable, T4: BERDecodable, T5: BERDecodable {
     fn decode_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.read_sequence(|reader| {
-            let t0 = try!(T0::decode_ber(reader.next()));
-            let t1 = try!(T1::decode_ber(reader.next()));
-            let t2 = try!(T2::decode_ber(reader.next()));
-            let t3 = try!(T3::decode_ber(reader.next()));
-            let t4 = try!(T4::decode_ber(reader.next()));
-            let t5 = try!(T5::decode_ber(reader.next()));
+            let t0 = T0::decode_ber(reader.next())?;
+            let t1 = T1::decode_ber(reader.next())?;
+            let t2 = T2::decode_ber(reader.next())?;
+            let t3 = T3::decode_ber(reader.next())?;
+            let t4 = T4::decode_ber(reader.next())?;
+            let t5 = T5::decode_ber(reader.next())?;
             return Ok((t0, t1, t2, t3, t4, t5));
         })
     }
@@ -343,13 +343,13 @@ impl<T0, T1, T2, T3, T4, T5, T6> BERDecodable for (T0, T1, T2, T3, T4, T5, T6)
             T6: BERDecodable {
     fn decode_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.read_sequence(|reader| {
-            let t0 = try!(T0::decode_ber(reader.next()));
-            let t1 = try!(T1::decode_ber(reader.next()));
-            let t2 = try!(T2::decode_ber(reader.next()));
-            let t3 = try!(T3::decode_ber(reader.next()));
-            let t4 = try!(T4::decode_ber(reader.next()));
-            let t5 = try!(T5::decode_ber(reader.next()));
-            let t6 = try!(T6::decode_ber(reader.next()));
+            let t0 = T0::decode_ber(reader.next())?;
+            let t1 = T1::decode_ber(reader.next())?;
+            let t2 = T2::decode_ber(reader.next())?;
+            let t3 = T3::decode_ber(reader.next())?;
+            let t4 = T4::decode_ber(reader.next())?;
+            let t5 = T5::decode_ber(reader.next())?;
+            let t6 = T6::decode_ber(reader.next())?;
             return Ok((t0, t1, t2, t3, t4, t5, t6));
         })
     }
@@ -362,14 +362,14 @@ impl<T0, T1, T2, T3, T4, T5, T6, T7> BERDecodable
             T6: BERDecodable, T7: BERDecodable {
     fn decode_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.read_sequence(|reader| {
-            let t0 = try!(T0::decode_ber(reader.next()));
-            let t1 = try!(T1::decode_ber(reader.next()));
-            let t2 = try!(T2::decode_ber(reader.next()));
-            let t3 = try!(T3::decode_ber(reader.next()));
-            let t4 = try!(T4::decode_ber(reader.next()));
-            let t5 = try!(T5::decode_ber(reader.next()));
-            let t6 = try!(T6::decode_ber(reader.next()));
-            let t7 = try!(T7::decode_ber(reader.next()));
+            let t0 = T0::decode_ber(reader.next())?;
+            let t1 = T1::decode_ber(reader.next())?;
+            let t2 = T2::decode_ber(reader.next())?;
+            let t3 = T3::decode_ber(reader.next())?;
+            let t4 = T4::decode_ber(reader.next())?;
+            let t5 = T5::decode_ber(reader.next())?;
+            let t6 = T6::decode_ber(reader.next())?;
+            let t7 = T7::decode_ber(reader.next())?;
             return Ok((t0, t1, t2, t3, t4, t5, t6, t7));
         })
     }
@@ -382,15 +382,15 @@ impl<T0, T1, T2, T3, T4, T5, T6, T7, T8> BERDecodable
             T6: BERDecodable, T7: BERDecodable, T8: BERDecodable {
     fn decode_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.read_sequence(|reader| {
-            let t0 = try!(T0::decode_ber(reader.next()));
-            let t1 = try!(T1::decode_ber(reader.next()));
-            let t2 = try!(T2::decode_ber(reader.next()));
-            let t3 = try!(T3::decode_ber(reader.next()));
-            let t4 = try!(T4::decode_ber(reader.next()));
-            let t5 = try!(T5::decode_ber(reader.next()));
-            let t6 = try!(T6::decode_ber(reader.next()));
-            let t7 = try!(T7::decode_ber(reader.next()));
-            let t8 = try!(T8::decode_ber(reader.next()));
+            let t0 = T0::decode_ber(reader.next())?;
+            let t1 = T1::decode_ber(reader.next())?;
+            let t2 = T2::decode_ber(reader.next())?;
+            let t3 = T3::decode_ber(reader.next())?;
+            let t4 = T4::decode_ber(reader.next())?;
+            let t5 = T5::decode_ber(reader.next())?;
+            let t6 = T6::decode_ber(reader.next())?;
+            let t7 = T7::decode_ber(reader.next())?;
+            let t8 = T8::decode_ber(reader.next())?;
             return Ok((t0, t1, t2, t3, t4, t5, t6, t7, t8));
         })
     }
@@ -404,16 +404,16 @@ impl<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> BERDecodable
             T9: BERDecodable {
     fn decode_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.read_sequence(|reader| {
-            let t0 = try!(T0::decode_ber(reader.next()));
-            let t1 = try!(T1::decode_ber(reader.next()));
-            let t2 = try!(T2::decode_ber(reader.next()));
-            let t3 = try!(T3::decode_ber(reader.next()));
-            let t4 = try!(T4::decode_ber(reader.next()));
-            let t5 = try!(T5::decode_ber(reader.next()));
-            let t6 = try!(T6::decode_ber(reader.next()));
-            let t7 = try!(T7::decode_ber(reader.next()));
-            let t8 = try!(T8::decode_ber(reader.next()));
-            let t9 = try!(T9::decode_ber(reader.next()));
+            let t0 = T0::decode_ber(reader.next())?;
+            let t1 = T1::decode_ber(reader.next())?;
+            let t2 = T2::decode_ber(reader.next())?;
+            let t3 = T3::decode_ber(reader.next())?;
+            let t4 = T4::decode_ber(reader.next())?;
+            let t5 = T5::decode_ber(reader.next())?;
+            let t6 = T6::decode_ber(reader.next())?;
+            let t7 = T7::decode_ber(reader.next())?;
+            let t8 = T8::decode_ber(reader.next())?;
+            let t9 = T9::decode_ber(reader.next())?;
             return Ok((t0, t1, t2, t3, t4, t5, t6, t7, t8, t9));
         })
     }
@@ -427,17 +427,17 @@ impl<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> BERDecodable
             T9: BERDecodable, T10: BERDecodable {
     fn decode_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.read_sequence(|reader| {
-            let t0 = try!(T0::decode_ber(reader.next()));
-            let t1 = try!(T1::decode_ber(reader.next()));
-            let t2 = try!(T2::decode_ber(reader.next()));
-            let t3 = try!(T3::decode_ber(reader.next()));
-            let t4 = try!(T4::decode_ber(reader.next()));
-            let t5 = try!(T5::decode_ber(reader.next()));
-            let t6 = try!(T6::decode_ber(reader.next()));
-            let t7 = try!(T7::decode_ber(reader.next()));
-            let t8 = try!(T8::decode_ber(reader.next()));
-            let t9 = try!(T9::decode_ber(reader.next()));
-            let t10 = try!(T10::decode_ber(reader.next()));
+            let t0 = T0::decode_ber(reader.next())?;
+            let t1 = T1::decode_ber(reader.next())?;
+            let t2 = T2::decode_ber(reader.next())?;
+            let t3 = T3::decode_ber(reader.next())?;
+            let t4 = T4::decode_ber(reader.next())?;
+            let t5 = T5::decode_ber(reader.next())?;
+            let t6 = T6::decode_ber(reader.next())?;
+            let t7 = T7::decode_ber(reader.next())?;
+            let t8 = T8::decode_ber(reader.next())?;
+            let t9 = T9::decode_ber(reader.next())?;
+            let t10 = T10::decode_ber(reader.next())?;
             return Ok((t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10));
         })
     }
@@ -451,18 +451,18 @@ impl<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> BERDecodable
             T9: BERDecodable, T10: BERDecodable, T11: BERDecodable {
     fn decode_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.read_sequence(|reader| {
-            let t0 = try!(T0::decode_ber(reader.next()));
-            let t1 = try!(T1::decode_ber(reader.next()));
-            let t2 = try!(T2::decode_ber(reader.next()));
-            let t3 = try!(T3::decode_ber(reader.next()));
-            let t4 = try!(T4::decode_ber(reader.next()));
-            let t5 = try!(T5::decode_ber(reader.next()));
-            let t6 = try!(T6::decode_ber(reader.next()));
-            let t7 = try!(T7::decode_ber(reader.next()));
-            let t8 = try!(T8::decode_ber(reader.next()));
-            let t9 = try!(T9::decode_ber(reader.next()));
-            let t10 = try!(T10::decode_ber(reader.next()));
-            let t11 = try!(T11::decode_ber(reader.next()));
+            let t0 = T0::decode_ber(reader.next())?;
+            let t1 = T1::decode_ber(reader.next())?;
+            let t2 = T2::decode_ber(reader.next())?;
+            let t3 = T3::decode_ber(reader.next())?;
+            let t4 = T4::decode_ber(reader.next())?;
+            let t5 = T5::decode_ber(reader.next())?;
+            let t6 = T6::decode_ber(reader.next())?;
+            let t7 = T7::decode_ber(reader.next())?;
+            let t8 = T8::decode_ber(reader.next())?;
+            let t9 = T9::decode_ber(reader.next())?;
+            let t10 = T10::decode_ber(reader.next())?;
+            let t11 = T11::decode_ber(reader.next())?;
             return Ok((t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11));
         })
     }

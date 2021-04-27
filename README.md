@@ -15,8 +15,6 @@ Since this library is at an early stage, the APIs are subject to change. However
 Serialization in DER (Distinguished Encoding Rules) is supported. It can also be used for serialization in BER (Basic Encoding Rules).
 
 ```rust
-extern crate yasna;
-
 fn main() {
     let der = yasna::construct_der(|writer| {
         writer.write_sequence(|writer| {
@@ -49,13 +47,11 @@ These datatypes are *not* supported:
 Deserialization in BER (Basic Encoding Rules) or DER (Distinguished Encoding Rules) is supported.
 
 ```rust
-extern crate yasna;
-
 fn main() {
     let asn = yasna::parse_der(&[48, 6, 2, 1, 10, 1, 1, 255], |reader| {
         reader.read_sequence(|reader| {
-            let i = try!(reader.next().read_i64());
-            let b = try!(reader.next().read_bool());
+            let i = reader.next().read_i64()?;
+            let b = reader.next().read_bool()?;
             return Ok((i, b));
         })
     }).unwrap();
@@ -89,7 +85,7 @@ This library is currently specialized for on-memory serialization/deserializatio
 
 ## Compatibility
 
-The minimum supported Rust version (MSRV) of `yasna.rs` is Rust 1.17.0.
+The minimum supported Rust version (MSRV) of `yasna.rs` is Rust 1.31.0.
 
 ## License
 

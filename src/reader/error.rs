@@ -35,7 +35,7 @@ impl ASN1Error {
 
 impl Display for ASN1Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        try!(write!(f, "{:?}", self));
+        write!(f, "{:?}", self)?;
         return Ok(());
     }
 }
