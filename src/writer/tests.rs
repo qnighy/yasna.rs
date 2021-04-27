@@ -6,6 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+use alloc::vec;
+
 #[cfg(feature = "num-bigint")]
 use num_bigint::{BigUint, BigInt};
 

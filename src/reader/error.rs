@@ -6,9 +6,9 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::error::Error;
-use std::fmt::{self,Display};
-use std::io;
+#[cfg(feature = "std")]
+use std::{error::Error, io};
+use core::fmt::{self, Display};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct ASN1Error {
@@ -40,6 +40,7 @@ impl Display for ASN1Error {
     }
 }
 
+#[cfg(feature = "std")]
 impl Error for ASN1Error {
     fn description(&self) -> &str {
         match self.kind {
@@ -52,6 +53,7 @@ impl Error for ASN1Error {
     }
 }
 
+#[cfg(feature = "std")]
 impl From<ASN1Error> for io::Error {
     fn from(e: ASN1Error) -> Self {
         return io::Error::new(io::ErrorKind::InvalidData, e);

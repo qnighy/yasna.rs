@@ -79,6 +79,11 @@
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
+#![no_std]
+
+extern crate alloc;
+#[cfg(any(test, feature = "std"))]
+extern crate std;
 
 pub mod tags;
 pub mod models;

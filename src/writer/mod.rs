@@ -9,6 +9,8 @@
 
 #![forbid(missing_docs)]
 
+use alloc::vec::Vec;
+
 #[cfg(feature = "num-bigint")]
 use num_bigint::{BigUint, BigInt};
 #[cfg(feature = "bit-vec")]

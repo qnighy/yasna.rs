@@ -85,7 +85,7 @@ This library is currently specialized for on-memory serialization/deserializatio
 
 ## Compatibility
 
-The minimum supported Rust version (MSRV) of `yasna.rs` is Rust 1.31.0.
+The minimum supported Rust version (MSRV) of `yasna.rs` is Rust 1.36.0.
 
 ## License
 

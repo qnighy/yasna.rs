@@ -8,6 +8,9 @@
 
 #![forbid(missing_docs)]
 
+use alloc::vec::Vec;
+use alloc::string::String;
+
 #[cfg(feature = "num-bigint")]
 use num_bigint::{BigInt,BigUint};
 #[cfg(feature = "bit-vec")]

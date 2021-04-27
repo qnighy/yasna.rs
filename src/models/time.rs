@@ -6,6 +6,8 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+use alloc::string::String;
+use alloc::vec::Vec;
 use chrono::{DateTime,FixedOffset,NaiveDate,NaiveTime,NaiveDateTime};
 use chrono::offset::Utc;
 use chrono::{TimeZone,Datelike,Timelike,LocalResult};

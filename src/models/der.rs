@@ -6,6 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
+use alloc::vec::Vec;
 use super::super::{PCBit, Tag};
 use super::super::tags::*;
 
@@ -97,7 +98,7 @@ impl TaggedDerValue {
 
     /// If the value is something string-like, returns it as string.
     pub fn as_str(&self) -> Option<&str> {
-        use std::str::from_utf8;
+        use alloc::str::from_utf8;
 
         match (self.tag, self.pcbit) {
             (TAG_IA5STRING, PCBit::Primitive) => from_utf8(&self.value).ok(),

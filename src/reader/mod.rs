@@ -9,6 +9,10 @@
 
 #![allow(missing_docs)]
 
+use alloc::vec::Vec;
+use alloc::string::String;
+use alloc::borrow::ToOwned;
+
 mod error;
 
 #[cfg(feature = "num-bigint")]
@@ -1363,11 +1367,8 @@ impl<'a, 'b> BERReader<'a, 'b> {
 
             match String::from_utf8(bytes) {
                 Ok(string) => {
-                    for c in string.chars() {
-                        if !c.is_ascii() {
-                            println!("{} is not ascii...", c);
-                            return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
-                        }
+                    if !string.is_ascii() {
+                        return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
                     }
                     Ok(string)
                 }
