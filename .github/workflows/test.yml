@@ -14,7 +14,7 @@ jobs:
         - nightly
         # Minimum supported Rust version.
         # Please also change README.md if you change this.
-        - 1.31.0
+        - 1.36.0
 
     env:
       RUSTFLAGS: -D warnings
@@ -29,7 +29,7 @@ jobs:
       run: |
         cargo build --verbose
         cargo test --verbose --no-default-features
-        cargo test --verbose --no-default-features --features="num-bigint bit-vec chrono"
+        cargo test --verbose --no-default-features --features="num-bigint bit-vec chrono std"
         cargo doc --features="num-bigint bit-vec chrono"
       continue-on-error: ${{ matrix.rust == 'nightly' }}
     - name: Deploy to GitHub Pages

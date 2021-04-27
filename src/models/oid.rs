@@ -6,9 +6,11 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::fmt::{self,Display};
+use core::fmt::{self, Display};
+#[cfg(feature = "std")]
 use std::error::Error;
-use std::str::FromStr;
+use alloc::str::FromStr;
+use alloc::vec::Vec;
 
 /// A type that represents object identifiers.
 ///
@@ -122,6 +124,7 @@ impl Display for ObjectIdentifier {
 /// An error indicating failure to parse an Object identifier
 pub struct ParseOidError(());
 
+#[cfg(feature = "std")]
 impl Error for ParseOidError {}
 
 impl Display for ParseOidError {
@@ -156,6 +159,7 @@ impl From<Vec<u64>> for ObjectIdentifier {
 
 #[test]
 fn test_display_oid() {
+    use alloc::format;
     let pkcs1 = ObjectIdentifier::from_slice(&[1, 2, 840, 113549, 1, 1]);
     assert_eq!(format!("{}", pkcs1), "1.2.840.113549.1.1");
 }
