@@ -17,9 +17,7 @@ use chrono::{TimeZone,Datelike,Timelike,LocalResult};
 /// It doesn't carry timezone information.
 ///
 /// Corresponds to ASN.1 UTCTime type. Often used in conjunction with
-/// [`GeneralizedTime`][generaliedtime].
-///
-/// [generalizedtime]: struct.GeneralizedTime.html
+/// [`GeneralizedTime`].
 ///
 /// # Features
 ///
@@ -230,9 +228,7 @@ impl UTCTime {
 /// It doesn't carry timezone information.
 ///
 /// Corresponds to ASN.1 GeneralizedTime type. Often used in conjunction with
-/// [`UTCTime`][utctime].
-///
-/// [utctime]: struct.UTCTime.html
+/// [`UTCTime`].
 ///
 /// # Features
 ///

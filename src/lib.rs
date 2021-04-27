@@ -12,9 +12,7 @@
 //!
 //! ## Encoding/decoding simple data
 //!
-//! A type implementing [`DEREncodable`][derencodable] can be easily encoded:
-//!
-//! [derencodable]: trait.DEREncodable.html
+//! A type implementing [`DEREncodable`] can be easily encoded:
 //!
 //! ```
 //! fn main() {
@@ -23,10 +21,8 @@
 //! }
 //! ```
 //!
-//! Similarly, a type implementing [`BERDecodable`][berdecodable] can be
+//! Similarly, a type implementing [`BERDecodable`] can be
 //! easily decoded:
-//!
-//! [berdecodable]: trait.BERDecodable.html
 //!
 //! ```
 //! fn main() {
@@ -42,9 +38,7 @@
 //! all ASN.1 type. In many cases you have to write your reader/writer
 //! by hand.
 //!
-//! To serialize ASN.1 data, you can use [`construct_der`][construct_der].
-//!
-//! [construct_der]: fn.construct_der.html
+//! To serialize ASN.1 data, you can use [`construct_der`].
 //!
 //! ```
 //! fn main() {
@@ -58,11 +52,7 @@
 //! }
 //! ```
 //!
-//! To deserialize ASN.1 data, you can use [`parse_ber`][parse_ber]
-//! or [`parse_der`][parse_der].
-//!
-//! [parse_ber]: fn.parse_ber.html
-//! [parse_der]: fn.parse_der.html
+//! To deserialize ASN.1 data, you can use [`parse_ber`] or [`parse_der`].
 //!
 //! ```
 //! fn main() {
@@ -110,9 +100,7 @@ pub enum PCBit {
     Constructed = 1,
 }
 
-/// An ASN.1 tag class, used in [`Tag`][tag].
-///
-/// [tag]: struct.Tag.html
+/// An ASN.1 tag class, used in [`Tag`].
 ///
 /// A tag class is one of:
 ///

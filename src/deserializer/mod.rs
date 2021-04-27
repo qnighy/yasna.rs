@@ -37,10 +37,8 @@ use super::models::{UTCTime,GeneralizedTime};
 /// of ASN.1 types can be decoded via default `BERDecodable` implementation.
 ///
 /// If you want to decode ASN.1, you may implement `BERDecodable` for your
-/// own types or use [`parse_der`][parse_der]/[`parse_ber`][parse_ber].
-///
-/// [parse_der]: fn.parse_der.html
-/// [parse_ber]: fn.parse_ber.html
+/// own types or use [`parse_der`](crate::parse_der)/
+/// [`parse_ber`](crate::parse_ber).
 ///
 /// # Default implementations
 ///
@@ -91,11 +89,8 @@ pub trait BERDecodable: Sized {
 
 /// Decodes DER/BER-encoded data.
 ///
-/// [`decode_ber`][decode_ber] and [`decode_der`][decode_der] are shorthands
+/// [`decode_ber`] and [`decode_der`] are shorthands
 /// for this function.
-///
-/// [decode_ber]: fn.decode_ber.html
-/// [decode_der]: fn.decode_der.html
 pub fn decode_ber_general<T:BERDecodable>(src: &[u8], mode: BERMode)
         -> ASN1Result<T> {
     parse_ber_general(src, mode, |reader| {
@@ -106,9 +101,7 @@ pub fn decode_ber_general<T:BERDecodable>(src: &[u8], mode: BERMode)
 /// Reads an ASN.1 value from `&[u8]`.
 ///
 /// If you want to accept only DER-encoded data,
-/// use [`decode_der`][decode_der].
-///
-/// [decode_der]: fn.decode_der.html
+/// use [`decode_der`].
 ///
 /// # Examples
 ///
@@ -124,9 +117,7 @@ pub fn decode_ber<T:BERDecodable>(src: &[u8]) -> ASN1Result<T> {
 /// Reads an ASN.1 value from `&[u8]`.
 ///
 /// If you want to decode BER-encoded data in general,
-/// use [`decode_ber`][decode_ber].
-///
-/// [decode_ber]: fn.decode_ber.html
+/// use [`decode_ber`].
 ///
 /// # Examples
 ///
