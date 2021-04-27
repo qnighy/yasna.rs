@@ -31,11 +31,8 @@ pub use self::error::*;
 
 /// Parses DER/BER-encoded data.
 ///
-/// [`parse_ber`][parse_ber] and [`parse_der`][parse_der] are shorthands
+/// [`parse_ber`] and [`parse_der`] are shorthands
 /// for this function.
-///
-/// [parse_ber]: fn.parse_ber.html
-/// [parse_der]: fn.parse_der.html
 pub fn parse_ber_general<'a, T, F>(buf: &'a [u8], mode: BERMode, callback: F)
         -> ASN1Result<T>
         where F: for<'b> FnOnce(BERReader<'a, 'b>) -> ASN1Result<T> {
@@ -51,13 +48,9 @@ pub fn parse_ber_general<'a, T, F>(buf: &'a [u8], mode: BERMode, callback: F)
 /// Parses BER-encoded data.
 ///
 /// This function uses the loan pattern: `callback` is called back with
-/// a [`BERReader`][berreader], from which the ASN.1 value is read.
+/// a [`BERReader`], from which the ASN.1 value is read.
 ///
-/// [berreader]: struct.BERReader.html
-///
-/// If you want to accept only DER-encoded data, use [`parse_der`][parse_der].
-///
-/// [parse_der]: fn.parse_der.html
+/// If you want to accept only DER-encoded data, use [`parse_der`].
 ///
 /// # Examples
 ///
@@ -82,14 +75,10 @@ pub fn parse_ber<'a, T, F>(buf: &'a [u8], callback: F)
 /// Parses DER-encoded data.
 ///
 /// This function uses the loan pattern: `callback` is called back with
-/// a [`BERReader`][berreader], from which the ASN.1 value is read.
-///
-/// [berreader]: struct.BERReader.html
+/// a [`BERReader`], from which the ASN.1 value is read.
 ///
 /// If you want to parse BER-encoded data in general,
-/// use [`parse_ber`][parse_ber].
-///
-/// [parse_ber]: fn.parse_ber.html
+/// use [`parse_ber`].
 ///
 /// # Examples
 ///
@@ -111,10 +100,8 @@ pub fn parse_der<'a, T, F>(buf: &'a [u8], callback: F)
     parse_ber_general(buf, BERMode::Der, callback)
 }
 
-/// Used by [`BERReader`][berreader] to determine whether or not to enforce
+/// Used by [`BERReader`] to determine whether or not to enforce
 /// DER restrictions when parsing.
-///
-/// [berreader]: struct.BERReader.html
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum BERMode {
     /// Use BER (Basic Encoding Rules).
@@ -403,13 +390,9 @@ impl<'a> BERReaderImpl<'a> {
 ///
 /// The two main sources of `BERReaderSeq` are:
 ///
-/// - The [`parse_ber`][parse_ber]/[`parse_der`][parse_der] function,
+/// - The [`parse_ber`]/[`parse_der`] function,
 ///   the starting point of DER serialization.
-/// - The `next` method of [`BERReaderSeq`][berreaderseq].
-///
-/// [parse_ber]: fn.parse_ber.html
-/// [parse_der]: fn.parse_der.html
-/// [berreaderseq]: struct.BERReaderSeq.html
+/// - The `next` method of [`BERReaderSeq`].
 ///
 /// # Examples
 ///
@@ -1031,10 +1014,8 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// Reads an ASN.1 SEQUENCE value.
     ///
     /// This function uses the loan pattern: `callback` is called back with
-    /// a [`BERReaderSeq`][berreaderseq], from which the contents of the
+    /// a [`BERReaderSeq`], from which the contents of the
     /// SEQUENCE is read.
-    ///
-    /// [berreaderseq]: struct.BERReaderSeq.html
     ///
     /// # Examples
     ///
@@ -1067,10 +1048,8 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// Reads an ASN.1 SEQUENCE OF value.
     ///
     /// This function uses the loan pattern: `callback` is called back with
-    /// a [`BERReader`][berreader], from which the contents of the
+    /// a [`BERReader`], from which the contents of the
     /// SEQUENCE OF is read.
-    ///
-    /// [berreader]: struct.BERReader.html
     ///
     /// This function doesn't return values. Instead, use mutable values to
     /// maintain read values. `collect_set_of` can be an alternative.
@@ -1107,12 +1086,10 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// Collects an ASN.1 SEQUENCE OF value.
     ///
     /// This function uses the loan pattern: `callback` is called back with
-    /// a [`BERReader`][berreader], from which the contents of the
+    /// a [`BERReader`], from which the contents of the
     /// SEQUENCE OF is read.
     ///
     /// If you don't like `Vec`, you can use `read_sequence_of` instead.
-    ///
-    /// [berreader]: struct.BERReader.html
     ///
     /// # Examples
     ///
@@ -1140,10 +1117,8 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// Reads an ASN.1 SET value.
     ///
     /// This function uses the loan pattern: `callback` is called back with
-    /// a [`BERReaderSet`][berreaderset], from which the contents of the
+    /// a [`BERReaderSet`], from which the contents of the
     /// SET are read.
-    ///
-    /// [berreaderset]: struct.BERReaderSet.html
     ///
     /// For SET OF values, use `read_set_of` instead.
     ///
@@ -1207,7 +1182,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// Reads an ASN.1 SET OF value.
     ///
     /// This function uses the loan pattern: `callback` is called back with
-    /// a [`BERReader`][berreader], from which the contents of the
+    /// a [`BERReader`], from which the contents of the
     /// SET OF are read.
     ///
     /// This function doesn't return values. Instead, use mutable values to
@@ -1215,8 +1190,6 @@ impl<'a, 'b> BERReader<'a, 'b> {
     ///
     /// This function doesn't sort the elements. In DER, it is assumed that
     /// the elements occur in an order determined by DER encodings of them.
-    ///
-    /// [berreader]: struct.BERReader.html
     ///
     /// For SET values, use `read_set` instead.
     ///
@@ -1264,15 +1237,13 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// Collects an ASN.1 SET OF value.
     ///
     /// This function uses the loan pattern: `callback` is called back with
-    /// a [`BERReader`][berreader], from which the contents of the
+    /// a [`BERReader`], from which the contents of the
     /// SET OF is read.
     ///
     /// If you don't like `Vec`, you can use `read_set_of` instead.
     ///
     /// This function doesn't sort the elements. In DER, it is assumed that
     /// the elements occur in an order determined by DER encodings of them.
-    ///
-    /// [berreader]: struct.BERReader.html
     ///
     /// # Examples
     ///
@@ -1638,9 +1609,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
 /// A reader object for a sequence of BER/DER-encoded ASN.1 data.
 ///
 /// The main source of this object is the `read_sequence` method from
-/// [`BERReader`][berreader].
-///
-/// [berreader]: struct.BERReader.html
+/// [`BERReader`].
 ///
 /// # Examples
 ///
@@ -1667,9 +1636,7 @@ impl<'a, 'b> BERReaderSeq<'a, 'b> {
         self.inner.mode
     }
 
-    /// Generates a new [`BERReader`][berreader].
-    ///
-    /// [berreader]: struct.BERReader.html
+    /// Generates a new [`BERReader`].
     pub fn next<'c>(&'c mut self) -> BERReader<'a, 'c> {
         BERReader::new(self.inner)
     }
@@ -1755,9 +1722,7 @@ impl<'a, 'b> BERReaderSeq<'a, 'b> {
 /// A reader object for a set of BER/DER-encoded ASN.1 data.
 ///
 /// The main source of this object is the `read_set` method from
-/// [`BERReader`][berreader].
-///
-/// [berreader]: struct.BERReader.html
+/// [`BERReader`].
 ///
 /// # Examples
 ///
@@ -1786,9 +1751,7 @@ impl<'a, 'b> BERReaderSet<'a, 'b> {
         self.impl_ref.mode
     }
 
-    /// Generates a new [`BERReader`][berreader].
-    ///
-    /// [berreader]: struct.BERReader.html
+    /// Generates a new [`BERReader`].
     ///
     /// This method needs `tag_hint` to determine the position of the data.
     pub fn next<'c>(&'c mut self, tag_hint: &[Tag])

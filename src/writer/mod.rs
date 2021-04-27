@@ -27,9 +27,7 @@ use super::models::{UTCTime,GeneralizedTime};
 /// Constructs DER-encoded data as `Vec<u8>`.
 ///
 /// This function uses the loan pattern: `callback` is called back with
-/// a [`DERWriter`][derwriter], to which the ASN.1 value is written.
-///
-/// [derwriter]: struct.DERWriter.html
+/// a [`DERWriter`], to which the ASN.1 value is written.
 ///
 /// # Examples
 ///
@@ -57,15 +55,11 @@ pub fn construct_der<F>(callback: F) -> Vec<u8>
 
 /// Tries to construct DER-encoded data as `Vec<u8>`.
 ///
-/// Same as [`construct_der`][construct_der], only that it allows
+/// Same as [`construct_der`], only that it allows
 /// returning an error from the passed closure.
 ///
-/// [construct_der]: fn.construct_der.html
-///
 /// This function uses the loan pattern: `callback` is called back with
-/// a [`DERWriterSeq`][derwriterseq], to which the ASN.1 values are written.
-///
-/// [derwriterseq]: struct.DERWriterSeq.html
+/// a [`DERWriterSeq`], to which the ASN.1 values are written.
 ///
 /// # Examples
 ///
@@ -103,15 +97,11 @@ pub fn try_construct_der<F, E>(callback: F) -> Result<Vec<u8>, E>
 
 /// Constructs DER-encoded sequence of data as `Vec<u8>`.
 ///
-/// This is similar to [`construct_der`][construct_der], but this function
+/// This is similar to [`construct_der`], but this function
 /// accepts more than one ASN.1 values.
 ///
-/// [construct_der]: fn.construct_der.html
-///
 /// This function uses the loan pattern: `callback` is called back with
-/// a [`DERWriterSeq`][derwriterseq], to which the ASN.1 values are written.
-///
-/// [derwriterseq]: struct.DERWriterSeq.html
+/// a [`DERWriterSeq`], to which the ASN.1 values are written.
 ///
 /// # Examples
 ///
@@ -137,15 +127,11 @@ pub fn construct_der_seq<F>(callback: F) -> Vec<u8>
 
 /// Tries to construct a DER-encoded sequence of data as `Vec<u8>`.
 ///
-/// Same as [`construct_der_seq`][construct_der_seq], only that it allows
+/// Same as [`construct_der_seq`], only that it allows
 /// returning an error from the passed closure.
 ///
-/// [construct_der_seq]: fn.construct_der_seq.html
-///
 /// This function uses the loan pattern: `callback` is called back with
-/// a [`DERWriterSeq`][derwriterseq], to which the ASN.1 values are written.
-///
-/// [derwriterseq]: struct.DERWriterSeq.html
+/// a [`DERWriterSeq`], to which the ASN.1 values are written.
 ///
 /// # Examples
 ///
@@ -178,12 +164,9 @@ pub fn try_construct_der_seq<F, E>(callback: F) -> Result<Vec<u8> , E>
 ///
 /// The two main sources of `DERWriterSeq` are:
 ///
-/// - The [`construct_der`][construct_der] function, the starting point of
+/// - The [`construct_der`] function, the starting point of
 ///   DER serialization.
-/// - The `next` method of [`DERWriterSeq`][derwriterseq].
-///
-/// [construct_der]: fn.construct_der.html
-/// [derwriterseq]: struct.DERWriterSeq.html
+/// - The `next` method of [`DERWriterSeq`].
 ///
 /// # Examples
 ///
@@ -776,12 +759,11 @@ impl<'a> DERWriter<'a> {
     /// Writes ASN.1 SEQUENCE.
     ///
     /// This function uses the loan pattern: `callback` is called back with
-    /// a [`DERWriterSeq`][derwriterseq], to which the contents of the
+    /// a [`DERWriterSeq`], to which the contents of the
     /// SEQUENCE is written.
     ///
-    /// [derwriterseq]: struct.DERWriterSeq.html
-    ///
-    /// This is equivalent to `write_sequence_of` in behaviors.
+    /// This is equivalent to [`write_sequence_of`](Self::write_sequence_of)
+    /// in behavior.
     ///
     /// # Examples
     ///
@@ -808,12 +790,11 @@ impl<'a> DERWriter<'a> {
     /// Writes ASN.1 SEQUENCE OF.
     ///
     /// This function uses the loan pattern: `callback` is called back with
-    /// a [`DERWriterSeq`][derwriterseq], to which the contents of the
+    /// a [`DERWriterSeq`], to which the contents of the
     /// SEQUENCE OF are written.
     ///
-    /// [derwriterseq]: struct.DERWriterSeq.html
-    ///
-    /// This is equivalent to `write_sequence` in behaviors.
+    /// This is equivalent to [`write_sequence`](Self::write_sequence) in
+    /// behavior.
     ///
     /// # Examples
     ///
@@ -836,12 +817,10 @@ impl<'a> DERWriter<'a> {
     /// Writes ASN.1 SET.
     ///
     /// This function uses the loan pattern: `callback` is called back with
-    /// a [`DERWriterSet`][derwriterset], to which the contents of the
+    /// a [`DERWriterSet`], to which the contents of the
     /// SET are written.
     ///
-    /// [derwriterset]: struct.DERWriterSet.html
-    ///
-    /// For SET OF values, use `write_set_of` instead.
+    /// For SET OF values, use [`write_set_of`](Self::write_set_of) instead.
     ///
     /// # Examples
     ///
@@ -890,12 +869,10 @@ impl<'a> DERWriter<'a> {
     /// Writes ASN.1 SET OF.
     ///
     /// This function uses the loan pattern: `callback` is called back with
-    /// a [`DERWriterSet`][derwriterset], to which the contents of the
+    /// a [`DERWriterSet`], to which the contents of the
     /// SET OF are written.
     ///
-    /// [derwriterset]: struct.DERWriterSet.html
-    ///
-    /// For SET values, use `write_set` instead.
+    /// For SET values, use [`write_set`](Self::write_set) instead.
     ///
     /// # Examples
     ///
@@ -1175,10 +1152,10 @@ impl<'a> DERWriter<'a> {
 
 /// A writer object that accepts ASN.1 values.
 ///
-/// The main source of this object is the `write_sequence` method from
-/// [`DERWriter`][derwriter].
+/// The main source of this object is the [`write_sequence`][write_sequence]
+/// method from [`DERWriter`].
 ///
-/// [derwriter]: struct.DERWriter.html
+/// [write_sequence]: DERWriter::write_sequence
 ///
 /// # Examples
 ///
@@ -1198,9 +1175,7 @@ pub struct DERWriterSeq<'a> {
 }
 
 impl<'a> DERWriterSeq<'a> {
-    /// Generates a new [`DERWriter`][derwriter].
-    ///
-    /// [derwriter]: struct.DERWriter.html
+    /// Generates a new [`DERWriter`].
     pub fn next<'b>(&'b mut self) -> DERWriter<'b> {
         return DERWriter::from_buf(self.buf);
     }
@@ -1209,9 +1184,7 @@ impl<'a> DERWriterSeq<'a> {
 /// A writer object that accepts ASN.1 values.
 ///
 /// The main source of this object is the `write_set` method from
-/// [`DERWriter`][derwriter].
-///
-/// [derwriter]: struct.DERWriter.html
+/// [`DERWriter`].
 ///
 /// # Examples
 ///
@@ -1231,9 +1204,7 @@ pub struct DERWriterSet<'a> {
 }
 
 impl<'a> DERWriterSet<'a> {
-    /// Generates a new [`DERWriter`][derwriter].
-    ///
-    /// [derwriter]: struct.DERWriter.html
+    /// Generates a new [`DERWriter`].
     pub fn next<'b>(&'b mut self) -> DERWriter<'b> {
         self.bufs.push(Vec::new());
         return DERWriter::from_buf(self.bufs.last_mut().unwrap());

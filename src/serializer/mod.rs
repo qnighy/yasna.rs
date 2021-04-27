@@ -37,9 +37,7 @@ use super::models::{UTCTime,GeneralizedTime};
 /// of ASN.1 types can be encoded via default `DEREncodable` implementation.
 ///
 /// If you want to encode ASN.1, you may implement `DEREncodable` for your
-/// own types or use [`construct_der`][construct_der].
-///
-/// [construct_der]: fn.construct_der.html
+/// own types or use [`construct_der`].
 ///
 /// # Default implementations
 ///
