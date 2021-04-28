@@ -1,3 +1,10 @@
+# 0.4.0
+
+- Increase MSRV to 1.36.0
+- Switch to Github actions for CI
+- `no_std` support (requiring `alloc`)
+- addition of default-off `std` feature to enable std-related features
+
 # 0.3.2
 
 - Disable default features of chrono (except std), removing dependency
