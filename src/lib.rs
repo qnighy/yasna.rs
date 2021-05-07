@@ -34,8 +34,8 @@
 //!
 //! ## Encoding/decoding by hand
 //!
-//! Default `DEREncodable`/`BERDecodable` implementations can't handle
-//! all ASN.1 type. In many cases you have to write your reader/writer
+//! The default [`DEREncodable`]/[`BERDecodable`] implementations can't handle
+//! all ASN.1 types. In many cases you have to write your reader/writer
 //! by hand.
 //!
 //! To serialize ASN.1 data, you can use [`construct_der`].
@@ -137,7 +137,7 @@ const TAG_CLASSES : [TagClass; 4] = [
 ///   - context specific
 ///   - PRIVATE
 /// - A tag number is a nonnegative integer.
-///   In this library. Tag numbers are assumed to be in `u64`.
+///   In this library, tag numbers are assumed to fit into `u64`.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Tag {
     /// The tag class
