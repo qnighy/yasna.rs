@@ -166,7 +166,7 @@ pub fn try_construct_der_seq<F, E>(callback: F) -> Result<Vec<u8> , E>
 ///
 /// - The [`construct_der`] function, the starting point of
 ///   DER serialization.
-/// - The `next` method of [`DERWriterSeq`].
+/// - The [`next`](DERWriterSeq::next) method of [`DERWriterSeq`].
 ///
 /// # Examples
 ///
@@ -518,7 +518,7 @@ impl<'a> DERWriter<'a> {
     }
 
     #[cfg(feature = "bit-vec")]
-    /// Writes `BitVec` as an ASN.1 BITSTRING value.
+    /// Writes [`BitVec`] as an ASN.1 BITSTRING value.
     ///
     /// # Examples
     ///
@@ -1048,7 +1048,7 @@ impl<'a> DERWriter<'a> {
         });
     }
 
-    /// Writes a (explicitly) tagged value.
+    /// Writes an (explicitly) tagged value.
     ///
     /// # Examples
     ///
@@ -1062,7 +1062,8 @@ impl<'a> DERWriter<'a> {
     /// assert_eq!(der, vec![163, 3, 2, 1, 10]);
     /// ```
     ///
-    /// Note: you can achieve the same using `write_tagged_implicit`:
+    /// Note: you can achieve the same using
+    /// [`write_tagged_implicit`](Self::write_tagged_implicit):
     ///
     /// ```
     /// use yasna::{self,Tag};
@@ -1183,8 +1184,8 @@ impl<'a> DERWriterSeq<'a> {
 
 /// A writer object that accepts ASN.1 values.
 ///
-/// The main source of this object is the `write_set` method from
-/// [`DERWriter`].
+/// The main source of this object is the [`write_set`](DERWriter::write_set)
+/// method from [`DERWriter`].
 ///
 /// # Examples
 ///

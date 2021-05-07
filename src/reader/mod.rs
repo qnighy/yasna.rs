@@ -392,7 +392,7 @@ impl<'a> BERReaderImpl<'a> {
 ///
 /// - The [`parse_ber`]/[`parse_der`] function,
 ///   the starting point of DER serialization.
-/// - The `next` method of [`BERReaderSeq`].
+/// - The [`next`](BERReaderSeq::next) method of [`BERReaderSeq`].
 ///
 /// # Examples
 ///
@@ -1608,8 +1608,10 @@ impl<'a, 'b> BERReader<'a, 'b> {
 
 /// A reader object for a sequence of BER/DER-encoded ASN.1 data.
 ///
-/// The main source of this object is the `read_sequence` method from
+/// The main source of this object is the [`read_sequence`] method from
 /// [`BERReader`].
+///
+/// [`read_sequence`]: BERReader::read_sequence
 ///
 /// # Examples
 ///
@@ -1670,7 +1672,8 @@ impl<'a, 'b> BERReaderSeq<'a, 'b> {
         })
     }
 
-    /// Similar to `read_optional`, but uses `default` if it fails.
+    /// Similar to [`read_optional`](Self::read_optional),
+    /// but uses `default` if it fails.
     ///
     /// `T: Eq` is required because it fails in DER mode if the read value
     /// is equal to `default`.
@@ -1721,8 +1724,8 @@ impl<'a, 'b> BERReaderSeq<'a, 'b> {
 
 /// A reader object for a set of BER/DER-encoded ASN.1 data.
 ///
-/// The main source of this object is the `read_set` method from
-/// [`BERReader`].
+/// The main source of this object is the [`read_set`](BERReader::read_set)
+/// method from [`BERReader`].
 ///
 /// # Examples
 ///
@@ -1808,7 +1811,8 @@ impl<'a, 'b> BERReaderSet<'a, 'b> {
         }
     }
 
-    /// Similar to `read_optional`, but uses `default` if it fails.
+    /// Similar to [`read_optional`](Self::read_optional),
+    /// but uses `default` if it fails.
     ///
     /// `T: Eq` is required because it fails in DER mode if the read value
     /// is equal to `default`.
