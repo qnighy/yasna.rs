@@ -11,11 +11,11 @@
 #![forbid(missing_docs)]
 
 mod oid;
-#[cfg(feature = "chrono")]
+#[cfg(feature = "time")]
 mod time;
 mod der;
 
 pub use self::oid::{ObjectIdentifier, ParseOidError};
-#[cfg(feature = "chrono")]
+#[cfg(feature = "time")]
 pub use self::time::{UTCTime,GeneralizedTime};
 pub use self::der::TaggedDerValue;

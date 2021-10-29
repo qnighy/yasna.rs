@@ -18,7 +18,7 @@ use bit_vec::BitVec;
 
 use super::{ASN1Result,BERMode,BERReader,parse_ber_general};
 use super::models::{ObjectIdentifier,TaggedDerValue};
-#[cfg(feature = "chrono")]
+#[cfg(feature = "time")]
 use super::models::{UTCTime,GeneralizedTime};
 
 /// Types decodable in BER.
@@ -233,14 +233,14 @@ impl BERDecodable for ObjectIdentifier {
     }
 }
 
-#[cfg(feature = "chrono")]
+#[cfg(feature = "time")]
 impl BERDecodable for UTCTime {
     fn decode_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.read_utctime()
     }
 }
 
-#[cfg(feature = "chrono")]
+#[cfg(feature = "time")]
 impl BERDecodable for GeneralizedTime {
     fn decode_ber(reader: BERReader) -> ASN1Result<Self> {
         reader.read_generalized_time()

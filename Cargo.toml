@@ -21,7 +21,7 @@ default = []
 std = []
 
 [package.metadata.docs.rs]
-features = ["num-bigint", "bit-vec", "chrono", "std"]
+features = ["num-bigint", "bit-vec", "time", "std"]
 
 [dependencies]
 
@@ -39,8 +39,8 @@ default-features = false
 features = ["std"]
 optional = true
 
-[dependencies.chrono]
-version = "0.4"
+[dependencies.time]
+version = "0.3"
 optional = true
 default-features = false
 features = ["std"]

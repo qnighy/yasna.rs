@@ -29,8 +29,8 @@ jobs:
       run: |
         cargo build --verbose
         cargo test --verbose --no-default-features
-        cargo test --verbose --no-default-features --features="num-bigint bit-vec chrono std"
-        cargo doc --features="num-bigint bit-vec chrono"
+        cargo test --verbose --no-default-features --features="num-bigint bit-vec time std"
+        cargo doc --features="num-bigint bit-vec time"
       continue-on-error: ${{ matrix.rust == 'nightly' }}
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3

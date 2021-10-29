@@ -18,7 +18,7 @@ use bit_vec::BitVec;
 
 use super::{DERWriter,construct_der};
 use super::models::ObjectIdentifier;
-#[cfg(feature = "chrono")]
+#[cfg(feature = "time")]
 use super::models::{UTCTime,GeneralizedTime};
 
 /// Types encodable in DER.
@@ -204,14 +204,14 @@ impl DEREncodable for ObjectIdentifier {
     }
 }
 
-#[cfg(feature = "chrono")]
+#[cfg(feature = "time")]
 impl DEREncodable for UTCTime {
     fn encode_der(&self, writer: DERWriter) {
         writer.write_utctime(self)
     }
 }
 
-#[cfg(feature = "chrono")]
+#[cfg(feature = "time")]
 impl DEREncodable for GeneralizedTime{
     fn encode_der(&self, writer: DERWriter) {
         writer.write_generalized_time(self)
