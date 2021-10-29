@@ -2,6 +2,11 @@ name: test
 
 on: [push, pull_request]
 
+env:
+  # Minimum supported Rust version.
+  # Please also change README.md if you change this.
+  MSRV: 1.36.0
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -12,9 +17,7 @@ jobs:
         - stable
         - beta
         - nightly
-        # Minimum supported Rust version.
-        # Please also change README.md if you change this.
-        - 1.36.0
+        - msrv
 
     env:
       RUSTFLAGS: -D warnings
@@ -23,14 +26,20 @@ jobs:
     - name: Install toolchain
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: ${{ matrix.rust }}
+        toolchain: ${{ matrix.rust == 'msrv' && env.MSRV || matrix.rust }}
         override: true
     - name: Test
       run: |
         cargo build --verbose
         cargo test --verbose --no-default-features
-        cargo test --verbose --no-default-features --features="num-bigint bit-vec time std"
-        cargo doc --features="num-bigint bit-vec time"
+
+        # don't test features on MSRV
+        if [[ '${{ matrix.rust }}' != 'msrv' ]]; then
+          cargo test --verbose --no-default-features --features="num-bigint bit-vec time std"
+          cargo doc --features="num-bigint bit-vec time"
+        else
+          cargo doc
+        fi
       continue-on-error: ${{ matrix.rust == 'nightly' }}
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3

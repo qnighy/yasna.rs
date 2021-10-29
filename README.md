@@ -86,6 +86,7 @@ This library is currently specialized for on-memory serialization/deserializatio
 ## Compatibility
 
 The minimum supported Rust version (MSRV) of `yasna.rs` is Rust 1.36.0.
+Optional feature flags that enable interoperability with third-party crates (e.g. `time`) follow the policy of that crate if stricter.
 
 ## License
 
