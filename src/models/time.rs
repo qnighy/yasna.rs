@@ -250,6 +250,8 @@ impl UTCTime {
 pub struct GeneralizedTime {
     datetime: OffsetDateTime,
     sub_nano: Vec<u8>,
+    // TODO: time does not support leap seconds. This is a simple hack to support round-tripping.
+    is_leap_second: bool,
 }
 
 impl GeneralizedTime {
@@ -322,8 +324,10 @@ impl GeneralizedTime {
             }
             i += j;
         }
-        // `time` doesn't accept leap seconds, so we ignore them
+        let mut is_leap_second = false;
         if second == 60 {
+            // TODO: `time` doesn't accept leap seconds, so we use a flag to preserve
+            is_leap_second = true;
             second = 59;
         }
         let date = Date::from_calendar_date(year, month, day).ok()?;
@@ -384,6 +388,7 @@ impl GeneralizedTime {
         return Some(GeneralizedTime {
             datetime: datetime,
             sub_nano: sub_nano,
+            is_leap_second,
         });
     }
 
@@ -438,6 +443,7 @@ impl GeneralizedTime {
         return GeneralizedTime {
             datetime: datetime,
             sub_nano: Vec::new(),
+            is_leap_second: false,
         };
     }
 
@@ -457,6 +463,7 @@ impl GeneralizedTime {
         return Some(GeneralizedTime {
             datetime: datetime,
             sub_nano: Vec::new(),
+            is_leap_second: false,
         });
     }
 
@@ -483,6 +490,7 @@ impl GeneralizedTime {
         return GeneralizedTime {
             datetime: datetime,
             sub_nano: sub_nano,
+            is_leap_second: false,
         };
     }
 
@@ -515,10 +523,13 @@ impl GeneralizedTime {
         return Some(GeneralizedTime {
             datetime: datetime,
             sub_nano: sub_nano,
+            is_leap_second: false,
         });
     }
 
-    /// Returns the `OffsetDateTime` it represents, discarding sub-nanoseconds digits.
+    /// Returns the `OffsetDateTime` it represents.
+    ///
+    /// Leap seconds and sub-nanoseconds digits will be discarded.
     pub fn datetime(&self) -> &OffsetDateTime {
         &self.datetime
     }
@@ -543,14 +554,14 @@ impl GeneralizedTime {
         buf.push((self.datetime.hour() % 10) as u8 + b'0');
         buf.push((self.datetime.minute() / 10 % 10) as u8 + b'0');
         buf.push((self.datetime.minute() % 10) as u8 + b'0');
-        let second = self.datetime.second();
+        let mut second = self.datetime.second();
         let nanosecond = self.datetime.nanosecond();
         // Cope with leap seconds.
-        let (second, nanosecond) = if nanosecond < 1_000_000_000 {
-            (second, nanosecond)
-        } else {
-            (second + 1, nanosecond - 1_000_000_000)
-        };
+        if self.is_leap_second {
+            debug_assert!(second == 59,
+                "is_leap_second is set, but second = {}", second);
+            second += 1;
+        }
         buf.push((second / 10 % 10) as u8 + b'0');
         buf.push((second % 10) as u8 + b'0');
         buf.push(b'.');
@@ -644,7 +655,7 @@ fn test_generalized_time_parse() {
 
     let datetime =
         GeneralizedTime::parse(b"19990101085960.1234+0900").unwrap();
-    assert_eq!(&datetime.to_string(), "19981231235959.1234Z");
+    assert_eq!(&datetime.to_string(), "19981231235960.1234Z");
 
     let datetime =
         GeneralizedTime::parse(
