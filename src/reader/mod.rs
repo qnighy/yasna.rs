@@ -25,7 +25,7 @@ use super::tags::{TAG_EOC,TAG_BOOLEAN,TAG_INTEGER,TAG_OCTETSTRING};
 use super::tags::{TAG_NULL,TAG_OID,TAG_UTF8STRING,TAG_SEQUENCE,TAG_SET,TAG_ENUM};
 use super::tags::{TAG_NUMERICSTRING,TAG_PRINTABLESTRING,TAG_VISIBLESTRING,TAG_IA5STRING,TAG_BMPSTRING};
 use super::models::{ObjectIdentifier,TaggedDerValue};
-#[cfg(feature = "chrono")]
+#[cfg(feature = "time")]
 use super::models::{UTCTime,GeneralizedTime};
 pub use self::error::*;
 
@@ -1374,7 +1374,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
         })
     }
 
-    #[cfg(feature = "chrono")]
+    #[cfg(feature = "time")]
     /// Reads an ASN.1 UTCTime.
     ///
     /// # Examples
@@ -1387,16 +1387,16 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// let asn = yasna::parse_ber(data, |reader| {
     ///     reader.read_utctime()
     /// }).unwrap();
-    /// assert_eq!(asn.datetime().timestamp(), 378820800);
+    /// assert_eq!(asn.datetime().unix_timestamp(), 378820800);
     /// ```
     ///
     /// # Features
     ///
-    /// This method is enabled by `chrono` feature.
+    /// This method is enabled by `time` feature.
     ///
     /// ```toml
     /// [dependencies]
-    /// yasna = { version = "*", features = ["chrono"] }
+    /// yasna = { version = "*", features = ["time"] }
     /// ```
     pub fn read_utctime(self) -> ASN1Result<UTCTime> {
         use super::tags::TAG_UTCTIME;
@@ -1412,7 +1412,7 @@ impl<'a, 'b> BERReader<'a, 'b> {
         })
     }
 
-    #[cfg(feature = "chrono")]
+    #[cfg(feature = "time")]
     /// Reads an ASN.1 GeneralizedTime.
     ///
     /// # Examples
@@ -1425,16 +1425,16 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// let asn = yasna::parse_ber(data, |reader| {
     ///     reader.read_generalized_time()
     /// }).unwrap();
-    /// assert_eq!(asn.datetime().timestamp(), 500159309);
+    /// assert_eq!(asn.datetime().unix_timestamp(), 500159309);
     /// ```
     ///
     /// # Features
     ///
-    /// This method is enabled by `chrono` feature.
+    /// This method is enabled by `time` feature.
     ///
     /// ```toml
     /// [dependencies]
-    /// yasna = { version = "*", features = ["chrono"] }
+    /// yasna = { version = "*", features = ["time"] }
     /// ```
     pub fn read_generalized_time(self) -> ASN1Result<GeneralizedTime> {
         use super::tags::TAG_GENERALIZEDTIME;

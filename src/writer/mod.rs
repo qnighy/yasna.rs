@@ -21,7 +21,7 @@ use super::tags::{TAG_BOOLEAN,TAG_INTEGER,TAG_OCTETSTRING};
 use super::tags::{TAG_NULL,TAG_OID,TAG_UTF8STRING,TAG_SEQUENCE,TAG_SET,TAG_ENUM,TAG_IA5STRING,TAG_BMPSTRING};
 use super::tags::{TAG_NUMERICSTRING,TAG_PRINTABLESTRING,TAG_VISIBLESTRING};
 use super::models::{ObjectIdentifier,TaggedDerValue};
-#[cfg(feature = "chrono")]
+#[cfg(feature = "time")]
 use super::models::{UTCTime,GeneralizedTime};
 
 /// Constructs DER-encoded data as `Vec<u8>`.
@@ -956,7 +956,7 @@ impl<'a> DERWriter<'a> {
         });
     }
 
-    #[cfg(feature = "chrono")]
+    #[cfg(feature = "time")]
     /// Writes an ASN.1 UTCTime.
     ///
     /// # Examples
@@ -965,10 +965,11 @@ impl<'a> DERWriter<'a> {
     /// # fn main() {
     /// use yasna;
     /// use yasna::models::UTCTime;
-    /// use chrono::{Utc,TimeZone};
+    /// use time::OffsetDateTime;
     /// let der = yasna::construct_der(|writer| {
     ///     writer.write_utctime(
-    ///         &UTCTime::from_datetime(&Utc.timestamp(378820800, 0)))
+    ///         &UTCTime::from_datetime(
+    ///             OffsetDateTime::from_unix_timestamp(378820800).unwrap()))
     /// });
     /// assert_eq!(&der, &[
     ///     23, 13, 56, 50, 48, 49, 48, 50, 49, 50, 48, 48, 48, 48, 90]);
@@ -977,11 +978,11 @@ impl<'a> DERWriter<'a> {
     ///
     /// # Features
     ///
-    /// This method is enabled by `chrono` feature.
+    /// This method is enabled by `time` feature.
     ///
     /// ```toml
     /// [dependencies]
-    /// yasna = { version = "*", features = ["chrono"] }
+    /// yasna = { version = "*", features = ["time"] }
     /// ```
     pub fn write_utctime(self, datetime: &UTCTime) {
         use super::tags::TAG_UTCTIME;
@@ -990,7 +991,7 @@ impl<'a> DERWriter<'a> {
         });
     }
 
-    #[cfg(feature = "chrono")]
+    #[cfg(feature = "time")]
     /// Writes an ASN.1 GeneralizedTime.
     ///
     /// # Examples
@@ -999,11 +1000,12 @@ impl<'a> DERWriter<'a> {
     /// # fn main() {
     /// use yasna;
     /// use yasna::models::GeneralizedTime;
-    /// use chrono::{Utc,TimeZone};
+    /// use time::OffsetDateTime;
     /// let der = yasna::construct_der(|writer| {
     ///     writer.write_generalized_time(
     ///         &GeneralizedTime::from_datetime(
-    ///             &Utc.timestamp(500159309, 724_000_000)))
+    ///             OffsetDateTime::from_unix_timestamp_nanos(
+    ///                 500_159_309_724_000_000).unwrap()))
     /// });
     /// assert_eq!(&der, &[
     ///     24, 19, 49, 57, 56, 53, 49, 49, 48, 54, 50,
@@ -1013,11 +1015,11 @@ impl<'a> DERWriter<'a> {
     ///
     /// # Features
     ///
-    /// This method is enabled by `chrono` feature.
+    /// This method is enabled by `time` feature.
     ///
     /// ```toml
     /// [dependencies]
-    /// yasna = { version = "*", features = ["chrono"] }
+    /// yasna = { version = "*", features = ["time"] }
     /// ```
     pub fn write_generalized_time(self, datetime: &GeneralizedTime) {
         use super::tags::TAG_GENERALIZEDTIME;

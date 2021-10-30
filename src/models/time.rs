@@ -8,9 +8,8 @@
 
 use alloc::string::String;
 use alloc::vec::Vec;
-use chrono::{DateTime,FixedOffset,NaiveDate,NaiveTime,NaiveDateTime};
-use chrono::offset::Utc;
-use chrono::{TimeZone,Datelike,Timelike,LocalResult};
+use core::convert::TryFrom;
+use time::{Date, Month, OffsetDateTime, PrimitiveDateTime, Time, UtcOffset};
 
 /// Date and time between 1950-01-01T00:00:00Z and 2049-12-31T23:59:59Z.
 /// It cannot express fractional seconds and leap seconds.
@@ -21,11 +20,11 @@ use chrono::{TimeZone,Datelike,Timelike,LocalResult};
 ///
 /// # Features
 ///
-/// This struct is enabled by `chrono` feature.
+/// This struct is enabled by `time` feature.
 ///
 /// ```toml
 /// [dependencies]
-/// yasna = { version = "*", features = ["chrono"] }
+/// yasna = { version = "*", features = ["time"] }
 /// ```
 ///
 /// # Examples
@@ -33,10 +32,9 @@ use chrono::{TimeZone,Datelike,Timelike,LocalResult};
 /// ```
 /// # fn main() {
 /// use yasna::models::UTCTime;
-/// use chrono::{Datelike,Timelike};
 /// let datetime = *UTCTime::parse(b"8201021200Z").unwrap().datetime();
 /// assert_eq!(datetime.year(), 1982);
-/// assert_eq!(datetime.month(), 1);
+/// assert_eq!(datetime.month() as u8, 1);
 /// assert_eq!(datetime.day(), 2);
 /// assert_eq!(datetime.hour(), 12);
 /// assert_eq!(datetime.minute(), 0);
@@ -46,7 +44,7 @@ use chrono::{TimeZone,Datelike,Timelike,LocalResult};
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct UTCTime {
-    datetime: DateTime<Utc>,
+    datetime: OffsetDateTime,
 }
 
 impl UTCTime {
@@ -85,7 +83,8 @@ impl UTCTime {
             return None;
         }
         if !buf[..i].iter().all(|&b| b'0' <= b && b <= b'9') ||
-            !buf[i+1..].iter().all(|&b| b'0' <= b && b <= b'9') {
+            !buf[i+1..].iter().all(|&b| b'0' <= b && b <= b'9')
+        {
             return None;
         }
         let year_short: i32 =
@@ -95,44 +94,37 @@ impl UTCTime {
         } else {
             year_short + 1900
         };
-        let month: u32 =
-            ((buf[2] - b'0') as u32) * 10 + ((buf[3] - b'0') as u32);
-        let day: u32 =
-            ((buf[4] - b'0') as u32) * 10 + ((buf[5] - b'0') as u32);
-        let hour: u32 =
-            ((buf[6] - b'0') as u32) * 10 + ((buf[7] - b'0') as u32);
-        let minute: u32 =
-            ((buf[8] - b'0') as u32) * 10 + ((buf[9] - b'0') as u32);
-        let second : u32 = if i == 12 {
-            ((buf[10] - b'0') as u32) * 10 + ((buf[11] - b'0') as u32)
+        let month = Month::try_from((buf[2] - b'0') * 10 + (buf[3] - b'0')).ok()?;
+        let day = (buf[4] - b'0') * 10 + (buf[5] - b'0');
+        let hour = (buf[6] - b'0') * 10 + (buf[7] - b'0');
+        let minute = (buf[8] - b'0') * 10 + (buf[9] - b'0');
+        let second = if i == 12 {
+            (buf[10] - b'0') * 10 + (buf[11] - b'0')
         } else {
             0
         };
-        let offset_hour: i32 = if buf[i] == b'Z' {
+        let offset_hour: i8 = if buf[i] == b'Z' {
             0
         } else {
-            ((buf[i+1] - b'0') as i32) * 10 + ((buf[i+2] - b'0') as i32)
+            ((buf[i+1] - b'0') as i8) * 10 + ((buf[i+2] - b'0') as i8)
         };
-        let offset_minute: i32 = if buf[i] == b'Z' {
+        let offset_minute: i8 = if buf[i] == b'Z' {
             0
         } else {
-            ((buf[i+3] - b'0') as i32) * 10 + ((buf[i+4] - b'0') as i32)
+            ((buf[i+3] - b'0') as i8) * 10 + ((buf[i+4] - b'0') as i8)
         };
-        let date = if let Some(date) = NaiveDate::from_ymd_opt(
-            year, month, day) { date } else { return None; };
-        let time = if let Some(time) = NaiveTime::from_hms_opt(
-            hour, minute, second) { time } else { return None; };
-        let datetime = NaiveDateTime::new(date, time);
+        let date = Date::from_calendar_date(year, month, day).ok()?;
+        let time = Time::from_hms(hour, minute, second).ok()?;
+        let datetime = PrimitiveDateTime::new(date, time);
         if !(offset_hour < 24 && offset_minute < 60) {
             return None;
         }
         let offset = if buf[i] == b'+' {
-            FixedOffset::east((offset_hour * 60 + offset_minute) * 60)
+            UtcOffset::from_hms(offset_hour, offset_minute, 0).ok()?
         } else {
-            FixedOffset::west((offset_hour * 60 + offset_minute) * 60)
+            UtcOffset::from_hms(-offset_hour, -offset_minute, 0).ok()?
         };
-        let datetime = offset.from_local_datetime(&datetime).unwrap();
-        let datetime = datetime.with_timezone(&Utc);
+        let datetime = datetime.assume_offset(offset).to_offset(UtcOffset::UTC);
         // While the given local datatime is in [1950, 2050) by definition,
         // the UTC datetime can be out of bounds. We check this.
         if !(1950 <= datetime.year() && datetime.year() < 2050) {
@@ -143,7 +135,7 @@ impl UTCTime {
         });
     }
 
-    /// Constructs `UTCTime` from a datetime.
+    /// Constructs `UTCTime` from an `OffsetDateTime`.
     ///
     /// # Panics
     ///
@@ -152,8 +144,8 @@ impl UTCTime {
     /// - The year is not between 1950 and 2049.
     /// - It is in a leap second.
     /// - It has a non-zero nanosecond value.
-    pub fn from_datetime<Tz:TimeZone>(datetime: &DateTime<Tz>) -> Self {
-        let datetime = datetime.with_timezone(&Utc);
+    pub fn from_datetime(datetime: OffsetDateTime) -> Self {
+        let datetime = datetime.to_offset(UtcOffset::UTC);
         assert!(1950 <= datetime.year() && datetime.year() < 2050,
             "Can't express a year {:?} in UTCTime", datetime.year());
         assert!(datetime.nanosecond() < 1_000_000_000,
@@ -165,7 +157,7 @@ impl UTCTime {
         };
     }
 
-    /// Constructs `UTCTime` from a datetime.
+    /// Constructs `UTCTime` from an `OffsetDateTime`.
     ///
     /// # Errors
     ///
@@ -174,9 +166,8 @@ impl UTCTime {
     /// - The year is not between 1950 and 2049.
     /// - It is in a leap second.
     /// - It has a non-zero nanosecond value.
-    pub fn from_datetime_opt<Tz:TimeZone>
-            (datetime: &DateTime<Tz>) -> Option<Self> {
-        let datetime = datetime.with_timezone(&Utc);
+    pub fn from_datetime_opt(datetime: OffsetDateTime) -> Option<Self> {
+        let datetime = datetime.to_offset(UtcOffset::UTC);
         if !(1950 <= datetime.year() && datetime.year() < 2050) {
             return None;
         }
@@ -188,8 +179,8 @@ impl UTCTime {
         });
     }
 
-    /// Returns the datetime it represents.
-    pub fn datetime(&self) -> &DateTime<Utc> {
+    /// Returns the `OffsetDateTime` it represents.
+    pub fn datetime(&self) -> &OffsetDateTime {
         &self.datetime
     }
 
@@ -198,8 +189,8 @@ impl UTCTime {
         let mut buf = Vec::with_capacity(13);
         buf.push((self.datetime.year() / 10 % 10) as u8 + b'0');
         buf.push((self.datetime.year() % 10) as u8 + b'0');
-        buf.push((self.datetime.month() / 10 % 10) as u8 + b'0');
-        buf.push((self.datetime.month() % 10) as u8 + b'0');
+        buf.push((self.datetime.month() as u8 / 10 % 10) + b'0');
+        buf.push((self.datetime.month() as u8 % 10) + b'0');
         buf.push((self.datetime.day() / 10 % 10) as u8 + b'0');
         buf.push((self.datetime.day() % 10) as u8 + b'0');
         buf.push((self.datetime.hour() / 10 % 10) as u8 + b'0');
@@ -232,11 +223,11 @@ impl UTCTime {
 ///
 /// # Features
 ///
-/// This struct is enabled by `chrono` feature.
+/// This struct is enabled by `time` feature.
 ///
 /// ```toml
 /// [dependencies]
-/// yasna = { version = "*", features = ["chrono"] }
+/// yasna = { version = "*", features = ["time"] }
 /// ```
 ///
 /// # Examples
@@ -244,11 +235,10 @@ impl UTCTime {
 /// ```
 /// # fn main() {
 /// use yasna::models::GeneralizedTime;
-/// use chrono::{Datelike,Timelike};
 /// let datetime =
 ///     *GeneralizedTime::parse(b"19851106210627.3Z").unwrap().datetime();
 /// assert_eq!(datetime.year(), 1985);
-/// assert_eq!(datetime.month(), 11);
+/// assert_eq!(datetime.month() as u8, 11);
 /// assert_eq!(datetime.day(), 6);
 /// assert_eq!(datetime.hour(), 21);
 /// assert_eq!(datetime.minute(), 6);
@@ -258,16 +248,17 @@ impl UTCTime {
 /// ```
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct GeneralizedTime {
-    datetime: DateTime<Utc>,
+    datetime: OffsetDateTime,
     sub_nano: Vec<u8>,
+    // TODO: time does not support leap seconds. This is a simple hack to support round-tripping.
+    is_leap_second: bool,
 }
 
 impl GeneralizedTime {
-    /// Almost same as `parse`. It takes `default_tz` however.
-    /// GeneralizedTime value can omit timezone in local time.
-    /// In that case, `default_tz` is used instead.
-    fn parse_general<Tz:TimeZone>(buf: &[u8], default_tz: Option<&Tz>)
-            -> Option<Self> {
+    /// Almost same as `parse`. It takes `default_offset` however.
+    /// GeneralizedTime value can omit offset in local time.
+    /// In that case, `default_offset` is used instead.
+    fn parse_general(buf: &[u8], default_offset: Option<UtcOffset>) -> Option<Self> {
         if buf.len() < 10 {
             return None;
         }
@@ -277,31 +268,26 @@ impl GeneralizedTime {
         let year: i32 =
             ((buf[0] - b'0') as i32) * 1000 + ((buf[1] - b'0') as i32) * 100
             + ((buf[2] - b'0') as i32) * 10 + ((buf[3] - b'0') as i32);
-        let month: u32 =
-            ((buf[4] - b'0') as u32) * 10 + ((buf[5] - b'0') as u32);
-        let day: u32 =
-            ((buf[6] - b'0') as u32) * 10 + ((buf[7] - b'0') as u32);
-        let hour: u32 =
-            ((buf[8] - b'0') as u32) * 10 + ((buf[9] - b'0') as u32);
+        let month = Month::try_from((buf[4] - b'0') * 10 + (buf[5] - b'0')).ok()?;
+        let day = (buf[6] - b'0') * 10 + (buf[7] - b'0');
+        let hour = (buf[8] - b'0') * 10 + (buf[9] - b'0');
         // i: current position on `buf`
         let mut i = 10;
         // The factor to scale the fraction part to nanoseconds.
         let mut fraction_scale : i64 = 1_000_000_000;
-        let mut minute : u32;
+        let mut minute: u8;
         if i+2 <= buf.len() &&
                 buf[i..i+2].iter().all(|&b| b'0' <= b && b <= b'9') {
-            minute =
-                ((buf[i] - b'0') as u32) * 10 + ((buf[i+1] - b'0') as u32);
+            minute = (buf[i] - b'0') * 10 + (buf[i + 1] - b'0');
             i += 2;
         } else {
             fraction_scale = 3_600_000_000_000;
             minute = 0;
         }
-        let mut second : u32;
+        let mut second: u8;
         if i+2 <= buf.len() &&
                 buf[i..i+2].iter().all(|&b| b'0' <= b && b <= b'9') {
-            second =
-                ((buf[i] - b'0') as u32) * 10 + ((buf[i+1] - b'0') as u32);
+            second = (buf[i] - b'0') * 10 + (buf[i + 1] - b'0');
             i += 2;
         } else {
             if fraction_scale == 1_000_000_000 {
@@ -327,8 +313,8 @@ impl GeneralizedTime {
                 sub_nano[k] = b'0' + ((sum % 10) as u8);
             }
             nanosecond = (carry % 1_000_000_000) as u32;
-            second += (carry / 1_000_000_000 % 60) as u32;
-            minute += (carry / 60_000_000_000) as u32;
+            second += (carry / 1_000_000_000 % 60) as u8;
+            minute += (carry / 60_000_000_000) as u8;
             while let Some(&digit) = sub_nano.last() {
                 if digit == b'0' {
                     sub_nano.pop();
@@ -338,32 +324,24 @@ impl GeneralizedTime {
             }
             i += j;
         }
-        // Cope with leap seconds.
+        let mut is_leap_second = false;
         if second == 60 {
+            // TODO: `time` doesn't accept leap seconds, so we use a flag to preserve
+            is_leap_second = true;
             second = 59;
-            nanosecond += 1_000_000_000;
         }
-        let date = if let Some(date) = NaiveDate::from_ymd_opt(
-            year, month, day) { date } else { return None; };
-        let time = if let Some(time) = NaiveTime::from_hms_nano_opt(
-            hour, minute, second, nanosecond) { time } else { return None; };
-        let naive_datetime = NaiveDateTime::new(date, time);
-        let datetime : DateTime<Utc>;
+        let date = Date::from_calendar_date(year, month, day).ok()?;
+        let time = Time::from_hms_nano(hour, minute, second, nanosecond).ok()?;
+        let naive_datetime = PrimitiveDateTime::new(date, time);
+        let datetime: OffsetDateTime;
         if i == buf.len() {
             // Local datetime with no timezone information.
-            if let Some(default_tz) = default_tz {
-                if let LocalResult::Single(dt) =
-                        default_tz.from_local_datetime(&naive_datetime) {
-                    datetime = dt.with_timezone(&Utc);
-                } else {
-                    return None;
-                }
-            } else {
-                return None;
-            }
+            datetime = naive_datetime
+                .assume_offset(default_offset?)
+                .to_offset(UtcOffset::UTC);
         } else if i < buf.len() && buf[i] == b'Z' {
             // UTC time.
-            datetime = DateTime::from_utc(naive_datetime, Utc);
+            datetime = naive_datetime.assume_utc();
             i += 1;
         } else if i < buf.len() && (buf[i] == b'+' || buf[i] == b'-') {
             // Local datetime with offset information.
@@ -374,13 +352,13 @@ impl GeneralizedTime {
                 return None;
             }
             let offset_hour =
-                ((buf[i] - b'0') as i32) * 10 + ((buf[i+1] - b'0') as i32);
+                ((buf[i] - b'0') as i8) * 10 + ((buf[i+1] - b'0') as i8);
             i += 2;
             let offset_minute;
             if i+2 <= buf.len() &&
                     buf[i..i+2].iter().all(|&b| b'0' <= b && b <= b'9') {
                 offset_minute =
-                    ((buf[i] - b'0') as i32) * 10 + ((buf[i+1] - b'0') as i32);
+                    ((buf[i] - b'0') as i8) * 10 + ((buf[i+1] - b'0') as i8);
                 i += 2;
             } else {
                 offset_minute = 0;
@@ -389,13 +367,13 @@ impl GeneralizedTime {
                 return None;
             }
             let offset = if offset_sign == b'+' {
-                FixedOffset::east((offset_hour * 60 + offset_minute) * 60)
+                UtcOffset::from_hms(offset_hour, offset_minute, 0)
             } else {
-                FixedOffset::west((offset_hour * 60 + offset_minute) * 60)
+                UtcOffset::from_hms(-offset_hour, -offset_minute, 0)
             };
-            datetime =
-                offset.from_local_datetime(&naive_datetime).unwrap()
-                .with_timezone(&Utc);
+            datetime = naive_datetime
+                .assume_offset(offset.ok()?)
+                .to_offset(UtcOffset::UTC);
         } else {
             return None;
         }
@@ -410,6 +388,7 @@ impl GeneralizedTime {
         return Some(GeneralizedTime {
             datetime: datetime,
             sub_nano: sub_nano,
+            is_leap_second,
         });
     }
 
@@ -428,7 +407,7 @@ impl GeneralizedTime {
     /// It returns `None` if the given string does not specify a correct
     /// datetime.
     pub fn parse(buf: &[u8]) -> Option<Self> {
-        Self::parse_general::<Utc>(buf, None)
+        Self::parse_general(buf, None)
     }
 
     /// Parses ASN.1 string representation of GeneralizedTime, with the
@@ -446,29 +425,29 @@ impl GeneralizedTime {
     ///
     /// It returns `None` if the given string does not specify a correct
     /// datetime.
-    pub fn parse_with_timezone<Tz:TimeZone>
-            (buf: &[u8], default_tz: &Tz) -> Option<Self> {
-        Self::parse_general(buf, Some(default_tz))
+    pub fn parse_with_offset(buf: &[u8], default_offset: UtcOffset) -> Option<Self> {
+        Self::parse_general(buf, Some(default_offset))
     }
 
-    /// Constructs `GeneralizedTime` from a datetime.
+    /// Constructs `GeneralizedTime` from an `OffsetDateTime`.
     ///
     /// # Panics
     ///
     /// Panics when GeneralizedTime can't represent the datetime. That is:
     ///
     /// - The year is not between 0 and 9999.
-    pub fn from_datetime<Tz:TimeZone>(datetime: &DateTime<Tz>) -> Self {
-        let datetime = datetime.with_timezone(&Utc);
+    pub fn from_datetime(datetime: OffsetDateTime) -> Self {
+        let datetime = datetime.to_offset(UtcOffset::UTC);
         assert!(0 <= datetime.year() && datetime.year() < 10000,
             "Can't express a year {:?} in GeneralizedTime", datetime.year());
         return GeneralizedTime {
             datetime: datetime,
             sub_nano: Vec::new(),
+            is_leap_second: false,
         };
     }
 
-    /// Constructs `GeneralizedTime` from a datetime.
+    /// Constructs `GeneralizedTime` from an `OffsetDateTime`.
     ///
     /// # Errors
     ///
@@ -476,19 +455,19 @@ impl GeneralizedTime {
     /// That is:
     ///
     /// - The year is not between 0 and 9999.
-    pub fn from_datetime_opt<Tz:TimeZone>(datetime: &DateTime<Tz>)
-            -> Option<Self> {
-        let datetime = datetime.with_timezone(&Utc);
+    pub fn from_datetime_opt(datetime: OffsetDateTime) -> Option<Self> {
+        let datetime = datetime.to_offset(UtcOffset::UTC);
         if !(0 <= datetime.year() && datetime.year() < 10000) {
             return None;
         }
         return Some(GeneralizedTime {
             datetime: datetime,
             sub_nano: Vec::new(),
+            is_leap_second: false,
         });
     }
 
-    /// Constructs `GeneralizedTime` from a datetime and sub-nanoseconds
+    /// Constructs `GeneralizedTime` from an `OffsetDateTime` and sub-nanoseconds
     /// digits.
     ///
     /// # Panics
@@ -498,9 +477,8 @@ impl GeneralizedTime {
     /// - The year is not between 0 and 9999.
     ///
     /// It also panics if `sub_nano` contains a non-digit character.
-    pub fn from_datetime_and_sub_nano<Tz:TimeZone>
-            (datetime: &DateTime<Tz>, sub_nano: &[u8]) -> Self {
-        let datetime = datetime.with_timezone(&Utc);
+    pub fn from_datetime_and_sub_nano(datetime: OffsetDateTime, sub_nano: &[u8]) -> Self {
+        let datetime = datetime.to_offset(UtcOffset::UTC);
         assert!(0 <= datetime.year() && datetime.year() < 10000,
             "Can't express a year {:?} in GeneralizedTime", datetime.year());
         assert!(sub_nano.iter().all(|&b| b'0' <= b && b <= b'9'),
@@ -512,10 +490,11 @@ impl GeneralizedTime {
         return GeneralizedTime {
             datetime: datetime,
             sub_nano: sub_nano,
+            is_leap_second: false,
         };
     }
 
-    /// Constructs `GeneralizedTime` from a datetime and sub-nanoseconds
+    /// Constructs `GeneralizedTime` from an `OffsetDateTime` and sub-nanoseconds
     /// digits.
     ///
     /// # Errors
@@ -526,9 +505,11 @@ impl GeneralizedTime {
     /// - The year is not between 0 and 9999.
     ///
     /// It also returns `None` if `sub_nano` contains a non-digit character.
-    pub fn from_datetime_and_sub_nano_opt<Tz:TimeZone>
-            (datetime: &DateTime<Tz>, sub_nano: &[u8]) -> Option<Self> {
-        let datetime = datetime.with_timezone(&Utc);
+    pub fn from_datetime_and_sub_nano_opt(
+        datetime: OffsetDateTime,
+        sub_nano: &[u8],
+    ) -> Option<Self> {
+        let datetime = datetime.to_offset(UtcOffset::UTC);
         if !(0 <= datetime.year() && datetime.year() < 10000) {
             return None;
         }
@@ -542,11 +523,14 @@ impl GeneralizedTime {
         return Some(GeneralizedTime {
             datetime: datetime,
             sub_nano: sub_nano,
+            is_leap_second: false,
         });
     }
 
-    /// Returns the datetime it represents, discarding sub-nanoseconds digits.
-    pub fn datetime(&self) -> &DateTime<Utc> {
+    /// Returns the `OffsetDateTime` it represents.
+    ///
+    /// Leap seconds and sub-nanoseconds digits will be discarded.
+    pub fn datetime(&self) -> &OffsetDateTime {
         &self.datetime
     }
 
@@ -562,22 +546,22 @@ impl GeneralizedTime {
         buf.push((self.datetime.year() / 100 % 10) as u8 + b'0');
         buf.push((self.datetime.year() / 10 % 10) as u8 + b'0');
         buf.push((self.datetime.year() % 10) as u8 + b'0');
-        buf.push((self.datetime.month() / 10 % 10) as u8 + b'0');
-        buf.push((self.datetime.month() % 10) as u8 + b'0');
+        buf.push((self.datetime.month() as u8 / 10 % 10) + b'0');
+        buf.push((self.datetime.month() as u8 % 10) + b'0');
         buf.push((self.datetime.day() / 10 % 10) as u8 + b'0');
         buf.push((self.datetime.day() % 10) as u8 + b'0');
         buf.push((self.datetime.hour() / 10 % 10) as u8 + b'0');
         buf.push((self.datetime.hour() % 10) as u8 + b'0');
         buf.push((self.datetime.minute() / 10 % 10) as u8 + b'0');
         buf.push((self.datetime.minute() % 10) as u8 + b'0');
-        let second = self.datetime.second();
+        let mut second = self.datetime.second();
         let nanosecond = self.datetime.nanosecond();
         // Cope with leap seconds.
-        let (second, nanosecond) = if nanosecond < 1_000_000_000 {
-            (second, nanosecond)
-        } else {
-            (second + 1, nanosecond - 1_000_000_000)
-        };
+        if self.is_leap_second {
+            debug_assert!(second == 59,
+                "is_leap_second is set, but second = {}", second);
+            second += 1;
+        }
         buf.push((second / 10 % 10) as u8 + b'0');
         buf.push((second % 10) as u8 + b'0');
         buf.push(b'.');
@@ -610,7 +594,7 @@ impl GeneralizedTime {
 fn test_utctime_parse() {
     let datetime = *UTCTime::parse(b"8201021200Z").unwrap().datetime();
     assert_eq!(datetime.year(), 1982);
-    assert_eq!(datetime.month(), 1);
+    assert_eq!(datetime.month() as u8, 1);
     assert_eq!(datetime.day(), 2);
     assert_eq!(datetime.hour(), 12);
     assert_eq!(datetime.minute(), 0);
@@ -619,7 +603,7 @@ fn test_utctime_parse() {
 
     let datetime = *UTCTime::parse(b"0101021200Z").unwrap().datetime();
     assert_eq!(datetime.year(), 2001);
-    assert_eq!(datetime.month(), 1);
+    assert_eq!(datetime.month() as u8, 1);
     assert_eq!(datetime.day(), 2);
     assert_eq!(datetime.hour(), 12);
     assert_eq!(datetime.minute(), 0);
@@ -647,7 +631,7 @@ fn test_generalized_time_parse() {
     let datetime =
         *GeneralizedTime::parse(b"19851106210627.3Z").unwrap().datetime();
     assert_eq!(datetime.year(), 1985);
-    assert_eq!(datetime.month(), 11);
+    assert_eq!(datetime.month() as u8, 11);
     assert_eq!(datetime.day(), 6);
     assert_eq!(datetime.hour(), 21);
     assert_eq!(datetime.minute(), 6);
