@@ -135,7 +135,7 @@ impl UTCTime {
         });
     }
 
-    /// Constructs `UTCTime` from a datetime.
+    /// Constructs `UTCTime` from an `OffsetDateTime`.
     ///
     /// # Panics
     ///
@@ -157,7 +157,7 @@ impl UTCTime {
         };
     }
 
-    /// Constructs `UTCTime` from a datetime.
+    /// Constructs `UTCTime` from an `OffsetDateTime`.
     ///
     /// # Errors
     ///
@@ -179,7 +179,7 @@ impl UTCTime {
         });
     }
 
-    /// Returns the datetime it represents.
+    /// Returns the `OffsetDateTime` it represents.
     pub fn datetime(&self) -> &OffsetDateTime {
         &self.datetime
     }
@@ -424,7 +424,7 @@ impl GeneralizedTime {
         Self::parse_general(buf, Some(default_offset))
     }
 
-    /// Constructs `GeneralizedTime` from a datetime.
+    /// Constructs `GeneralizedTime` from an `OffsetDateTime`.
     ///
     /// # Panics
     ///
@@ -441,7 +441,7 @@ impl GeneralizedTime {
         };
     }
 
-    /// Constructs `GeneralizedTime` from a datetime.
+    /// Constructs `GeneralizedTime` from an `OffsetDateTime`.
     ///
     /// # Errors
     ///
@@ -460,7 +460,7 @@ impl GeneralizedTime {
         });
     }
 
-    /// Constructs `GeneralizedTime` from a datetime and sub-nanoseconds
+    /// Constructs `GeneralizedTime` from an `OffsetDateTime` and sub-nanoseconds
     /// digits.
     ///
     /// # Panics
@@ -486,7 +486,7 @@ impl GeneralizedTime {
         };
     }
 
-    /// Constructs `GeneralizedTime` from a datetime and sub-nanoseconds
+    /// Constructs `GeneralizedTime` from an `OffsetDateTime` and sub-nanoseconds
     /// digits.
     ///
     /// # Errors
@@ -518,7 +518,7 @@ impl GeneralizedTime {
         });
     }
 
-    /// Returns the datetime it represents, discarding sub-nanoseconds digits.
+    /// Returns the `OffsetDateTime` it represents, discarding sub-nanoseconds digits.
     pub fn datetime(&self) -> &OffsetDateTime {
         &self.datetime
     }
