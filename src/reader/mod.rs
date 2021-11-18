@@ -287,7 +287,6 @@ impl<'a> BERReaderImpl<'a> {
                 if old_buf.len() < limit {
                     return Err(ASN1Error::new(ASN1ErrorKind::Eof));
                 }
-
                 self.buf = &old_buf[..limit];
             },
             None => {
