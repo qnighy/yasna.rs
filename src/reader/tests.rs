@@ -1651,3 +1651,12 @@ fn test_ber_read_tagged_implicit_err() {
         }).unwrap_err();
     }
 }
+
+#[test]
+fn test_ber_read_overflow() {
+    let data = [33, 136, 255, 255, 255, 255, 255, 255, 255, 255];
+
+    let _: Result<bool, _> = parse_ber(&data, |reader| {
+        reader.read_bool()
+    });
+}
