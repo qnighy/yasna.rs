@@ -1656,7 +1656,11 @@ fn test_ber_read_tagged_implicit_err() {
 fn test_ber_read_overflow() {
     let data = [33, 136, 255, 255, 255, 255, 255, 255, 255, 255];
 
-    let _: Result<bool, _> = parse_ber(&data, |reader| {
+    let r: Result<bool, _> = parse_ber(&data, |reader| {
         reader.read_bool()
     });
+
+    let err = r.unwrap_err();
+
+    assert_eq!(err.kind(), ASN1ErrorKind::IntegerOverflow);
 }
