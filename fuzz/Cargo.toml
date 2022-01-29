@@ -15,10 +15,6 @@ libfuzzer-sys = "0.4"
 [dependencies.yasna]
 path = ".."
 
-# Prevent this from interfering with workspaces
-[workspace]
-members = ["."]
-
 [[bin]]
 name = "decode_ber"
 path = "fuzz_targets/decode_ber.rs"
