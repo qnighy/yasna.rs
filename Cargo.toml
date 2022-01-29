@@ -44,3 +44,6 @@ version = "0.3"
 optional = true
 default-features = false
 features = ["std"]
+
+[workspace]
+members = ["fuzz"]
