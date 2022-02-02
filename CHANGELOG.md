@@ -1,3 +1,8 @@
+# 0.5.0
+
+- Fix overflow when reading length
+- Switch from `chrono` to `time`
+
 # 0.4.0
 
 - Increase MSRV to 1.36.0
