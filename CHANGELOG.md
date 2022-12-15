@@ -1,3 +1,8 @@
+# 0.5.1 (2022-12-15)
+
+- Ensure yasna builds with `-Z minimal-versions`
+- Addition of `{read,write}_bigint_bytes`
+
 # 0.5.0 (2022-02-02)
 
 - Fix overflow when reading length
