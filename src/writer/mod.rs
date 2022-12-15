@@ -552,8 +552,9 @@ impl<'a> DERWriter<'a> {
 
     /// Writes `&[u8]` and `usize` as an ASN.1 BITSTRING value.
     ///
-    /// This function is similar to `write_bitvec`, but is available
-    /// even if the `bit-vec` feature is disabled.
+    /// The `len` parameter represents the number of bits to be encoded.
+    /// This function is similar to `write_bitvec`, with `to_bytes` applied to
+    /// the bitvec, but is available even if the `bit-vec` feature is disabled.
     ///
     /// # Examples
     ///
