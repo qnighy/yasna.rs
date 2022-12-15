@@ -428,48 +428,70 @@ impl<'a> DERWriter<'a> {
     /// [dependencies]
     /// yasna = { version = "*", features = ["num-bigint"] }
     /// ```
-    pub fn write_bigint(mut self, val: &BigInt) {
+    pub fn write_bigint(self, val: &BigInt) {
         use num_bigint::Sign;
-        self.write_identifier(TAG_INTEGER, PCBit::Primitive);
-        let (sign, mut bytes) = val.to_bytes_le();
-        match sign {
-            Sign::NoSign => {
-                self.write_length(1);
-                self.buf.push(0);
-            },
-            Sign::Plus => {
-                let byteslen = bytes.len();
-                debug_assert!(bytes[byteslen-1] != 0);
-                if bytes[byteslen-1] >= 128 {
-                    self.write_length(byteslen+1);
-                    self.buf.push(0);
-                } else {
-                    self.write_length(byteslen);
-                }
-                bytes.reverse();
-                self.buf.extend_from_slice(&bytes);
-                return;
-            },
-            Sign::Minus => {
-                let byteslen = bytes.len();
-                debug_assert!(bytes[byteslen-1] != 0);
-                let mut carry : usize = 1;
-                for b in bytes.iter_mut() {
-                    let bval = 255 - (*b as usize);
-                    *b = (bval + carry) as u8;
-                    carry = (bval + carry) >> 8;
-                }
-                if bytes[byteslen-1] < 128 {
-                    self.write_length(byteslen+1);
-                    self.buf.push(255);
-                } else {
-                    self.write_length(byteslen);
-                }
-                bytes.reverse();
-                self.buf.extend_from_slice(&bytes);
-                return;
+        let (sign, mut bytes) = val.to_bytes_be();
+        if sign == Sign::Minus {
+            let mut carry: usize = 1;
+            for b in bytes.iter_mut().rev() {
+                let bval = 255 - (*b as usize);
+                *b = (bval + carry) as u8;
+                carry = (bval + carry) >> 8;
             }
-        };
+        }
+        self.write_bigint_bytes(&bytes, sign != Sign::Minus);
+    }
+
+    /// Writes `&[u8]` and `bool` as an ASN.1 INTEGER value.
+    ///
+    /// The first parameter encodes the bytes of the integer, in big-endian
+    /// byte ordering and two's complement format. The second parameter encodes
+    /// the sign, and is true if the number is non-negative, and false if it is
+    /// negative. Zero is encoded by passing an empty slice.
+    ///
+    /// The number is expected to be in two's complement format, so for example
+    /// `1` is encoded as `[1]` and `-1` as `[255]`.
+    ///
+    /// You don't have to worry about leading bits, meaning that if the leading
+    /// bit of a positive number is not zero, a leading zero byte will be
+    /// encoded by the function. Similarly, if the leading bit of a negative
+    /// number is not one, a leading byte will be added by the function as well.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn main() {
+    /// use yasna;
+    /// let der = yasna::construct_der(|writer| {
+    ///     // Encodes 1234567890
+    ///     writer.write_bigint_bytes(&[73, 150, 2, 210], true)
+    /// });
+    /// assert_eq!(der, vec![2, 4, 73, 150, 2, 210]);
+    /// # }
+    /// ```
+    pub fn write_bigint_bytes(mut self, bytes: &[u8], positive: bool) {
+        self.write_identifier(TAG_INTEGER, PCBit::Primitive);
+        if bytes.len() == 0 || bytes[0] == 0 {
+            self.write_length(1);
+            self.buf.push(0);
+        } else if positive {
+            if bytes[0] >= 128 {
+                self.write_length(bytes.len() + 1);
+                self.buf.push(0);
+            } else {
+                self.write_length(bytes.len());
+            }
+            self.buf.extend_from_slice(&bytes);
+        } else {
+            debug_assert!(bytes[0] != 0);
+            if bytes[0] < 128 {
+                self.write_length(bytes.len() + 1);
+                self.buf.push(255);
+            } else {
+                self.write_length(bytes.len());
+            }
+            self.buf.extend_from_slice(&bytes);
+        }
     }
 
     #[cfg(feature = "num-bigint")]
@@ -552,8 +574,9 @@ impl<'a> DERWriter<'a> {
 
     /// Writes `&[u8]` and `usize` as an ASN.1 BITSTRING value.
     ///
-    /// This function is similar to `write_bitvec`, but is available
-    /// even if the `bit-vec` feature is disabled.
+    /// The `len` parameter represents the number of bits to be encoded.
+    /// This function is similar to `write_bitvec`, with `to_bytes` applied to
+    /// the bitvec, but is available even if the `bit-vec` feature is disabled.
     ///
     /// # Examples
     ///
