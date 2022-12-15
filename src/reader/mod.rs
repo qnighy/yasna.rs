@@ -678,6 +678,43 @@ impl<'a, 'b> BERReader<'a, 'b> {
     /// yasna = { version = "*", features = ["num"] }
     /// ```
     pub fn read_bigint(self) -> ASN1Result<BigInt> {
+        let (mut bytes, non_negative) = self.read_bigint_bytes()?;
+        let sign = if non_negative {
+            Sign::Plus
+        } else {
+            let mut carry: usize = 1;
+            for b in bytes.iter_mut().rev() {
+                let bval = 255 - (*b as usize);
+                *b = (bval + carry) as u8;
+                carry = (bval + carry) >> 8;
+            }
+            Sign::Minus
+        };
+        Ok(BigInt::from_bytes_be(sign, &bytes))
+    }
+
+    /// Reads an ASN.1 INTEGER value as `Vec<u8>` and a sign bit.
+    ///
+    /// The number given is in big endian byte ordering, and in two's
+    /// complement.
+    ///
+    /// The sign bit is `true` if the number is positive,
+    /// and false if it is negative.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # fn main() {
+    /// use yasna;
+    /// let data = &[2, 4, 73, 150, 2, 210];
+    /// let (bytes, nonnegative) = yasna::parse_der(data, |reader| {
+    ///     reader.read_bigint_bytes()
+    /// }).unwrap();
+    /// assert_eq!(&bytes, &[73, 150, 2, 210]);
+    /// assert_eq!(nonnegative, true);
+    /// # }
+    /// ```
+    pub fn read_bigint_bytes(self) -> ASN1Result<(Vec<u8>, bool)> {
         self.read_general(TAG_INTEGER, |contents| {
             let buf = match contents {
                 Contents::Primitive(buf) => buf,
@@ -688,25 +725,14 @@ impl<'a, 'b> BERReader<'a, 'b> {
             if buf.len() == 0 {
                 return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
             } else if buf.len() == 1 {
-                return Ok(BigInt::from(buf[0] as i8));
+                return Ok((buf.to_vec(), buf[0] & 128 == 0));
             }
             let x2 = ((buf[0] as i8 as i32) << 8) + (buf[1] as i32);
             if -128 <= x2 && x2 < 128 {
                 return Err(ASN1Error::new(ASN1ErrorKind::Invalid));
             }
-            if 0 <= x2 {
-                return Ok(BigInt::from_bytes_be(Sign::Plus, buf));
-            } else {
-                let mut buf = buf.to_vec();
-                buf.reverse();
-                let mut carry : usize = 1;
-                for b in buf.iter_mut() {
-                    let bval = 255 - (*b as usize);
-                    *b = (bval + carry) as u8;
-                    carry = (bval + carry) >> 8;
-                }
-                return Ok(BigInt::from_bytes_le(Sign::Minus, &buf));
-            }
+            let sign = 0 <= x2;
+            Ok((buf.to_vec(), sign))
         })
     }
 
