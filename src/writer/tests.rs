@@ -205,6 +205,44 @@ fn test_der_write_u8() {
     }
 }
 
+
+#[test]
+fn test_der_write_bigint_bytes() {
+    let tests: &[(_, &[_], &[_])] = &[
+        // First group: identical to test_der_write_bigint
+        (false, &(-9223372036854775808_i64).to_be_bytes(), &[2, 8, 128, 0, 0, 0, 0, 0, 0, 0]),
+        (false, &(-65537_i32).to_be_bytes(), &[2, 3, 254, 255, 255]),
+        (false, &(-65536_i32).to_be_bytes(), &[2, 3, 255, 0, 0]),
+        (false, &(-32769_i32).to_be_bytes(), &[2, 3, 255, 127, 255]),
+        (false, &(-32768_i32).to_be_bytes(), &[2, 2, 128, 0]),
+        (false, &(-129_i16).to_be_bytes(), &[2, 2, 255, 127]),
+        (false, &(-128_i16).to_be_bytes(), &[2, 1, 128]),
+        (false, &(-1_i16).to_be_bytes(), &[2, 1, 255]),
+        (false, &[0], &[2, 1, 0]),
+        (true, &[1], &[2, 1, 1]),
+        (true, &127_i16.to_be_bytes(), &[2, 1, 127]),
+        (true, &128_i16.to_be_bytes(), &[2, 2, 0, 128]),
+        (true, &32767_u16.to_be_bytes(), &[2, 2, 127, 255]),
+        (true, &32768_u16.to_be_bytes(), &[2, 3, 0, 128, 0]),
+        (true, &65535_u16.to_be_bytes(), &[2, 3, 0, 255, 255]),
+        (true, &65536_u32.to_be_bytes(), &[2, 3, 1, 0, 0]),
+        (true, &9223372036854775807_u64.to_be_bytes(), &[2, 8, 127, 255, 255, 255, 255, 255, 255, 255]),
+        // Second group: more special tests
+        // Leading zeros are stripped:
+        (true, &[0, 1, 2, 3], &[2, 3, 1, 2, 3]),
+        (true, &[0, 0, 1, 2, 3], &[2, 3, 1, 2, 3]),
+        (true, &[0, 0, 0, 1, 2, 3], &[2, 3, 1, 2, 3]),
+        // [255, 0] is a fixpoint of normalization (it encodes -256):
+        (false, &[255, 0], &[2, 2, 255, 0]),
+    ];
+    for &(is_nonnegative, ref value, edata) in tests {
+        let data = construct_der(|writer| {
+            writer.write_bigint_bytes(*value, is_nonnegative)
+        });
+        assert_eq!(data, edata);
+    }
+}
+
 #[cfg(feature = "num-bigint")]
 #[test]
 fn test_der_write_bigint() {
