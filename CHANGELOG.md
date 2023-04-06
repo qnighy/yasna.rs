@@ -1,3 +1,7 @@
+# 0.5.2 (2023-04-06)
+
+- Strip leading zeros and sometimes leading 255s in `write_bigint_bytes`
+
 # 0.5.1 (2022-12-15)
 
 - Ensure yasna builds with `-Z minimal-versions`
