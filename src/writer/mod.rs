@@ -470,6 +470,21 @@ impl<'a> DERWriter<'a> {
     /// # }
     /// ```
     pub fn write_bigint_bytes(mut self, bytes: &[u8], positive: bool) {
+        let mut bytes = bytes;
+
+        // Remove leading zero bytes
+        while bytes.get(0) == Some(&0)  {
+            bytes = &bytes[1..];
+        }
+
+        if !positive {
+            // Remove leading 255 bytes
+            // (the order is important here, [255, 0] should be a fixpoint input)
+            while bytes.len() > 1 && bytes[0] == 255 && bytes.get(1).unwrap_or(&0) & 128 != 0 {
+                bytes = &bytes[1..];
+            }
+        }
+
         self.write_identifier(TAG_INTEGER, PCBit::Primitive);
         if bytes.len() == 0 || bytes[0] == 0 {
             self.write_length(1);
