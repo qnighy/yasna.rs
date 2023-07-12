@@ -1662,5 +1662,8 @@ fn test_ber_read_overflow() {
 
     let err = r.unwrap_err();
 
+    #[cfg(target_pointer_width = "32")]
+    assert_eq!(err.kind(), ASN1ErrorKind::Eof);
+    #[cfg(target_pointer_width = "64")]
     assert_eq!(err.kind(), ASN1ErrorKind::IntegerOverflow);
 }
