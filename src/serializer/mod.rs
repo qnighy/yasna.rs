@@ -85,10 +85,16 @@ pub trait DEREncodable {
 }
 
 /// Encodes a value to DER-encoded ASN.1 data.
-pub fn encode_der<T:DEREncodable>(value: &T) -> Vec<u8> {
+pub fn encode_der<T: DEREncodable + ?Sized>(value: &T) -> Vec<u8> {
     construct_der(|writer| {
         value.encode_der(writer)
     })
+}
+
+impl<T> DEREncodable for &T where T: DEREncodable + ?Sized {
+    fn encode_der(&self, writer: DERWriter) {
+        (**self).encode_der(writer)
+    }
 }
 
 impl<T> DEREncodable for Vec<T> where T: DEREncodable {
@@ -417,5 +423,24 @@ impl<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> DEREncodable
             self.10.encode_der(writer.next());
             self.11.encode_der(writer.next());
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::encode_der;
+
+    #[test]
+    fn serialize_slice() {
+        let arr = [0u8; 16];
+        let data_slice: &[u8] = &arr;
+        encode_der(data_slice);
+    }
+
+    #[test]
+    fn serialize_tuple_of_slices() {
+        let arr = [0u8; 16];
+        let data_tuple: (&[u8], &[u8]) = (&arr[..], &arr[..]);
+        encode_der(&data_tuple);
     }
 }
