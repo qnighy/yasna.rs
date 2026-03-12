@@ -1,6 +1,7 @@
 [package]
 name = "yasna"
 version = "0.5.2"
+rust-version = "1.60"
 authors = ["Masaki Hara <ackie.h.gmai@gmail.com>"]
 
 description = "ASN.1 library for Rust"
@@ -20,7 +21,7 @@ include = [
 
 [features]
 default = []
-std = []
+std = ["bit-vec?/std", "time?/std"]
 
 [package.metadata.docs.rs]
 features = ["num-bigint", "bit-vec", "time", "std"]
@@ -39,14 +40,12 @@ default-features = false
 [dependencies.bit-vec]
 version = "0.9.1"
 default-features = false
-features = ["std"]
 optional = true
 
 [dependencies.time]
 version = "0.3.1"
 optional = true
 default-features = false
-features = ["std"]
 
 [workspace]
 members = ["fuzz"]
