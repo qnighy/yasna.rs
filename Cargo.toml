@@ -1,6 +1,6 @@
 [package]
 name = "yasna"
-version = "0.5.2"
+version = "0.6.0"
 rust-version = "1.60"
 authors = ["Masaki Hara <ackie.h.gmai@gmail.com>"]
 
