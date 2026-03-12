@@ -37,7 +37,7 @@ version = "0.2"
 default-features = false
 
 [dependencies.bit-vec]
-version = "0.6.1"
+version = "0.9.1"
 default-features = false
 features = ["std"]
 optional = true
