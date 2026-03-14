@@ -1,0 +1,9 @@
+(function() {
+    const implementors = Object.fromEntries([["num_bigint",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.94.0/core/iter/traits/marker/trait.FusedIterator.html\" title=\"trait core::iter::traits::marker::FusedIterator\">FusedIterator</a> for <a class=\"struct\" href=\"num_bigint/struct.U32Digits.html\" title=\"struct num_bigint::U32Digits\">U32Digits</a>&lt;'_&gt;",0],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.94.0/core/iter/traits/marker/trait.FusedIterator.html\" title=\"trait core::iter::traits::marker::FusedIterator\">FusedIterator</a> for <a class=\"struct\" href=\"num_bigint/struct.U64Digits.html\" title=\"struct num_bigint::U64Digits\">U64Digits</a>&lt;'_&gt;",0]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":59,"fragment_lengths":[668]}

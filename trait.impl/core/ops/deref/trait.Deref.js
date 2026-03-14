@@ -1,0 +1,9 @@
+(function() {
+    const implementors = Object.fromEntries([["bit_vec",[["impl&lt;B: <a class=\"trait\" href=\"bit_vec/trait.BitBlock.html\" title=\"trait bit_vec::BitBlock\">BitBlock</a>&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.94.0/core/ops/deref/trait.Deref.html\" title=\"trait core::ops::deref::Deref\">Deref</a> for <a class=\"struct\" href=\"bit_vec/struct.MutBorrowedBit.html\" title=\"struct bit_vec::MutBorrowedBit\">MutBorrowedBit</a>&lt;'_, B&gt;",0]]],["powerfmt",[["impl&lt;T&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.94.0/core/ops/deref/trait.Deref.html\" title=\"trait core::ops::deref::Deref\">Deref</a> for <a class=\"struct\" href=\"powerfmt/smart_display/struct.Metadata.html\" title=\"struct powerfmt::smart_display::Metadata\">Metadata</a>&lt;'_, T&gt;<div class=\"where\">where\n    T: <a class=\"trait\" href=\"powerfmt/smart_display/trait.SmartDisplay.html\" title=\"trait powerfmt::smart_display::SmartDisplay\">SmartDisplay</a> + ?<a class=\"trait\" href=\"https://doc.rust-lang.org/1.94.0/core/marker/trait.Sized.html\" title=\"trait core::marker::Sized\">Sized</a>,</div>",0],["impl&lt;const SIZE: <a class=\"primitive\" href=\"https://doc.rust-lang.org/1.94.0/core/primitive.usize.html\">usize</a>&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.94.0/core/ops/deref/trait.Deref.html\" title=\"trait core::ops::deref::Deref\">Deref</a> for <a class=\"struct\" href=\"powerfmt/buf/struct.WriteBuffer.html\" title=\"struct powerfmt::buf::WriteBuffer\">WriteBuffer</a>&lt;SIZE&gt;",0]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":59,"fragment_lengths":[421,1074]}
