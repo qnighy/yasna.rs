@@ -5,7 +5,7 @@ on: [push, pull_request]
 env:
   # Minimum supported Rust version.
   # Please also change README.md if you change this.
-  MSRV: 1.36.0
+  MSRV: 1.60.0
 
 jobs:
   test:

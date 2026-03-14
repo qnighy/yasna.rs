@@ -1,3 +1,9 @@
+# 0.6.0 (2026-03-13)
+
+- Increase MSRV to 1.60
+- Bump Rust edition to 2021
+- Bump bit-vec version
+
 # 0.5.2 (2023-04-06)
 
 - Strip leading zeros and sometimes leading 255s in `write_bigint_bytes`
